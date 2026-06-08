@@ -86,7 +86,7 @@
     @media(max-width:640px){.wrap{width:min(100% - 20px,1180px);padding-top:14px}.hero{min-height:auto;border-radius:26px}.hero .title{padding:24px 16px}.brand-mark img{width:60px;height:60px}.brand-text{font-size:19px}.title h1{font-size:56px}.title .lead{font-size:17px}.hero-benefits{grid-template-columns:repeat(5,1fr);gap:6px;margin-top:22px}.benefit i{width:42px;height:42px;border-radius:14px;font-size:24px}.benefit span{font-size:11px}.home-premium-grid{grid-template-columns:1fr}.home-premium-grid .feature-card{min-height:auto}.world-cup-strip,.fav-cta{display:grid}.strip-logos{font-size:28px}.tabs{position:sticky;top:0;z-index:20;display:flex;overflow-x:auto;gap:8px;border-radius:0;margin-left:-10px;margin-right:-10px;padding:10px}.tabs .tab{white-space:nowrap;flex:0 0 auto;padding:10px 12px}.match-head{display:flex;align-items:center;flex-wrap:nowrap}.match-head>.tag{font-size:11px;max-width:42%;overflow:hidden;text-overflow:ellipsis}.match-actions{justify-content:flex-start}.match-actions .fav,.match-actions .detail-btn{font-size:11px;padding:6px 8px}.match-actions .tag{font-size:10px;padding:6px 8px}.modal-card{width:calc(100% - 14px);border-radius:22px}.metric-grid{grid-template-columns:1fr}.info{grid-template-columns:1fr 1fr}.public-footer{font-size:13px}}
 
   
-    /* V18 — accueil dashboard premium, stable moteur */
+    /* V19 — accueil dashboard premium, stable moteur */
     body{background:#020b16 radial-gradient(circle at 72% 18%,#102a58 0,#08182d 30%,#020b16 70%) fixed;color:var(--text)}
     .wrap{width:min(1320px,calc(100% - 32px));padding-top:18px}
     .site-header{position:sticky;top:12px;z-index:60;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:18px;padding:12px 18px;margin-bottom:18px;border-radius:28px;background:linear-gradient(180deg,#061426f4,#03101fde);backdrop-filter:blur(22px);box-shadow:0 18px 55px #0008}
@@ -104,7 +104,29 @@
     @media(max-width:1180px){.desktop-nav{gap:10px}.nav-link{font-size:13px}.home-premium-grid{grid-template-columns:repeat(2,1fr)}.home-premium-grid .feature-card:nth-child(5){grid-column:1/-1}.hero{min-height:360px}}
     @media(max-width:780px){.wrap{width:min(100% - 18px,1320px);padding-bottom:88px}.site-header{top:8px;grid-template-columns:auto 1fr auto;padding:10px 12px;border-radius:22px}.mobile-menu{display:block;width:44px;height:44px;padding:0}.site-logo img{width:44px;height:44px}.site-logo{min-width:0}.site-logo div b{font-size:13px}.site-logo div span{font-size:18px}.desktop-nav{display:none}.site-actions{gap:6px}.icon-action{width:42px;height:42px;font-size:18px}.fav-action{font-size:12px;padding:10px 12px}.hero{border-radius:26px;min-height:0}.hero .title{padding:28px 18px}.title h1{font-size:54px;line-height:.9}.title .lead{font-size:16px}.hero-benefits{grid-template-columns:repeat(5,1fr);gap:7px;margin-top:18px}.benefit i{width:40px;height:40px;font-size:22px}.benefit span{font-size:10px}.hero-kpis{grid-template-columns:repeat(3,1fr);max-width:100%}.hero-kpis div{padding:10px 8px}.hero-kpis b{font-size:22px}.hero-kpis span{font-size:11px}.home-premium-grid{grid-template-columns:1fr;gap:12px}.home-premium-grid .feature-card{min-height:auto}.feature-card:nth-child(n+3){padding:14px}.world-cup-strip{grid-template-columns:1fr;padding:16px}.world-cup-strip:before{display:none}.fav-cta{display:grid}.public-footer{display:grid;text-align:left}.footer-links{gap:12px}.tabs{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:80;margin:0;border-radius:22px 22px 0 0;padding:9px 8px;display:grid;grid-template-columns:repeat(5,1fr);overflow:visible;background:#061426f6}.tabs .tab{font-size:11px;line-height:1.1;white-space:normal;padding:8px 4px;border-radius:14px}.tabs .tab:nth-child(4),.tabs .tab:nth-child(5),.tabs .tab:nth-child(8){display:none}.match-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}.match-head>.tag{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.match-actions{justify-content:flex-end;max-width:100%;overflow:hidden}.match-actions .fav,.match-actions .detail-btn,.match-actions .tag{font-size:10px;padding:6px 7px}.match-actions .tag:first-child{display:none}.time-main{font-size:25px!important}.modal-card{max-height:88vh}}
 
-  </style>
+  
+    /* V19 correctifs navigation + hero premium */
+    .hero{background:
+      linear-gradient(90deg,#061426 0%,#061426f4 34%,#061426b8 52%,#06142644 75%,#06142611 100%),
+      radial-gradient(circle at 78% 30%,#ffffff3a 0 1.2%,transparent 8%),
+      radial-gradient(ellipse at 74% 58%,#00a85960 0 10%,transparent 30%),
+      url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1600&q=80') center right/cover no-repeat !important;
+    }
+    .hero:before{background:
+      linear-gradient(12deg,transparent 0 51%,#ffffff18 51.2% 51.6%,transparent 52%),
+      repeating-linear-gradient(90deg,transparent 0 76px,#ffffff08 77px 78px),
+      repeating-linear-gradient(0deg,transparent 0 54px,#ffffff05 55px 56px) !important;
+    }
+    .hero:after{background:radial-gradient(ellipse at 82% 60%,#1d87ff38,transparent 58%) !important}
+    .site-logo,.nav-link,.tab,.icon-action,.fav-action,.home-btn,.mini-match,.city-pill,.stadium-card,button{touch-action:manipulation}
+    @media(max-width:780px){
+      .site-header{gap:10px}
+      .site-actions{gap:10px;margin-left:8px}
+      .icon-action{margin-left:4px}
+      .fav-action{white-space:nowrap}
+      .tabs .tab{white-space:nowrap;font-size:10px}
+    }
+</style>
 
   <script>
     // Nettoyage des anciens caches PWA pour éviter d'afficher une version cassée ou ancienne.
@@ -135,8 +157,8 @@
         <button onclick="switchTab('fan')" class="nav-link" data-nav="fan">Fan zone</button>
       </nav>
       <div class="site-actions">
-        <button class="icon-action" onclick="document.getElementById('q')?.focus()">⌕</button>
-        <button class="fav-action" onclick="quick('fav')">⭐ Mes favoris</button>
+        <button class="icon-action" onclick="switchTab('matches');setTimeout(()=>document.getElementById('q')?.focus(),120)">⌕</button>
+        <button class="fav-action" onclick="applyQuick('Favoris')">⭐ Mes favoris</button>
       </div>
     </header>
     <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit"><i>📅</i><span>Calendrier complet</span></div><div class="benefit"><i>📺</i><span>Guide TV France</span></div><div class="benefit"><i>🏟️</i><span>Stades & infos</span></div><div class="benefit"><i>🌎</i><span>Carte interactive</span></div><div class="benefit"><i>⭐</i><span>Mes équipes favorites</span></div></div></div><div class="panel stats"><div class="stat"><b id="countAll">0</b><span>matchs intégrés</span></div><div class="stat"><b id="countM6">0</b><span>diffusés aussi sur M6/M6+</span></div><div class="stat"><b>16</b><span>villes hôtes</span></div><div class="stat"><b>104</b><span>matchs prévus au total</span></div></div></section>
@@ -153,8 +175,8 @@
     <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Vote local dans le navigateur : parfait pour rendre la fiche match plus vivante sans API.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📤 Carte de partage</h2><p class="mini">Message prêt à envoyer pour partager le guide.</p><div id="sharePreview" class="share-preview"></div><button onclick="shareApp()">Partager le guide</button></div></div></section>
     <section id="view-stadiums" class="view"><div class="panel dashboard"><h2>🏟️ Les stades du Mondial</h2><p class="mini">Photos de stades, capacités, pays hôte et nombre de matchs intégrés dans cette version.</p><div id="stadiumGrid" class="stadium-grid"></div></div></section>
     <section id="view-map" class="view"><div class="panel host-map-page"><h2 class="section-title">🌎 Carte des villes hôtes</h2><p class="mini">Survole une ville pour voir son stade, clique pour ouvrir directement la fiche du stade.</p><div id="bigHostMap"></div><div id="cityList" class="city-list"></div></div></section>
-    <footer class="public-footer"><div><b>Guide Mondial 2026</b><br>Le guide francophone de la Coupe du Monde 2026</div><div class="links"><button onclick="switchTab('matches')">Calendrier</button><button onclick="switchTab('tv')">Guide TV</button><button onclick="switchTab('stadiums')">Stades</button><button onclick="switchTab('map')">Carte</button></div><div>© 2026 Guide Mondial</div></footer>
-  <footer class="public-footer"><div class="footer-brand"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026"><div><b>Guide Mondial 2026</b><span>Le guide francophone de la Coupe du Monde 2026</span></div></div><div class="footer-links"><button onclick="switchTab('matches')">Calendrier</button><button onclick="switchTab('tv')">Guide TV</button><button onclick="switchTab('stadiums')">Stades</button><button onclick="switchTab('map')">Carte interactive</button><button onclick="quick('fav')">Favoris</button></div><small>© 2026 Guide Mondial</small></footer>
+    
+  <footer class="public-footer"><div class="footer-brand"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026"><div><b>Guide Mondial 2026</b><span>Le guide francophone de la Coupe du Monde 2026</span></div></div><div class="footer-links"><button onclick="switchTab('matches')">Calendrier</button><button onclick="switchTab('tv')">Guide TV</button><button onclick="switchTab('stadiums')">Stades</button><button onclick="switchTab('map')">Carte interactive</button><button onclick="applyQuick('Favoris')">Favoris</button></div><small>© 2026 Guide Mondial</small></footer>
   </main>
   <div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()"><div class="modal-card"><div class="modal-head"><b>Détail du match</b><button class="close" onclick="closeModal()">Fermer</button></div><div class="modal-body" id="modalBody"></div></div></div>
   <script>
@@ -227,10 +249,10 @@ const data = [
       reset.onclick=()=>{q.value='';phase.value='';group.value='';channel.value='';renderAll()};
       quick.onclick=e=>{if(e.target.dataset.v)applyQuick(e.target.dataset.v)};
       nextBtn.onclick=goNext;shareBtn.onclick=shareApp;
-      tabs.onclick=e=>{if(e.target.dataset.tab){activeTab=e.target.dataset.tab;renderAll()}};
+      tabs.onclick=e=>{let btn=e.target.closest('[data-tab]'); if(btn) switchTab(btn.dataset.tab)};
       renderTeamPicker();renderAll();setInterval(renderAll,60000)
     }
-    function switchTab(tab){activeTab=tab;renderAll();window.scrollTo({top:0,behavior:'smooth'})}
+    function switchTab(tab){activeTab=tab;document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===tab));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
     function applyQuick(v){
       if(v==='Aujourd’hui + à venir'){q.value=q.value==='upcoming'?'':'upcoming'}
       else if(v==='Favoris'){q.value=q.value==='favoris'?'':'favoris'}
