@@ -89,6 +89,24 @@
     @media(max-width:1050px){.hero{grid-template-columns:1fr}.home-hero-map{display:none}.home-quick-icons{grid-template-columns:repeat(3,1fr)}.feature-grid{grid-template-columns:1fr 1fr}.top-install,.top-star{position:static;margin:8px 0;width:100%}.tabs{overflow:auto;justify-content:flex-start}.tab{min-width:118px}.footer-public{display:block}.footer-links{margin-top:12px}}
     @media(max-width:700px){.feature-grid,.home-grid{grid-template-columns:1fr}.title{min-height:unset}.home-quick-icons{grid-template-columns:repeat(2,1fr)}.host-map-page .na-map.big-map{min-height:300px}.city-dot:hover:after,.city-dot:focus:after{max-width:160px;overflow:hidden;text-overflow:ellipsis}.map-country-legend{position:static;margin:8px}.tabs{top:0}}
 
+  
+    /* V14 - accueil premium inspiré de la maquette */
+    .hero{grid-template-columns:.78fr 1.22fr;gap:22px;align-items:stretch;margin-bottom:22px}
+    .title{min-height:430px;display:flex;flex-direction:column;justify-content:center}
+    .gm-logo{height:90px;align-self:flex-start;margin-bottom:12px}
+    .title h1{font-size:clamp(54px,7vw,86px);margin:12px 0 12px}
+    .lead{font-size:19px;color:#e0ebf7}
+    .home-hero-map{min-height:430px;border-radius:28px;border:1px solid #ffffff25;background:linear-gradient(135deg,#061426,#0b213c);box-shadow:var(--shadow);overflow:hidden;padding:0}
+    .home-hero-map .na-map.big-map{height:100%;min-height:430px;border:0;border-radius:28px}
+    .home-quick-icons{margin-top:34px;gap:18px}.home-quick-icons div{font-size:14px;color:#fff}.home-quick-icons b{font-size:34px}
+    .home-action-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr 1.15fr 1.2fr;gap:14px;margin-top:18px}
+    .home-card{border:1px solid var(--line);background:linear-gradient(180deg,#ffffff12,#ffffff06);border-radius:22px;padding:16px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 16px 42px #0004}
+    .home-card h2{margin:0 0 12px;font-size:17px;letter-spacing:.01em}.home-card .card-btn{width:100%;margin-top:auto;border-radius:14px;background:transparent;border:1px solid #ffffff30;padding:11px}.home-card .card-btn:hover{border-color:#ffd166aa}
+    .home-card.featured{border-color:#ef33be66;background:linear-gradient(155deg,#2b123f88,#081426)}.home-card.tv{border-color:#00a6ff55}.home-card.teams{border-color:#ffb00066;background:linear-gradient(155deg,#211707aa,#081426)}.home-card.stadium{border-color:#63d94366;background:linear-gradient(155deg,#062515aa,#081426)}.home-card.upcoming{border-color:#00a6ff66}
+    .home-card .time-pill{display:inline-flex;align-self:flex-start;border-radius:9px;padding:7px 10px;background:linear-gradient(90deg,#b650d9,#7b3cff);font-size:12px;font-weight:950;color:#fff;margin-bottom:12px}.featured-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center}.flag-tile{display:flex;flex-direction:column;gap:8px;align-items:center;font-weight:1000}.flag-tile .flag{font-size:42px}.featured-vs .vs{font-size:22px;color:#fff}.home-card .small-line{font-size:12px;color:#b9c8d8;text-align:center;margin:10px 0}.tv-line,.upcoming-line,.follow-line{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #ffffff13}.tv-line:last-child,.upcoming-line:last-child,.follow-line:last-child{border-bottom:0}.tv-logo{font-weight:1000;border-radius:7px;padding:4px 6px;background:#ffffff16;font-size:11px}.follow-line .flag{font-size:28px}.follow-line .star{color:#ffb000;font-size:22px}.stadium-shot{height:82px;border-radius:14px;background:#061426 center/cover no-repeat;border:1px solid #ffffff1c;margin-bottom:10px}.stadium-meta{color:#d9e9f8;font-size:13px;line-height:1.5}.team-manager-public{margin-top:16px}.team-manager-public.collapsed{display:none}
+    @media(max-width:1120px){.home-action-grid{grid-template-columns:repeat(2,1fr)}.home-card.upcoming{grid-column:auto}.hero{grid-template-columns:1fr}.home-hero-map{display:block}.home-hero-map .na-map.big-map{min-height:340px}}
+    @media(max-width:700px){.home-action-grid{grid-template-columns:1fr}.home-hero-map{display:none}.gm-logo{height:74px}.title h1{font-size:56px}.home-quick-icons{grid-template-columns:repeat(2,1fr)}}
+
   </style>
 </head>
 <body>
@@ -97,7 +115,16 @@
     <section class="hero"><div class="panel title"><button class="top-install" onclick="installApp()">📱 Installer l'application</button><button class="top-star" onclick="switchTab('matches'); q.value='favoris'; renderAll()">☆</button><div class="brand"><img class="gm-logo" src="/guide-mondial-logo.svg" alt="Guide Mondial 2026"></div><h1>Guide <span class="grad">Mondial 2026</span></h1><p class="lead">Le guide francophone de la Coupe du Monde 2026 : calendrier complet, guide TV France, stades, carte interactive et équipes favorites.</p><div class="home-quick-icons"><div><b>📅</b>Calendrier<br>complet</div><div><b>📺</b>Guide TV<br>France</div><div><b>🏟️</b>Stades &<br>infos</div><div><b>🌎</b>Carte<br>interactive</div><div><b>⭐</b>Mes équipes<br>favorites</div></div></div><div class="home-hero-map" id="homeHeroMap"></div></section>
     <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Arbre</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
 
-    <section id="view-home" class="view active"><div class="home-grid"><div class="panel dashboard" id="monMondialBox"></div><div class="panel dashboard" id="featuredBox"></div></div><div class="feature-grid"><div class="feature-card" id="freeTodayBox"></div><div class="feature-card" id="stadiumDiscoveryBox"></div></div><div class="panel dashboard"><h2>⭐ Choisis tes équipes à suivre</h2><p class="mini">Elles seront mises en avant dans Mon Mondial et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div></section>
+    <section id="view-home" class="view active">
+      <div class="home-action-grid">
+        <article class="home-card featured" id="featuredBox"></article>
+        <article class="home-card tv" id="freeTodayBox"></article>
+        <article class="home-card teams" id="followedTeamsBox"></article>
+        <article class="home-card stadium" id="stadiumDiscoveryBox"></article>
+        <article class="home-card upcoming" id="upcomingBox"></article>
+      </div>
+      <div class="panel dashboard team-manager-public collapsed" id="teamManagerBox"><h2>⭐ Gérer mes équipes favorites</h2><p class="mini">Elles seront mises en avant dans l’accueil et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div>
+    </section>
 
     <section id="view-matches" class="view"><section class="panel toolbar"><input id="q" placeholder="Rechercher France, Brésil, stade, ville..." /><select id="phase"><option value="">Toutes phases</option></select><select id="group"><option value="">Tous groupes</option></select><select id="channel"><option value="">Toutes chaînes</option><option>M6</option><option>beIN Sports</option></select><button id="reset">Réinitialiser</button></section><section class="layout"><aside class="panel side"><h2>Accès rapide</h2><div class="chips" id="quick"></div><div class="actions"><button id="nextBtn">Voir le prochain match</button><button id="shareBtn">Partager l'app</button></div><p class="mini">Tous les matchs, filtres, favoris, chaînes françaises, stades et statut en direct.</p></aside><section><div class="feature-grid"><div class="feature-card" id="todayBox"></div><div class="feature-card" id="tvBox"></div></div><div id="list" class="list"></div></section></section></section>
 
@@ -140,12 +167,12 @@ const data = [
       'Guadalupe':{country:'Mexique',lat:25.6692,lon:-100.2444,capacity:'53 500 places',timezone:'UTC-6',photo:'https://upload.wikimedia.org/wikipedia/commons/5/57/Mexico_Guadalupe_Monterrey_Estadio_BBVA_Bancomer_fifa_world_cup_2026_6.JPG',source:'FIFA / Wikimedia'}
     };
     const mapPositions={
-      'Vancouver':{x:18,y:30},'Toronto':{x:77,y:32},
-      'Seattle':{x:18,y:43},'San Francisco':{x:16,y:57},'Los Angeles':{x:21,y:66},
-      'Dallas':{x:55,y:58},'Houston':{x:58,y:66},'Kansas City':{x:55,y:48},
-      'Atlanta':{x:70,y:60},'Miami':{x:78,y:76},'Boston':{x:88,y:39},
-      'New York':{x:85,y:44},'Philadelphia':{x:83,y:47},
-      'Mexico':{x:46,y:88},'Zapopan':{x:36,y:79},'Guadalupe':{x:50,y:75}
+      'Vancouver':{x:20,y:32},'Toronto':{x:79,y:33},
+      'Seattle':{x:22,y:43},'San Francisco':{x:20,y:56},'Los Angeles':{x:23,y:64},
+      'Dallas':{x:54,y:58},'Houston':{x:57,y:65},'Kansas City':{x:54,y:50},
+      'Atlanta':{x:70,y:59},'Miami':{x:78,y:71},'Boston':{x:87,y:40},
+      'New York':{x:84,y:45},'Philadelphia':{x:82,y:48},
+      'Mexico':{x:47,y:86},'Zapopan':{x:36,y:78},'Guadalupe':{x:50,y:76}
     };
     function mapPos(lat,lon,city){
       if(city && mapPositions[city]) return {x:mapPositions[city].x.toFixed(1), y:mapPositions[city].y.toFixed(1)};
@@ -202,7 +229,7 @@ const data = [
     }
     function updateChips(){document.querySelectorAll('.chip').forEach(c=>{let v=c.dataset.v;let active=(v==='Aujourd’hui + à venir'&&q.value==='upcoming')||(v==='Favoris'&&q.value==='favoris')||(v==='Mes équipes'&&q.value==='myteams')||((v==='M6'||v==='Matchs gratuits')&&channel.value==='M6')||(v==='beIN Sports'&&channel.value==='beIN Sports')||((v==='Finale'||v==='16es de finale')&&phase.value===v)||(v==='France'&&q.value.toLowerCase()==='france');c.classList.toggle('active',active)})}
     function filtered(){let query=q.value.toLowerCase().trim(),ph=phase.value,gr=group.value,ch=channel.value;return data.filter(m=>{let blob=Object.values(m).join(' ').toLowerCase();let mine=followedTeams.has(m.home)||followedTeams.has(m.away);let okQ=!query||(query==='upcoming'?!isPast(m):query==='favoris'?favs.has(m.id):query==='myteams'?mine:blob.includes(query));return okQ&&(!ph||m.phase===ph)&&(!gr||m.phase===gr)&&(!ch||m.tv.includes(ch))}).sort((a,b)=>matchStart(a)-matchStart(b))}
-    function renderAll(){ const homeMapEl=document.getElementById('homeHeroMap'); if(homeMapEl) homeMapEl.innerHTML=renderHostMap('', 'big');
+    function renderAll(){ if(document.getElementById('homeHeroMap')) homeHeroMap.innerHTML=renderHostMap('', 'big');
       document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
       renderHome();updateChips();renderHighlights();render();renderStadiums();renderMapPage();renderTvGuide();renderGroups();renderBracket();renderFanZone();
@@ -213,14 +240,28 @@ const data = [
       const now=new Date(), upcoming=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b));
       const mine=upcoming.filter(m=>followedTeams.has(m.home)||followedTeams.has(m.away));
       const freeToday=data.filter(m=>sameDay(matchStart(m),now)&&m.tv.includes('M6')).sort((a,b)=>matchStart(a)-matchStart(b));
+      const freeNext=upcoming.filter(m=>m.tv.includes('M6')).slice(0,2);
       const featured=(mine[0]||upcoming.find(m=>m.tv.includes('M6'))||upcoming[0]);
-      const teams=[...followedTeams].map(t=>(flags[t]||'🏳️')+' '+esc(t)).join(' · ')||'Aucune équipe suivie';
-      monMondialBox.innerHTML=`<h2>⚽ Mon Mondial</h2><p class="mini">${teams}</p><div class="dashboard-kpis"><div class="kpi"><b>${followedTeams.size}</b><span>équipes suivies</span></div><div class="kpi"><b>${favs.size}</b><span>favoris</span></div><div class="kpi"><b>${mine.length}</b><span>matchs de mes équipes</span></div><div class="kpi"><b>${upcoming.filter(m=>m.tv.includes('M6')).length}</b><span>gratuits à venir</span></div></div>${mine[0]?`<div class="mini-match" onclick="openDetail(${mine[0].id})"><div><b>Prochain match suivi</b><div class="mini-teams">${flags[mine[0].home]||'🏳️'} ${esc(mine[0].home)} - ${flags[mine[0].away]||'🏳️'} ${esc(mine[0].away)}</div><div class="small">${dateLabel(mine[0].date)} · ${mine[0].time} · ${esc(mine[0].tv)}</div></div></div>`:`<div class="empty-soft">Choisis une équipe pour créer ton programme personnalisé.</div>`}`;
-      featuredBox.innerHTML=featured?`<h2>🔥 Match vedette</h2><div class="hero-match" onclick="openDetail(${featured.id})"><div class="big">${flags[featured.home]||'🏳️'} ${esc(featured.home)} <span class="grad">VS</span> ${flags[featured.away]||'🏳️'} ${esc(featured.away)}</div><p>${dateLabel(featured.date)} · <b>${featured.time}</b><br>${esc(featured.stadium)} · ${esc(featured.city)}<br>📺 ${esc(featured.tv)}</p></div>`:'<h2>🔥 Match vedette</h2><div class="empty-soft">Aucun match à venir.</div>';
-      freeTodayBox.innerHTML=`<h2>📺 Gratuits aujourd’hui</h2>${freeToday.length?freeToday.map(m=>`<div class="mini-match" onclick="openDetail(${m.id})"><div class="mini-teams">${m.time} · ${flags[m.home]||'🏳️'} ${esc(m.home)} - ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><span class="free-badge">M6/M6+</span></div>`).join(''):'<p class="small">Aucun match gratuit aujourd’hui. Le prochain match M6 est affiché dans le Guide TV.</p>'}`;
-      const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{};
-      stadiumDiscoveryBox.innerHTML=`<h2>🏟️ Stade à découvrir</h2><div class="mini-match" onclick="openStadium('${esc(city)}')"><div><div class="mini-teams">${esc(v.stadium||stadiums[city]||'Stade')}</div><div class="small">${esc(city)} · ${esc(v.country||'')} · ${esc(v.capacity||'')}</div></div></div>`;
+      const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, stadium=stadiums[city]||city, stadiumMatches=data.filter(m=>m.city===city).length, img=photoList(city)[0]||'';
+      if(featuredBox){
+        featuredBox.innerHTML=featured?`<div><h2>🔥 MATCH VEDETTE</h2><span class="time-pill">${dateLabel(featured.date)} · ${featured.time}</span><div class="featured-vs"><div class="flag-tile"><span class="flag">${flags[featured.home]||'🏳️'}</span><span>${esc(featured.home)}</span></div><div class="vs">VS</div><div class="flag-tile"><span class="flag">${flags[featured.away]||'🏳️'}</span><span>${esc(featured.away)}</span></div></div><div class="small-line">${esc(featured.phase)} · ${esc(featured.stadium)}, ${esc(featured.city)}</div></div><button class="card-btn" onclick="openDetail(${featured.id})">Voir le match →</button>`:`<h2>🔥 MATCH VEDETTE</h2><div class="empty-soft">Aucun match à venir.</div>`;
+      }
+      if(freeTodayBox){
+        const tvList=(freeToday.length?freeToday:freeNext).slice(0,2);
+        freeTodayBox.innerHTML=`<div><h2>📺 CE SOIR À LA TV</h2>${tvList.length?tvList.map(m=>`<div class="tv-line" onclick="openDetail(${m.id})"><b>${m.time}</b><span>${esc(m.home)}<br><small>vs ${esc(m.away)}</small></span><span class="tv-logo">${m.tv.includes('M6')?'M6+':'beIN'}</span></div>`).join(''):'<p class="small">Aucun match TV à venir trouvé.</p>'}</div><button class="card-btn" onclick="switchTab('tv')">Voir le guide TV →</button>`;
+      }
+      if(followedTeamsBox){
+        const teams=[...followedTeams].slice(0,3);
+        followedTeamsBox.innerHTML=`<div><h2>⭐ MES ÉQUIPES</h2>${teams.length?teams.map(t=>`<div class="follow-line"><span class="flag">${flags[t]||'🏳️'}</span><b>${esc(t)}</b><span class="star">★</span></div>`).join(''):'<p class="small">Sélectionne tes équipes pour personnaliser ton guide.</p>'}</div><button class="card-btn" onclick="document.getElementById('teamManagerBox').classList.toggle('collapsed')">Gérer mes équipes →</button>`;
+      }
+      if(stadiumDiscoveryBox){
+        stadiumDiscoveryBox.innerHTML=`<div><h2>🏟️ STADE DU JOUR</h2><div class="stadium-shot" style="background-image:url('${img}')"></div><h3 style="margin:0 0 4px">${esc(stadium)}</h3><div class="stadium-meta">📍 ${esc(city)}, ${esc(v.country||'')}<br>◎ ${esc(v.capacity||'Capacité à confirmer')}<br>${stadiumMatches} match(s) intégrés</div></div><button class="card-btn" onclick="openStadiumDetail('${esc(city)}')">Voir le stade →</button>`;
+      }
+      if(upcomingBox){
+        upcomingBox.innerHTML=`<div><h2>📅 PROCHAINS MATCHS</h2>${upcoming.slice(0,3).map(m=>`<div class="upcoming-line" onclick="openDetail(${m.id})"><span>${dateLabel(m.date).split(' ').slice(0,3).join(' ')}<br><b>${m.time}</b></span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}</b><span>vs<br>${flags[m.away]||'🏳️'} ${esc(m.away)}</span></div>`).join('')}</div><button class="card-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
+      }
     }
+
     function renderHighlights(){
       const now=new Date();
       const todays=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
@@ -246,7 +287,7 @@ const data = [
     }
     function renderGroups(){
       if(!window.groupsGrid)return; const groups=groupData();
-      groupsGrid.innerHTML=Object.entries(groups).map(([g,teams])=>`<article class="group-card"><h3>${esc(g)}</h3><table class="standings"><thead><tr><th>Équipe</th><th>J</th><th>Pts</th></tr></thead><tbody>${teams.map(t=>`<tr><td>${flags[t]||'🏳️'} ${esc(t)}</td><td>0</td><td><b>0</b></td></tr>`).join('')}</tbody></table><div class="mini" style="margin-top:10px">Classement initial — suivi pendant la compétition.</div></article>`).join('')
+      groupsGrid.innerHTML=Object.entries(groups).map(([g,teams])=>`<article class="group-card"><h3>${esc(g)}</h3><table class="standings"><thead><tr><th>Équipe</th><th>J</th><th>Pts</th></tr></thead><tbody>${teams.map(t=>`<tr><td>${flags[t]||'🏳️'} ${esc(t)}</td><td>0</td><td><b>0</b></td></tr>`).join('')}</tbody></table><div class="mini" style="margin-top:10px">À mettre à jour quand les résultats seront connus.</div></article>`).join('')
     }
     function renderBracket(){
       if(!window.bracketBox)return; const rounds=['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
@@ -269,21 +310,21 @@ const data = [
       const cities=Object.entries(venueMeta).map(([city,v])=>{const p=mapPos(v.lat,v.lon,city),n=data.filter(m=>m.city===city).length;return `<button type="button" class="city-dot map-click ${city===activeCity?'active':''} ${major.has(city)?'major':''}" data-city="${esc(city)}" data-stadium="${esc(stadiums[city]||'Stade')}" title="${esc(city)} — ${esc(stadiums[city]||'Stade')}" aria-label="Voir ${esc(stadiums[city]||'le stade')} à ${esc(city)}" style="left:${p.x}%;top:${p.y}%" onclick="openStadiumDetail('${esc(city)}')"></button>`}).join('');
       return `<div class="na-map ${mode==='big'?'big-map':''}"><div class="map-legend"><span>● Survole une ville</span><span>↗ Clique = fiche stade</span></div><div class="map-country-legend"><span><i class="ca"></i>CANADA</span><span><i class="us"></i>ÉTATS-UNIS</span><span><i class="mx"></i>MEXIQUE</span></div><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <defs>
-          <linearGradient id="canGrad2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#2fc7bd" stop-opacity=".86"/><stop offset="1" stop-color="#116491" stop-opacity=".76"/></linearGradient>
-          <linearGradient id="usaGrad2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#1675ff" stop-opacity=".86"/><stop offset="1" stop-color="#0d3569" stop-opacity=".86"/></linearGradient>
-          <linearGradient id="mexGrad2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#81d843" stop-opacity=".86"/><stop offset="1" stop-color="#0e704a" stop-opacity=".84"/></linearGradient>
+          <linearGradient id="canGrad2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#28d6ca" stop-opacity=".88"/><stop offset="1" stop-color="#116491" stop-opacity=".78"/></linearGradient>
+          <linearGradient id="usaGrad2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#1478ff" stop-opacity=".90"/><stop offset="1" stop-color="#0b346a" stop-opacity=".88"/></linearGradient>
+          <linearGradient id="mexGrad2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#8ce547" stop-opacity=".90"/><stop offset="1" stop-color="#0c7048" stop-opacity=".86"/></linearGradient>
         </defs>
         <path class="grid-line" d="M6 18 H95 M6 31 H95 M6 44 H95 M6 57 H95 M6 70 H95 M6 83 H95 M15 6 V94 M29 6 V94 M43 6 V94 M57 6 V94 M71 6 V94 M85 6 V94"/>
-        <path class="land" fill="url(#canGrad2)" d="M7,18 L13,12 L22,12 L29,9 L37,12 L46,10 L55,12 L63,9 L72,13 L83,14 L93,23 L96,31 L91,35 L82,34 L76,32 L70,36 L62,36 L55,39 L47,38 L39,40 L31,38 L24,40 L17,36 L10,31 L8,25 Z"/>
-        <path class="land" fill="url(#usaGrad2)" d="M9,42 L17,38 L26,39 L34,40 L43,39 L52,40 L61,39 L70,42 L78,48 L84,55 L88,64 L86,72 L80,76 L72,73 L66,66 L59,65 L53,70 L44,68 L36,64 L28,66 L20,73 L15,68 L12,58 Z"/>
-        <path class="land" fill="#2d8fb6aa" d="M11,53 L14,58 L16,68 L20,81 L17,84 L12,72 L9,61 Z"/>
-        <path class="land" fill="url(#mexGrad2)" d="M20,75 L29,67 L37,67 L45,70 L52,76 L60,82 L66,90 L64,96 L55,92 L49,84 L41,79 L34,83 L27,80 L21,82 Z"/>
-        <path class="coast" d="M8,25 C20,15 38,17 52,14 C66,11 84,17 96,31"/>
-        <path class="coast" d="M10,42 C24,37 37,41 52,40 C66,39 80,49 87,64 C90,72 84,78 78,75"/>
-        <path class="coast" d="M21,75 C33,67 48,72 60,84 C65,90 67,94 64,96"/>
-        <path class="border" d="M9,42 L17,38 L26,39 L34,40 L43,39 L52,40 L61,39 L70,42"/>
-        <path class="border" d="M20,75 L29,67 L37,67 L45,70"/>
-        <text class="country-name" x="43" y="26">CANADA</text><text class="country-name" x="42" y="55">ÉTATS-UNIS</text><text class="country-name" x="39" y="84">MEXIQUE</text>
+        <path class="land" fill="url(#canGrad2)" d="M7,25 L12,18 L19,17 L26,12 L34,14 L42,9 L51,11 L59,8 L67,12 L75,13 L84,18 L91,23 L96,32 L90,37 L80,36 L73,33 L66,38 L58,37 L51,39 L43,38 L36,40 L28,39 L20,43 L13,37 L9,31 Z"/>
+        <path class="land" fill="url(#usaGrad2)" d="M13,43 L21,39 L31,40 L40,41 L50,40 L60,41 L69,43 L77,48 L84,56 L88,64 L86,72 L79,76 L71,73 L65,67 L58,65 L52,70 L43,68 L35,64 L27,66 L19,73 L15,67 L13,58 Z"/>
+        <path class="land" fill="#2d8fb6aa" d="M13,57 L16,66 L20,80 L17,84 L12,72 L10,62 Z"/>
+        <path class="land" fill="url(#mexGrad2)" d="M21,75 L29,68 L37,68 L46,71 L54,77 L61,84 L68,91 L65,96 L56,92 L50,84 L42,79 L34,83 L27,80 L22,82 Z"/>
+        <path class="coast" d="M9,31 C21,18 39,17 54,14 C69,11 86,18 96,32"/>
+        <path class="coast" d="M13,43 C27,39 42,41 57,41 C72,43 84,54 88,64 C91,73 85,78 79,76"/>
+        <path class="coast" d="M22,75 C35,68 49,73 61,84 C66,90 68,94 65,96"/>
+        <path class="border" d="M13,43 L21,39 L31,40 L40,41 L50,40 L60,41 L69,43"/>
+        <path class="border" d="M21,75 L29,68 L37,68 L46,71"/>
+        <text class="country-name" x="44" y="27">CANADA</text><text class="country-name" x="41" y="56">ÉTATS-UNIS</text><text class="country-name" x="39" y="84">MEXIQUE</text>
       </svg><span class="map-ocean">Atlantique</span><span class="map-compass">Pacifique ← · Nord ↑</span>${cities}</div>`
     }
 
