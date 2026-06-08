@@ -126,7 +126,27 @@
       .fav-action{white-space:nowrap}
       .tabs .tab{white-space:nowrap;font-size:10px}
     }
-</style>
+
+
+    /* V21 — corrections navigation mobile/desktop */
+    html{scroll-behavior:smooth;scroll-padding-top:112px}
+    .mobile-drawer{display:none}
+    @media(max-width:780px){
+      html{scroll-padding-top:92px}
+      .wrap{padding-bottom:24px!important}
+      .site-header{gap:12px!important}
+      .mobile-menu{display:grid!important;place-items:center;flex:0 0 44px}
+      .site-actions{gap:10px!important}
+      .icon-action{margin-left:8px}
+      .tabs{display:none!important;position:static!important}
+      .mobile-drawer{display:none;position:sticky;top:78px;z-index:55;margin:-8px 0 14px;padding:10px;border:1px solid #ffffff18;border-radius:20px;background:#061426f5;box-shadow:0 18px 45px #0008;grid-template-columns:repeat(2,1fr);gap:8px}
+      .mobile-drawer.open{display:grid}
+      .mobile-drawer button{padding:12px 10px;border-radius:14px;background:#ffffff0d;border:1px solid #ffffff16;color:#eaf5ff;font-weight:950;text-align:left}
+      .mobile-drawer button.active{background:linear-gradient(135deg,#ffd166,#ef3340);color:#061426;border-color:transparent}
+    }
+    @media(min-width:781px){.mobile-drawer{display:none!important}}
+
+  </style>
 
   <script>
     // Nettoyage des anciens caches PWA pour éviter d'afficher une version cassée ou ancienne.
@@ -141,7 +161,7 @@
 <body>
   <main class="wrap">
     <header class="site-header panel">
-      <button class="mobile-menu" onclick="document.getElementById('tabs').scrollIntoView({behavior:'smooth'})">☰</button>
+      <button class="mobile-menu" id="mobileMenuBtn" aria-label="Ouvrir le menu">☰</button>
       <div class="site-logo" onclick="switchTab('home')">
         <img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'">
         <div><b>GUIDE</b><b>MONDIAL</b><span>2026</span></div>
@@ -161,6 +181,16 @@
         <button class="fav-action" onclick="applyQuick('Favoris')">⭐ Mes favoris</button>
       </div>
     </header>
+    <div class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+      <button data-nav="home">Accueil</button>
+      <button data-nav="matches">Tous les matchs</button>
+      <button data-nav="tv">Guide TV</button>
+      <button data-nav="groups">Groupes</button>
+      <button data-nav="bracket">Arbre</button>
+      <button data-nav="stadiums">Stades</button>
+      <button data-nav="map">Carte</button>
+      <button data-nav="fan">Fan zone</button>
+    </div>
     <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit"><i>📅</i><span>Calendrier complet</span></div><div class="benefit"><i>📺</i><span>Guide TV France</span></div><div class="benefit"><i>🏟️</i><span>Stades & infos</span></div><div class="benefit"><i>🌎</i><span>Carte interactive</span></div><div class="benefit"><i>⭐</i><span>Mes équipes favorites</span></div></div></div><div class="panel stats"><div class="stat"><b id="countAll">0</b><span>matchs intégrés</span></div><div class="stat"><b id="countM6">0</b><span>diffusés aussi sur M6/M6+</span></div><div class="stat"><b>16</b><span>villes hôtes</span></div><div class="stat"><b>104</b><span>matchs prévus au total</span></div></div></section>
     <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Arbre</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
 
@@ -252,7 +282,16 @@ const data = [
       const tabsEl=$('tabs'); if(tabsEl){tabsEl.addEventListener('click',e=>{let btn=e.target.closest('[data-tab]'); if(btn){e.preventDefault(); switchTab(btn.dataset.tab)}})};
       renderTeamPicker();renderAll();setInterval(renderAll,60000)
     }
-    function switchTab(tab){activeTab=tab;document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===tab));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
+    function scrollToActiveView(tab){
+      const target=document.getElementById('view-'+tab) || document.getElementById('tabs') || document.body;
+      const header=document.querySelector('.site-header');
+      const offset=(header?.getBoundingClientRect().height||80)+22;
+      const top=target.getBoundingClientRect().top+window.pageYOffset-offset;
+      window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+    }
+    function closeMobileMenu(){const d=document.getElementById('mobileDrawer'); if(d){d.classList.remove('open'); d.setAttribute('aria-hidden','true')}}
+    function toggleMobileMenu(){const d=document.getElementById('mobileDrawer'); if(d){const open=!d.classList.contains('open'); d.classList.toggle('open',open); d.setAttribute('aria-hidden',open?'false':'true')}}
+    function switchTab(tab,shouldScroll=true){activeTab=tab;document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===tab));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));document.querySelectorAll('.mobile-drawer [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===tab));renderAll();closeMobileMenu();if(shouldScroll)setTimeout(()=>scrollToActiveView(tab),40)}
     function applyQuick(v){
       if(v==='Aujourd’hui + à venir'){q.value=q.value==='upcoming'?'':'upcoming'}
       else if(v==='Favoris'){q.value=q.value==='favoris'?'':'favoris'}
@@ -261,13 +300,13 @@ const data = [
       else if(v==='beIN Sports'){channel.value=channel.value===v?'':v}
       else if(v==='Finale'||v==='16es de finale'){phase.value=phase.value===v?'':v; q.value=''}
       else {q.value=q.value.toLowerCase()===v.toLowerCase()?'':v}
-      activeTab='matches';renderAll()
+      activeTab='matches';renderAll();closeMobileMenu();setTimeout(()=>scrollToActiveView('matches'),40)
     }
     function updateChips(){document.querySelectorAll('.chip').forEach(c=>{let v=c.dataset.v;let active=(v==='Aujourd’hui + à venir'&&q.value==='upcoming')||(v==='Favoris'&&q.value==='favoris')||(v==='Mes équipes'&&q.value==='myteams')||((v==='M6'||v==='Matchs gratuits')&&channel.value==='M6')||(v==='beIN Sports'&&channel.value==='beIN Sports')||((v==='Finale'||v==='16es de finale')&&phase.value===v)||(v==='France'&&q.value.toLowerCase()==='france');c.classList.toggle('active',active)})}
     function filtered(){let query=q.value.toLowerCase().trim(),ph=phase.value,gr=group.value,ch=channel.value;return data.filter(m=>{let blob=Object.values(m).join(' ').toLowerCase();let mine=followedTeams.has(m.home)||followedTeams.has(m.away);let okQ=!query||(query==='upcoming'?!isPast(m):query==='favoris'?favs.has(m.id):query==='myteams'?mine:blob.includes(query));return okQ&&(!ph||m.phase===ph)&&(!gr||m.phase===gr)&&(!ch||m.tv.includes(ch))}).sort((a,b)=>matchStart(a)-matchStart(b))}
     function renderAll(){
       document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===activeTab));
-      document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
+      document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));document.querySelectorAll('.mobile-drawer [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
       [renderHome,updateChips,renderHighlights,render,renderStadiums,renderMapPage,renderTvGuide,renderGroups,renderBracket,renderFanZone].forEach(fn=>{try{fn()}catch(err){console.error('Render error:',fn.name,err)}});
     }
@@ -382,6 +421,9 @@ const data = [
       if(favBtn){favBtn.addEventListener('click',e=>{e.preventDefault(); applyQuick('Favoris')});}
       const searchBtn=document.querySelector('.icon-action');
       if(searchBtn){searchBtn.addEventListener('click',e=>{e.preventDefault(); switchTab('matches'); setTimeout(()=>document.getElementById('q')?.focus(),120)});}
+      const menuBtn=document.getElementById('mobileMenuBtn');
+      if(menuBtn){menuBtn.addEventListener('click',e=>{e.preventDefault(); toggleMobileMenu()});}
+      document.addEventListener('click',e=>{const d=document.getElementById('mobileDrawer'); const b=document.getElementById('mobileMenuBtn'); if(d&&d.classList.contains('open')&&!d.contains(e.target)&&!b?.contains(e.target)) closeMobileMenu();});
       const logo=document.querySelector('.site-logo');
       if(logo){logo.addEventListener('click',e=>{e.preventDefault(); switchTab('home')});}
       document.querySelectorAll('.footer-links button').forEach(btn=>{
@@ -395,7 +437,7 @@ const data = [
         });
       });
     }
-    window.switchTab=switchTab; window.applyQuick=applyQuick; window.openDetail=openDetail; window.openStadiumDetail=openStadiumDetail;
+    window.switchTab=switchTab; window.toggleMobileMenu=toggleMobileMenu; window.applyQuick=applyQuick; window.openDetail=openDetail; window.openStadiumDetail=openStadiumDetail;
     init();
     attachNavigation();
   </script>
