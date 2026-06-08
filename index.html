@@ -249,7 +249,7 @@ const data = [
       reset.onclick=()=>{q.value='';phase.value='';group.value='';channel.value='';renderAll()};
       quick.onclick=e=>{if(e.target.dataset.v)applyQuick(e.target.dataset.v)};
       nextBtn.onclick=goNext;shareBtn.onclick=shareApp;
-      tabs.onclick=e=>{let btn=e.target.closest('[data-tab]'); if(btn) switchTab(btn.dataset.tab)};
+      const tabsEl=$('tabs'); if(tabsEl){tabsEl.addEventListener('click',e=>{let btn=e.target.closest('[data-tab]'); if(btn){e.preventDefault(); switchTab(btn.dataset.tab)}})};
       renderTeamPicker();renderAll();setInterval(renderAll,60000)
     }
     function switchTab(tab){activeTab=tab;document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===tab));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
@@ -267,8 +267,9 @@ const data = [
     function filtered(){let query=q.value.toLowerCase().trim(),ph=phase.value,gr=group.value,ch=channel.value;return data.filter(m=>{let blob=Object.values(m).join(' ').toLowerCase();let mine=followedTeams.has(m.home)||followedTeams.has(m.away);let okQ=!query||(query==='upcoming'?!isPast(m):query==='favoris'?favs.has(m.id):query==='myteams'?mine:blob.includes(query));return okQ&&(!ph||m.phase===ph)&&(!gr||m.phase===gr)&&(!ch||m.tv.includes(ch))}).sort((a,b)=>matchStart(a)-matchStart(b))}
     function renderAll(){
       document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===activeTab));
+      document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
-      renderHome();updateChips();renderHighlights();render();renderStadiums();renderMapPage();renderTvGuide();renderGroups();renderBracket();renderFanZone();
+      [renderHome,updateChips,renderHighlights,render,renderStadiums,renderMapPage,renderTvGuide,renderGroups,renderBracket,renderFanZone].forEach(fn=>{try{fn()}catch(err){console.error('Render error:',fn.name,err)}});
     }
     function renderTeamPicker(){teamPicker.innerHTML=allTeams().map(t=>`<button class="team-chip ${followedTeams.has(t)?'on':''}" onclick="toggleTeam('${esc(t)}')">${flags[t]||'🏳️'} ${esc(t)}</button>`).join('')}
     function toggleTeam(t){followedTeams.has(t)?followedTeams.delete(t):followedTeams.add(t);localStorage.setItem('wc26_teams',JSON.stringify([...followedTeams]));renderTeamPicker();renderAll()}
@@ -370,7 +371,33 @@ const data = [
     function toggleFav(id){favs.has(id)?favs.delete(id):favs.add(id);localStorage.setItem('wc26_favs',JSON.stringify([...favs]));renderAll()}
     function goNext(){activeTab='matches';renderAll();let next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0]; if(next) setTimeout(()=>document.getElementById('match-'+next.id)?.scrollIntoView({behavior:'smooth',block:'center'}),80)}
     async function shareApp(){let shareData={title:'Guide Mondial 2026',text:'Calendrier, guide TV France, stades et matchs de la Coupe du Monde 2026',url:location.href}; if(navigator.share) await navigator.share(shareData); else {await navigator.clipboard.writeText(location.href); alert('Lien copié !')}}
+    function attachNavigation(){
+      document.querySelectorAll('[data-nav]').forEach(btn=>{
+        btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.nav)});
+      });
+      document.querySelectorAll('[data-tab]').forEach(btn=>{
+        btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.tab)});
+      });
+      const favBtn=document.querySelector('.fav-action');
+      if(favBtn){favBtn.addEventListener('click',e=>{e.preventDefault(); applyQuick('Favoris')});}
+      const searchBtn=document.querySelector('.icon-action');
+      if(searchBtn){searchBtn.addEventListener('click',e=>{e.preventDefault(); switchTab('matches'); setTimeout(()=>document.getElementById('q')?.focus(),120)});}
+      const logo=document.querySelector('.site-logo');
+      if(logo){logo.addEventListener('click',e=>{e.preventDefault(); switchTab('home')});}
+      document.querySelectorAll('.footer-links button').forEach(btn=>{
+        const txt=btn.textContent.toLowerCase();
+        btn.addEventListener('click',e=>{e.preventDefault();
+          if(txt.includes('calendrier')) switchTab('matches');
+          else if(txt.includes('tv')) switchTab('tv');
+          else if(txt.includes('stade')) switchTab('stadiums');
+          else if(txt.includes('carte')) switchTab('map');
+          else if(txt.includes('favori')) applyQuick('Favoris');
+        });
+      });
+    }
+    window.switchTab=switchTab; window.applyQuick=applyQuick; window.openDetail=openDetail; window.openStadiumDetail=openStadiumDetail;
     init();
+    attachNavigation();
   </script>
 </body>
 </html>
