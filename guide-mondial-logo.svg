@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" role="img" aria-label="Guide Mondial 2026">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#27d7ff"/><stop offset="0.28" stop-color="#1e66ff"/><stop offset="0.55" stop-color="#ffd166"/><stop offset="0.78" stop-color="#ff6b4a"/><stop offset="1" stop-color="#ef3340"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#bfe8ff"/><stop offset="0.68" stop-color="#ffd166"/><stop offset="1" stop-color="#ff7fa3"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="820" height="260" fill="none"/>
+  <g transform="translate(26 22)">
+    <circle cx="108" cy="108" r="92" fill="url(#g1)" opacity=".95" filter="url(#glow)"/>
+    <circle cx="108" cy="108" r="92" fill="#071426" opacity=".18"/>
+    <path d="M40 75 C65 42 107 24 150 35" fill="none" stroke="#eaf7ff" stroke-width="7" stroke-linecap="round" opacity=".75"/>
+    <path d="M37 143 C63 182 112 199 157 179" fill="none" stroke="#eaf7ff" stroke-width="7" stroke-linecap="round" opacity=".62"/>
+    <path d="M73 43 C54 78 53 132 78 171" fill="none" stroke="#021426" stroke-width="5" opacity=".38"/>
+    <path d="M139 38 C161 77 162 135 136 177" fill="none" stroke="#021426" stroke-width="5" opacity=".38"/>
+    <path d="M29 107 H188" stroke="#021426" stroke-width="5" opacity=".30"/>
+    <polygon points="108,70 137,88 126,123 90,123 79,88" fill="#08182c" opacity=".72" stroke="#ffffff" stroke-opacity=".35" stroke-width="3"/>
+    <polygon points="50,91 77,83 87,119 62,137 38,119" fill="#06255a" opacity=".72" stroke="#ffffff" stroke-opacity=".24" stroke-width="3"/>
+    <polygon points="158,91 181,113 169,145 139,135 130,101" fill="#7b0f31" opacity=".62" stroke="#ffffff" stroke-opacity=".24" stroke-width="3"/>
+    <polygon points="80,151 121,151 137,177 102,195 70,176" fill="#063f62" opacity=".62" stroke="#ffffff" stroke-opacity=".24" stroke-width="3"/>
+  </g>
+  <g transform="translate(250 58)">
+    <text x="0" y="54" font-family="Inter, Arial, sans-serif" font-size="54" font-weight="900" letter-spacing="2" fill="#f8fbff">GUIDE</text>
+    <text x="0" y="111" font-family="Inter, Arial, sans-serif" font-size="54" font-weight="900" letter-spacing="2" fill="#f8fbff">MONDIAL</text>
+    <text x="0" y="183" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="1000" letter-spacing="1" fill="url(#g2)">2026</text>
+  </g>
+</svg>
