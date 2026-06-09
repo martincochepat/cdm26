@@ -177,7 +177,42 @@
     .modal-body{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;max-height:calc(min(92dvh,760px) - 74px);padding-bottom:28px}
     .modal-body img{max-width:100%;display:block}
     .close{position:relative;z-index:6}
+
+
+    /* V24 — recherche mobile sous forme de panneau dédié */
+    .mobile-search-close{display:none}
+    @media(max-width:780px){
+      body.mobile-search-open{overflow:hidden}
+      body.mobile-search-open::after{
+        content:'';position:fixed;inset:0;background:#0009;backdrop-filter:blur(8px);z-index:110;
+      }
+      body.mobile-search-open #view-matches .toolbar{
+        display:grid!important;position:fixed;left:12px;right:12px;top:82px;z-index:130;
+        grid-template-columns:1fr!important;gap:10px;padding:14px;border-radius:24px;
+        box-shadow:0 28px 80px #000c;border-color:#ffffff30;background:#071426f8;
+      }
+      body.mobile-search-open #view-matches .toolbar input,
+      body.mobile-search-open #view-matches .toolbar select,
+      body.mobile-search-open #view-matches .toolbar button{
+        min-height:48px;font-size:15px;
+      }
+      body.mobile-search-open #view-matches .toolbar .mobile-search-close{
+        display:block;background:#ffffff12;border:1px solid #ffffff25;color:#fff;
+      }
+    }
+
     @media(max-width:780px){.modal{align-items:flex-end;padding:8px;background:#000c}.modal-card{width:100%;max-height:88dvh;border-radius:24px 24px 0 0}.modal-head{padding:14px 14px}.modal-body{max-height:calc(88dvh - 64px);padding:16px 14px 28px}.modal-head .close{padding:10px 14px;border-radius:999px}.venue-grid{grid-template-columns:1fr!important}.venue-photo{min-height:190px}.detail-title{font-size:30px!important;line-height:1.02}}
+
+    /* V25 — modal fluide desktop/mobile : verrouille l’arrière-plan et masque la navigation */
+    html.modal-lock, body.modal-lock{overflow:hidden!important}
+    body.modal-lock .site-header,
+    body.modal-lock .tabs,
+    body.modal-lock .mobile-drawer{opacity:0!important;pointer-events:none!important;transform:translateY(-10px);transition:opacity .18s ease,transform .18s ease}
+    body.modal-lock .modal{z-index:9999!important}
+    .modal{overflow:hidden;overscroll-behavior:none}
+    .modal-card{overscroll-behavior:contain}
+    .modal-body{overscroll-behavior:contain}
+    @media(min-width:781px){.modal{align-items:center!important}.modal-card{max-height:calc(100dvh - 48px)!important}.modal-body{max-height:calc(100dvh - 140px)!important}}
 
   </style>
 
@@ -210,7 +245,7 @@
         <button onclick="switchTab('fan')" class="nav-link" data-nav="fan">Fan zone</button>
       </nav>
       <div class="site-actions">
-        <button class="icon-action" onclick="switchTab('matches');setTimeout(()=>document.getElementById('q')?.focus(),120)">⌕</button>
+        <button class="icon-action" onclick="openSearch()">⌕</button>
         <button class="fav-action" onclick="applyQuick('Favoris')">⭐ Mes favoris</button>
       </div>
     </header>
@@ -229,7 +264,7 @@
 
     <section id="view-home" class="view active"><div class="home-premium-grid"><div class="feature-card" id="featuredBox"></div><div class="feature-card" id="freeTodayBox"></div><div class="feature-card" id="monMondialBox"></div><div class="feature-card" id="stadiumDiscoveryBox"></div><div class="feature-card" id="homeUpcomingBox"></div></div><div class="world-cup-strip"><div><h2>🏆 La Coupe du Monde 2026</h2><p>11 juin — 19 juillet 2026 · 104 matchs · 16 villes · 3 pays</p></div><div class="strip-logos"><span>🇨🇦</span><span>🇺🇸</span><span>🇲🇽</span></div></div><div class="fav-cta"><div>⭐ Ajoutez vos équipes favorites pour personnaliser votre expérience et ne rien manquer de leurs matchs.</div><button onclick="switchTab('home');document.getElementById('teamPickerPanel').scrollIntoView({behavior:'smooth'})">Choisir mes équipes</button></div><div class="panel dashboard" id="teamPickerPanel"><h2>⭐ Choisis tes équipes à suivre</h2><p class="mini">Elles seront mises en avant dans Mon Mondial et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div></section>
 
-    <section id="view-matches" class="view"><section class="panel toolbar"><input id="q" placeholder="Rechercher France, Brésil, stade, ville..." /><select id="phase"><option value="">Toutes phases</option></select><select id="group"><option value="">Tous groupes</option></select><select id="channel"><option value="">Toutes chaînes</option><option>M6</option><option>beIN Sports</option></select><button id="reset">Réinitialiser</button></section><section class="layout"><aside class="panel side"><h2>Accès rapide</h2><div class="chips" id="quick"></div><div class="actions"><button id="nextBtn">Voir le prochain match</button><button id="shareBtn">Partager l'app</button></div><p class="mini">Le calendrier global reste ici : tous les matchs, filtres, favoris, chaînes, stades et voyant direct automatique.</p></aside><section><div class="feature-grid"><div class="feature-card" id="todayBox"></div><div class="feature-card" id="tvBox"></div></div><div id="list" class="list"></div></section></section></section>
+    <section id="view-matches" class="view"><section class="panel toolbar"><button id="mobileSearchClose" class="mobile-search-close" type="button">Fermer la recherche</button><input id="q" placeholder="Rechercher France, Brésil, stade, ville..." /><select id="phase"><option value="">Toutes phases</option></select><select id="group"><option value="">Tous groupes</option></select><select id="channel"><option value="">Toutes chaînes</option><option>M6</option><option>beIN Sports</option></select><button id="reset">Réinitialiser</button></section><section class="layout"><aside class="panel side"><h2>Accès rapide</h2><div class="chips" id="quick"></div><div class="actions"><button id="nextBtn">Voir le prochain match</button><button id="shareBtn">Partager l'app</button></div><p class="mini">Le calendrier global reste ici : tous les matchs, filtres, favoris, chaînes, stades et voyant direct automatique.</p></aside><section><div class="feature-grid"><div class="feature-card" id="todayBox"></div><div class="feature-card" id="tvBox"></div></div><div id="list" class="list"></div></section></section></section>
 
     <section id="view-tv" class="view"><div class="panel dashboard"><h2>📺 Guide TV du Mondial</h2><p class="mini">Vue simple des matchs diffusés en France. Le badge vert indique les matchs accessibles gratuitement sur M6/M6+.</p><div id="tvGuideFull"></div></div></section>
 
@@ -437,15 +472,23 @@ const data = [
     let __modalScrollY=0;
     function lockModalScroll(){
       __modalScrollY=window.scrollY||document.documentElement.scrollTop||0;
+      document.documentElement.classList.add('modal-lock');
       document.body.classList.add('modal-lock');
+      document.documentElement.style.overflow='hidden';
+      document.body.style.overflow='hidden';
       document.body.style.position='fixed';
       document.body.style.top=`-${__modalScrollY}px`;
       document.body.style.left='0';
       document.body.style.right='0';
       document.body.style.width='100%';
+      const drawer=document.getElementById('mobileDrawer');
+      if(drawer){drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true')}
     }
     function unlockModalScroll(){
+      document.documentElement.classList.remove('modal-lock');
       document.body.classList.remove('modal-lock');
+      document.documentElement.style.overflow='';
+      document.body.style.overflow='';
       document.body.style.position='';
       document.body.style.top='';
       document.body.style.left='';
@@ -456,7 +499,7 @@ const data = [
     function openModal(){
       const mb=document.getElementById('modalBody');
       if(mb) mb.scrollTop=0;
-      openModal();
+      modal.classList.add('open');
       lockModalScroll();
     }
 
@@ -469,7 +512,7 @@ const data = [
     }
     function showStadiumMatches(city){closeModal();q.value=city;activeTab='matches';renderAll();setTimeout(()=>list.scrollIntoView({behavior:'smooth'}),80)}
     function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>x.id===id); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${m.round} · ${m.phase}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${m.time}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${m.id});openDetail(${m.id})">${favs.has(m.id)?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${m.id})">Partager ce match</button></div>`;openModal()}
-    function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'}
+    function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){let m=data.find(x=>x.id===id);let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
     function toggleFav(id){favs.has(id)?favs.delete(id):favs.add(id);localStorage.setItem('wc26_favs',JSON.stringify([...favs]));renderAll()}
@@ -485,7 +528,9 @@ const data = [
       const favBtn=document.querySelector('.fav-action');
       if(favBtn){favBtn.addEventListener('click',e=>{e.preventDefault(); applyQuick('Favoris')});}
       const searchBtn=document.querySelector('.icon-action');
-      if(searchBtn){searchBtn.addEventListener('click',e=>{e.preventDefault(); switchTab('matches'); setTimeout(()=>document.getElementById('q')?.focus(),120)});}
+      if(searchBtn){searchBtn.addEventListener('click',e=>{e.preventDefault(); openSearch();});}
+      document.getElementById('mobileSearchClose')?.addEventListener('click',()=>closeSearch());
+      document.addEventListener('keydown',e=>{if(e.key==='Escape') closeSearch();});
       const menuBtn=document.getElementById('mobileMenuBtn');
       if(menuBtn){menuBtn.addEventListener('click',e=>{e.preventDefault(); toggleMobileMenu()});}
       document.addEventListener('click',e=>{const d=document.getElementById('mobileDrawer'); const b=document.getElementById('mobileMenuBtn'); if(d&&d.classList.contains('open')&&!d.contains(e.target)&&!b?.contains(e.target)) closeMobileMenu();});
