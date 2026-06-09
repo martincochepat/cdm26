@@ -540,7 +540,7 @@ let data = [
       const tvToday=today.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'));
       const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
       const tvTitle=tvToday.length?'📺 Ce soir à la TV':'📺 Prochaines diffusions TV';
-      const mainMatch=liveMatches[0] || mine[0] || upcoming[0] || finished[0];
+      const mainMatch=liveMatches[0] || upcoming[0] || finished[0];
       const mainStatus=mainMatch ? matchStatusKey(mainMatch) : 'upcoming';
       const mainTitle=mainStatus==='live'?'🔴 Match en cours':(mainStatus==='finished'?'✅ Dernier résultat':'⏳ Prochain match');
       const followed=[...followedTeams];
