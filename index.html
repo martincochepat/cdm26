@@ -168,6 +168,17 @@
       }
     }
 
+  
+    /* V23 — pop-up détails plus fluide sur mobile : seul le contenu du pop-up défile */
+    body.modal-lock{overflow:hidden!important;touch-action:none}
+    .modal{overscroll-behavior:contain;touch-action:none;padding:14px}
+    .modal-card{display:flex;flex-direction:column;overflow:hidden;max-height:min(92dvh,760px)}
+    .modal-head{position:sticky;top:0;z-index:5;background:linear-gradient(145deg,#0b223c,#1b1025);backdrop-filter:blur(16px)}
+    .modal-body{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;max-height:calc(min(92dvh,760px) - 74px);padding-bottom:28px}
+    .modal-body img{max-width:100%;display:block}
+    .close{position:relative;z-index:6}
+    @media(max-width:780px){.modal{align-items:flex-end;padding:8px;background:#000c}.modal-card{width:100%;max-height:88dvh;border-radius:24px 24px 0 0}.modal-head{padding:14px 14px}.modal-body{max-height:calc(88dvh - 64px);padding:16px 14px 28px}.modal-head .close{padding:10px 14px;border-radius:999px}.venue-grid{grid-template-columns:1fr!important}.venue-photo{min-height:190px}.detail-title{font-size:30px!important;line-height:1.02}}
+
   </style>
 
   <script>
@@ -422,16 +433,44 @@ const data = [
       </svg><span class="map-ocean">Atlantique</span><span class="map-compass">Pacifique ← · Nord ↑</span>${cities}</div>`
     }
 
+
+    let __modalScrollY=0;
+    function lockModalScroll(){
+      __modalScrollY=window.scrollY||document.documentElement.scrollTop||0;
+      document.body.classList.add('modal-lock');
+      document.body.style.position='fixed';
+      document.body.style.top=`-${__modalScrollY}px`;
+      document.body.style.left='0';
+      document.body.style.right='0';
+      document.body.style.width='100%';
+    }
+    function unlockModalScroll(){
+      document.body.classList.remove('modal-lock');
+      document.body.style.position='';
+      document.body.style.top='';
+      document.body.style.left='';
+      document.body.style.right='';
+      document.body.style.width='';
+      window.scrollTo(0,__modalScrollY||0);
+    }
+    function openModal(){
+      const mb=document.getElementById('modalBody');
+      if(mb) mb.scrollTop=0;
+      openModal();
+      lockModalScroll();
+    }
+
     function openStadiumDetail(city){
       let v=venueMeta[city]||{}, matches=data.filter(m=>m.city===city).sort((a,b)=>matchStart(a)-matchStart(b)), img=photoList(city)[0]||'';
       modal.querySelector('.modal-card').classList.add('stadium-modal');
       modal.querySelector('.modal-head b').textContent='Fiche du stade';
       modalBody.innerHTML=`<div class="tag">Ville hôte · ${esc(v.country||'')}</div><div class="detail-title">🏟️ ${esc(stadiums[city]||city)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(stadiums[city]||'Stade')} — ${esc(city)}"><img src="${img}" alt="${esc(stadiums[city]||'Stade')}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Où se trouve la ville ?</b><span>Carte interactive</span></div><p class="small">Survole les autres points ou clique pour changer de stade.</p>${renderHostMap(city)}</div></div><div class="metric-grid"><div class="metric"><b>Ville</b>${esc(city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Matchs intégrés</b>${matches.length}</div><div class="metric"><b>Stade</b>${esc(stadiums[city]||'')}</div></div><h3 class="section-title" style="margin-top:18px">Matchs dans ce stade</h3><div class="stadium-detail-list">${matches.map(m=>`<div class="mini-match" onclick="openDetail(${m.id})"><div><div class="mini-teams">${m.time} · ${flags[m.home]||'🏳️'} ${esc(m.home)} - ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="small">${dateLabel(m.date)} · ${esc(m.phase)} · ${esc(m.tv)}</div></div>${m.tv.includes('M6')?'<span class="free-badge">M6/M6+</span>':''}</div>`).join('')||'<div class="empty-soft">Aucun match intégré pour ce stade.</div>'}</div><div class="actions"><button onclick="showStadiumMatches('${esc(city)}')">Voir dans tous les matchs</button><button onclick="shareApp()">Partager l’app</button></div>`;
-      modal.classList.add('open')
+      openModal()
     }
     function showStadiumMatches(city){closeModal();q.value=city;activeTab='matches';renderAll();setTimeout(()=>list.scrollIntoView({behavior:'smooth'}),80)}
-    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>x.id===id); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${m.round} · ${m.phase}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${m.time}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${m.id});openDetail(${m.id})">${favs.has(m.id)?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${m.id})">Partager ce match</button></div>`;modal.classList.add('open')}
-    function closeModal(){modal.classList.remove('open');modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'}
+    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>x.id===id); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${m.round} · ${m.phase}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${m.time}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${m.id});openDetail(${m.id})">${favs.has(m.id)?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${m.id})">Partager ce match</button></div>`;openModal()}
+    function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'}
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){let m=data.find(x=>x.id===id);let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
     function toggleFav(id){favs.has(id)?favs.delete(id):favs.add(id);localStorage.setItem('wc26_favs',JSON.stringify([...favs]));renderAll()}
     function goNext(){activeTab='matches';renderAll();let next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0]; if(next) setTimeout(()=>document.getElementById('match-'+next.id)?.scrollIntoView({behavior:'smooth',block:'center'}),80)}
