@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#08182c" />
   <title>Guide Mondial 2026 | Calendrier, TV, stades et matchs</title>
   <meta name="description" content="Guide complet de la Coupe du Monde 2026 : calendrier des matchs, horaires français, chaînes TV, stades, groupes, carte interactive et favoris.">
-  <link rel="manifest" href="/manifest.webmanifest?v=36">
-  <link rel="icon" type="image/png" href="/favicon.png?v=36">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=36">
+  <link rel="manifest" href="/manifest.webmanifest?v=43">
+  <link rel="icon" type="image/png" href="/favicon.png?v=43">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=43">
   <style>
     :root{--bg:#050914;--bg2:#08182c;--text:#f8fbff;--muted:#adc0d2;--line:#ffffff20;--deep:#061426;--red:#ef3340;--blue:#0066cc;--green:#00a859;--gold:#ffd166;--radius:28px;--shadow:0 24px 80px #0009}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 12% 8%,#174477 0 16%,transparent 42%),radial-gradient(circle at 88% 8%,#8c1534 0 18%,transparent 42%),radial-gradient(circle at 80% 92%,#087052 0 14%,transparent 35%),linear-gradient(135deg,var(--bg),var(--bg2) 56%,#07111f);color:var(--text);min-height:100vh}
@@ -268,11 +268,11 @@
     // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=36').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=43').catch(() => {});
       });
     }
     if (window.caches) {
-      caches.keys().then(keys => keys.filter(k => !k.includes('v37')).forEach(key => caches.delete(key))).catch(()=>{});
+      caches.keys().then(keys => keys.filter(k => !k.includes('v43')).forEach(key => caches.delete(key))).catch(()=>{});
     }
   </script>
 </head>
@@ -329,7 +329,7 @@
     <section id="view-teams" class="view"><div class="panel dashboard"><h2>🌍 Équipes du Mondial</h2><p class="mini">Choisissez une sélection pour voir son calendrier, son groupe, ses stades et ses diffusions en France.</p><div id="teamsOverview" class="teams-overview"></div></div></section>
     <section id="view-groups" class="view"><div class="panel dashboard"><h2>📊 Classements des groupes</h2><p class="mini">Classements calculés automatiquement à partir des scores et statuts renseignés dans Supabase.</p><div id="groupsGrid" class="group-grid"></div></div></section>
     <section id="view-bracket" class="view"><div class="panel dashboard"><h2>🏆 Arbre de la phase finale</h2><p class="mini">Vue simplifiée des matchs à élimination directe intégrés. Idéal pour consulter rapidement le chemin jusqu’à la finale.</p><div id="bracketBox" class="bracket"></div></div></section>
-    <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Votes globaux des visiteurs : un vote par match et par appareil, synchronisé avec Supabase.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📤 Carte de partage</h2><p class="mini">Message prêt à envoyer pour partager le guide.</p><div id="sharePreview" class="share-preview"></div><button onclick="shareApp()">Partager le guide</button></div></div></section>
+    <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostics du jour</h2><p class="mini">Votes globaux des visiteurs : un vote par match et par appareil, synchronisé avec Supabase.</p><div id="pollBox"></div></div></div></section>
     <section id="view-stadiums" class="view"><div class="panel dashboard"><h2>🏟️ Les stades du Mondial</h2><p class="mini">Photos de stades, capacités, pays hôte et nombre de matchs intégrés dans cette version.</p><div id="stadiumGrid" class="stadium-grid"></div></div></section>
     <section id="view-map" class="view"><div class="panel host-map-page"><h2 class="section-title">🌎 Carte des villes hôtes</h2><p class="mini">Survole une ville pour voir son stade, clique pour ouvrir directement la fiche du stade.</p><div id="bigHostMap"></div><div id="cityList" class="city-list"></div></div></section>
     
@@ -760,7 +760,7 @@ let data = [
         }
       }
       pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Résultats globaux synchronisés entre les visiteurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}`;
-      sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
+      if (window.sharePreview) sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
     }
     function answerQuiz(dayKey,ans){localStorage.setItem('wc26_quiz_'+dayKey,ans);renderFanZone()}
     async function votePoll(id,opt){

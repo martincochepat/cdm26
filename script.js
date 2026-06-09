@@ -155,7 +155,7 @@ const data = [
       const next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0]||data[0];
       const key='wc26_poll_'+next.id; const votes=JSON.parse(localStorage.getItem(key)||'{}'); const opts=[next.home,'Nul',next.away]; const total=opts.reduce((n,o)=>n+(votes[o]||0),0)||1;
       pollBox.innerHTML=`<b>${flags[next.home]||'🏳️'} ${esc(next.home)} vs ${flags[next.away]||'🏳️'} ${esc(next.away)}</b><div class="mini">${dateLabel(next.date)} · ${next.time}</div>`+opts.map(o=>{let pct=Math.round(((votes[o]||0)/total)*100);return `<button class="poll-option" onclick="votePoll(${next.id},'${esc(o)}')"><span>${esc(o)}</span><b>${pct}%</b></button><div class="progress"><span style="width:${pct}%"></span></div>`}).join('');
-      sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
+      if (window.sharePreview) sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
     }
     function answerQuiz(i,ans){localStorage.setItem('wc26_quiz_'+i,ans);renderFanZone()}
     function votePoll(id,opt){const key='wc26_poll_'+id;const votes=JSON.parse(localStorage.getItem(key)||'{}');votes[opt]=(votes[opt]||0)+1;localStorage.setItem(key,JSON.stringify(votes));renderFanZone()}

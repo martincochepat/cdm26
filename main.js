@@ -404,7 +404,7 @@ let data = [
         }
       }
       pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Résultats globaux synchronisés entre les visiteurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}`;
-      sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
+      if (window.sharePreview) sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
     }
     function answerQuiz(dayKey,ans){localStorage.setItem('wc26_quiz_'+dayKey,ans);renderFanZone()}
     async function votePoll(id,opt){
