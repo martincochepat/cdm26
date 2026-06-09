@@ -523,22 +523,36 @@ let data = [
     }
     function renderTeamPicker(){teamPicker.innerHTML=allTeams().map(t=>`<button class="team-chip ${followedTeams.has(t)?'on':''}" onclick="toggleTeam('${esc(t)}')">${flags[t]||'🏳️'} ${esc(t)}</button>`).join('')}
     function toggleTeam(t){followedTeams.has(t)?followedTeams.delete(t):followedTeams.add(t);localStorage.setItem('wc26_teams',JSON.stringify([...followedTeams]));renderTeamPicker();renderAll()}
+    function smartDateLabel(m){
+      const now=new Date(), d=matchStart(m);
+      const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1);
+      if(sameDay(d,now)) return 'Aujourd’hui';
+      if(sameDay(d,tomorrow)) return 'Demain';
+      return dateLabel(m.date).replace('2026','').trim();
+    }
     function renderHome(){
-      const now=new Date(), upcoming=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b));
+      const now=new Date();
+      const upcoming=data.filter(m=>matchStatusKey(m)==='upcoming').sort((a,b)=>matchStart(a)-matchStart(b));
+      const liveMatches=data.filter(m=>matchStatusKey(m)==='live').sort((a,b)=>matchStart(a)-matchStart(b));
+      const finished=data.filter(m=>matchStatusKey(m)==='finished').sort((a,b)=>matchStart(b)-matchStart(a));
       const mine=upcoming.filter(m=>followedTeams.has(m.home)||followedTeams.has(m.away));
       const today=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
-      const tvToday=(today.length?today:upcoming).filter(m=>m.tv.includes('M6')||m.tv.includes('beIN')).slice(0,3);
-      const featured=(mine[0]||upcoming.find(m=>m.tv.includes('M6'))||upcoming[0]);
+      const tvToday=today.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'));
+      const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
+      const tvTitle=tvToday.length?'📺 Ce soir à la TV':'📺 Prochaines diffusions TV';
+      const mainMatch=liveMatches[0] || mine[0] || upcoming[0] || finished[0];
+      const mainStatus=mainMatch ? matchStatusKey(mainMatch) : 'upcoming';
+      const mainTitle=mainStatus==='live'?'🔴 Match en cours':(mainStatus==='finished'?'✅ Dernier résultat':'⏳ Prochain match');
       const followed=[...followedTeams];
-      if(featured){
-        featuredBox.innerHTML=`<h2 class="card-title">🔥 Match vedette</h2><div onclick="openDetail(${jsArg(featured.id)})" style="cursor:pointer"><div class="match-feature-teams"><div class="match-feature-team"><span class="flag">${flags[featured.home]||'🏳️'}</span>${esc(featured.home)}</div><div class="match-feature-vs">VS</div><div class="match-feature-team"><span class="flag">${flags[featured.away]||'🏳️'}</span>${esc(featured.away)}</div></div><div class="match-meta-line"><span>📅 ${dateLabel(featured.date)}</span><span>🕘 ${featured.time}</span><span>📍 ${esc(featured.stadium)}, ${esc(featured.city)}</span><span>📺 ${esc(featured.tv)}</span></div></div><button class="home-btn" onclick="openDetail(${jsArg(featured.id)})">Voir le match →</button>`;
-      }else featuredBox.innerHTML='<h2 class="card-title">🔥 Match vedette</h2><div class="empty-soft">Aucun match à venir.</div>';
-      freeTodayBox.innerHTML=`<h2 class="card-title">📺 Ce soir à la TV</h2>${tvToday.length?tvToday.map(m=>`<div class="tv-mini-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></span><span class="tv-channel">${m.tv.includes('M6')?'M6':'beIN'}</span></div>`).join(''):'<div class="empty-soft">Aucun match TV à afficher.</div>'}<button class="home-btn" onclick="switchTab('tv')">Voir le guide TV →</button>`;
-      const followedRows=followed.length?followed.slice(0,4).map(t=>{const next=upcoming.find(m=>m.home===t||m.away===t);return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?dateLabel(next.date).replace('2026',''):''}</small></div>`}).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
+      if(mainMatch){
+        featuredBox.innerHTML=`<h2 class="card-title">${mainTitle}</h2><div onclick="openDetail(${jsArg(mainMatch.id)})" style="cursor:pointer"><div class="match-feature-teams"><div class="match-feature-team"><span class="flag">${flags[mainMatch.home]||'🏳️'}</span>${esc(mainMatch.home)}</div>${scoreCenter(mainMatch)}<div class="match-feature-team"><span class="flag">${flags[mainMatch.away]||'🏳️'}</span>${esc(mainMatch.away)}</div></div><div class="match-meta-line"><span>${statusBadge(mainMatch)}</span><span>📅 ${smartDateLabel(mainMatch)} · ${mainMatch.time}</span><span>📍 ${esc(mainMatch.stadium)}, ${esc(mainMatch.city)}</span><span>📺 ${esc(mainMatch.tv)}</span></div></div><button class="home-btn" onclick="openDetail(${jsArg(mainMatch.id)})">Voir le match →</button>`;
+      }else featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
+      freeTodayBox.innerHTML=`<h2 class="card-title">${tvTitle}</h2>${tvList.length?tvList.map(m=>`<div class="tv-mini-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)} · ${smartDateLabel(m)}</small></span><span class="tv-channel">${m.tv.includes('M6')?'M6':'beIN'}</span></div>`).join(''):'<div class="empty-soft">Aucune diffusion TV à afficher.</div>'}<button class="home-btn" onclick="switchTab('tv')">Voir le guide TV →</button>`;
+      const followedRows=followed.length?followed.slice(0,4).map(t=>{const next=upcoming.find(m=>m.home===t||m.away===t);return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?`${smartDateLabel(next)} · ${next.time}`:''}</small></div>`}).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
       monMondialBox.innerHTML=`<h2 class="card-title">⭐ Mes équipes</h2>${followedRows}<div class="mini-details">${followedTeams.size} équipe(s) suivie(s) · ${favs.size} favori(s)</div><button class="home-btn" onclick="switchTab('teams')">Voir mes équipes →</button>`;
       const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
       stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
-      homeUpcomingBox.innerHTML=`<h2 class="card-title">📅 Prochains matchs</h2>${upcoming.slice(0,5).map(m=>`<div class="upcoming-row" onclick="openDetail(${jsArg(m.id)})"><span>${dateLabel(m.date).replace('2026','')}</span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></b><small>${m.time}</small></div>`).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}<button class="home-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
+      homeUpcomingBox.innerHTML=`<h2 class="card-title">📅 Prochains matchs</h2>${upcoming.slice(0,5).map(m=>`<div class="upcoming-row" onclick="openDetail(${jsArg(m.id)})"><span>${smartDateLabel(m)}</span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></b><small>${m.time}</small></div>`).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}<button class="home-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
     }
     function renderHighlights(){
       const now=new Date();
