@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#08182c" />
   <title>Guide Mondial 2026 | Calendrier, TV, stades et matchs</title>
   <meta name="description" content="Guide complet de la Coupe du Monde 2026 : calendrier des matchs, horaires français, chaînes TV, stades, groupes, carte interactive et favoris.">
-  <link rel="manifest" href="/manifest.webmanifest?v=36">
-  <link rel="icon" type="image/png" href="/favicon.png?v=36">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=36">
+  <link rel="manifest" href="/manifest.webmanifest?v=45">
+  <link rel="icon" type="image/png" href="/favicon.png?v=45">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=45">
   <style>
     :root{--bg:#050914;--bg2:#08182c;--text:#f8fbff;--muted:#adc0d2;--line:#ffffff20;--deep:#061426;--red:#ef3340;--blue:#0066cc;--green:#00a859;--gold:#ffd166;--radius:28px;--shadow:0 24px 80px #0009}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 12% 8%,#174477 0 16%,transparent 42%),radial-gradient(circle at 88% 8%,#8c1534 0 18%,transparent 42%),radial-gradient(circle at 80% 92%,#087052 0 14%,transparent 35%),linear-gradient(135deg,var(--bg),var(--bg2) 56%,#07111f);color:var(--text);min-height:100vh}
@@ -268,7 +268,7 @@
     // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=36').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=45').catch(() => {});
       });
     }
     if (window.caches) {
@@ -368,7 +368,8 @@ let data = [
     let supabaseStatus = 'local';
     let predictionRows = [];
     let predictionsLoaded = false;
-    let dailyContent = null;
+    let quizRows = [];
+    let quizLoaded = false;
     const predictionUserKey = (()=>{
       let key = localStorage.getItem('gm26_prediction_user_key');
       if(!key){
@@ -449,38 +450,19 @@ let data = [
         predictionsLoaded = false;
       }
     }
+    async function loadQuizQuestions(){
+      try{
+        const rows = await supabaseFetch('quiz_questions?select=*&order=id.asc');
+        quizRows = Array.isArray(rows) ? rows.filter(r=>r && r.question) : [];
+        quizLoaded = quizRows.length > 0;
+        if(activeTab==='fan') renderFanZone();
+      }catch(err){
+        console.warn('Quiz Supabase indisponible, utilisation du quiz local.', err);
+        quizLoaded = false;
+      }
+    }
     async function savePrediction(matchId, choice){
       return supabasePost('match_predictions', {match_id:String(matchId), choice:String(choice), user_key:predictionUserKey});
-    }
-    function normalizeDailyContent(row){
-      if(!row) return null;
-      let options = row.quiz_options || row.options || [];
-      if(typeof options === 'string'){
-        try{ options = JSON.parse(options); }catch(e){ options = options.split('|').map(x=>x.trim()).filter(Boolean); }
-      }
-      if(!Array.isArray(options)) options=[];
-      return {
-        content_date: row.content_date || row.date || localDateKey(),
-        stadium_city: row.stadium_city || row.city || '',
-        quiz_question: row.quiz_question || row.question || '',
-        quiz_answer: row.quiz_answer || row.answer || '',
-        quiz_options: options,
-        fact_title: row.fact_title || '',
-        fact_text: row.fact_text || ''
-      };
-    }
-    async function loadDailyContent(){
-      try{
-        const day = localDateKey();
-        let rows = await supabaseFetch(`daily_content?select=*&content_date=eq.${day}&limit=1`);
-        if(!rows || !rows.length){
-          rows = await supabaseFetch('daily_content?select=*&order=content_date.desc&limit=1');
-        }
-        dailyContent = rows && rows.length ? normalizeDailyContent(rows[0]) : null;
-      }catch(err){
-        console.warn('Contenu quotidien Supabase indisponible, fallback local.', err);
-        dailyContent = null;
-      }
     }
     async function loadDynamicData(){
       try{
@@ -488,7 +470,6 @@ let data = [
           supabaseFetch('matches?select=*&order=date.asc,time_fr.asc'),
           supabaseFetch('stadiums?select=*')
         ]);
-        await loadDailyContent();
         (stadiumRows||[]).forEach(normalizeSupabaseStadium);
         const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeSupabaseMatch);
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
@@ -573,7 +554,7 @@ let data = [
       quick.onclick=e=>{if(e.target.dataset.v)applyQuick(e.target.dataset.v)};
       nextBtn.onclick=goNext;shareBtn.onclick=shareApp;
       const tabsEl=$('tabs'); if(tabsEl){tabsEl.addEventListener('click',e=>{let btn=e.target.closest('[data-tab]'); if(btn){e.preventDefault(); switchTab(btn.dataset.tab)}})};
-      renderTeamPicker();renderAll();loadDynamicData();loadPredictions();setInterval(loadDynamicData,30000);setInterval(loadPredictions,30000);setInterval(renderAll,60000)
+      renderTeamPicker();renderAll();loadDynamicData();loadPredictions();loadQuizQuestions();setInterval(loadDynamicData,30000);setInterval(loadPredictions,30000);setInterval(loadQuizQuestions,3600000);setInterval(renderAll,60000)
     }
     function scrollToActiveView(tab){
       const isMobile=window.matchMedia('(max-width:780px)').matches;
@@ -651,9 +632,8 @@ let data = [
       freeTodayBox.innerHTML=`<h2 class="card-title">${tvTitle}</h2>${tvList.length?tvList.map(m=>`<div class="tv-mini-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)} · ${smartDateLabel(m)}</small></span><span class="tv-channel">${m.tv.includes('M6')?'M6':'beIN'}</span></div>`).join(''):'<div class="empty-soft">Aucune diffusion TV à afficher.</div>'}<button class="home-btn" onclick="switchTab('tv')">Voir le guide TV →</button>`;
       const followedRows=followed.length?followed.slice(0,4).map(t=>{const next=upcoming.find(m=>m.home===t||m.away===t);return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?`${smartDateLabel(next)} · ${next.time}`:''}</small></div>`}).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
       monMondialBox.innerHTML=`<h2 class="card-title">⭐ Mes équipes</h2>${followedRows}<div class="mini-details">${followedTeams.size} équipe(s) suivie(s) · ${favs.size} favori(s)</div><button class="home-btn" onclick="switchTab('teams')">Voir mes équipes →</button>`;
-      const cities=[...new Set(data.map(m=>m.city))], preferredCity=dailyContent?.stadium_city, city=(preferredCity&&venueMeta[preferredCity])?preferredCity:cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
-      const fact = dailyContent?.fact_text ? `<div class="mini-details" style="margin:8px 0 0">${dailyContent.fact_title?`<b>${esc(dailyContent.fact_title)}</b><br>`:''}${esc(dailyContent.fact_text)}</div>` : '';
-      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div>${fact}<button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
+      const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
+      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
       homeUpcomingBox.innerHTML=`<h2 class="card-title">📅 Prochains matchs</h2>${upcoming.slice(0,5).map(m=>`<div class="upcoming-row" onclick="openDetail(${jsArg(m.id)})"><span>${smartDateLabel(m)}</span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></b><small>${m.time}</small></div>`).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}<button class="home-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
     }
     function renderHighlights(){
@@ -752,10 +732,26 @@ let data = [
       if(!window.bracketBox)return; const rounds=['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
       bracketBox.innerHTML=rounds.map(r=>{let matches=data.filter(m=>m.phase===r|| (r==='Finale'&&m.phase==='Finale')).sort((a,b)=>matchStart(a)-matchStart(b)); if(!matches.length && r!=='Finale') matches=[]; return `<div class="round-col"><h3>${r}</h3>${matches.length?matches.map(m=>`<div class="bracket-match" onclick="openDetail(${jsArg(m.id)})"><b>${m.round} · ${dateLabel(m.date)} · ${m.time}</b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br>${flags[m.away]||'🏳️'} ${esc(m.away)}<br><span class="mini">${esc(m.city)}</span></div>`).join(''):'<div class="bracket-match"><b>À venir</b>Matchs à compléter quand le calendrier détaillé sera disponible.</div>'}</div>`}).join('')
     }
-    const quiz=[{q:'Combien de pays accueillent la Coupe du Monde 2026 ?',a:'3',o:['2','3','4']},{q:'Quel stade accueille la finale intégrée dans ce guide ?',a:'MetLife Stadium',o:['SoFi Stadium','MetLife Stadium','AT&T Stadium']},{q:'Quel pays hôte joue le match d’ouverture ?',a:'Mexique',o:['Canada','Mexique','États-Unis']}];
+    const quizFallback=[{id:'local-1',question:'Combien de pays accueillent la Coupe du Monde 2026 ?',correct_answer:'3',options:['2','3','4','5']},{id:'local-2',question:'Quel stade accueille la finale intégrée dans ce guide ?',correct_answer:'MetLife Stadium',options:['SoFi Stadium','MetLife Stadium','AT&T Stadium','Estadio Azteca']},{id:'local-3',question:'Quel pays hôte joue le match d’ouverture ?',correct_answer:'Mexique',options:['Canada','Mexique','États-Unis','Brésil']}];
     function localDateKey(d=new Date()){
       const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
       return `${y}-${m}-${day}`;
+    }
+    function dayNumber(d=new Date()){
+      const start = new Date('2026-06-11T00:00:00+02:00');
+      const cur = new Date(`${localDateKey(d)}T00:00:00+02:00`);
+      return Math.max(0, Math.floor((cur - start) / 86400000));
+    }
+    function normalizeQuizRow(row){
+      if(!row) return null;
+      const opts = [row.option_a,row.option_b,row.option_c,row.option_d].filter(Boolean).map(String);
+      return {id:String(row.id||row.question),question:String(row.question||''),correct_answer:String(row.correct_answer||''),options:opts.length?opts:(row.options||[])};
+    }
+    function getDailyQuiz(){
+      const source = quizLoaded && quizRows.length ? quizRows.map(normalizeQuizRow).filter(Boolean) : quizFallback;
+      if(!source.length) return null;
+      const item = source[dayNumber() % source.length];
+      return item || source[0];
     }
     const pollOptionsFor=m=>[m.home,'Nul',m.away];
     function predictionStats(matchId){
@@ -780,11 +776,16 @@ let data = [
     function renderFanZone(){
       if(!window.quizBox)return;
       const todayKey=localDateKey();
-      const qi=(new Date().getDate()+new Date().getMonth())%quiz.length;
-      const fallbackQuiz=quiz[qi];
-      const item=(dailyContent?.quiz_question&&dailyContent?.quiz_answer) ? {q:dailyContent.quiz_question,a:dailyContent.quiz_answer,o:(dailyContent.quiz_options&&dailyContent.quiz_options.length?dailyContent.quiz_options:fallbackQuiz.o)} : fallbackQuiz;
-      const answered=localStorage.getItem('wc26_quiz_'+todayKey);
-      quizBox.innerHTML=`<b>${esc(item.q)}</b>`+item.o.map(o=>`<button class="quiz-option ${answered? (o===item.a?'good':(o===answered?'bad':'')) : ''}" ${answered?'disabled':''} onclick="answerQuiz('${todayKey}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.a?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
+      const item=getDailyQuiz();
+      if(item){
+        const quizKey=`wc26_quiz_${todayKey}_${item.id}`;
+        const answered=localStorage.getItem(quizKey);
+        const options=(item.options||[]).filter(Boolean);
+        const sourceLabel=quizLoaded?'Question du jour Supabase':'Question locale de secours';
+        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered? (o===item.correct_answer?'good':(o===answered?'bad':'')) : ''}" ${answered?'disabled':''} onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
+      }else{
+        quizBox.innerHTML='<div class="empty-soft">Quiz indisponible pour le moment.</div>';
+      }
       const now=new Date();
       let pollMatches=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
       let pollTitle='Pronostics du jour';
@@ -796,9 +797,9 @@ let data = [
         }
       }
       pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Résultats globaux synchronisés entre les visiteurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}`;
-      sharePreview.innerHTML=`<span class="muted-pill">Guide français</span><span class="muted-pill">Heure française</span><span class="muted-pill">TV M6/beIN</span><h3>Guide Mondial 2026</h3><p>Le calendrier clair pour suivre les matchs, les stades, les chaînes françaises, les favoris et les équipes à suivre.</p>`
+      if(window.sharePreview) sharePreview.innerHTML='';
     }
-    function answerQuiz(dayKey,ans){localStorage.setItem('wc26_quiz_'+dayKey,ans);renderFanZone()}
+    function answerQuiz(quizKey,ans){localStorage.setItem(quizKey,ans);renderFanZone()}
     async function votePoll(id,opt){
       id=String(id);
       if(myPrediction(id)){renderFanZone();return}

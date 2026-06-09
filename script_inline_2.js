@@ -60,7 +60,6 @@ let data = [
           supabaseFetch('matches?select=*&order=date.asc,time_fr.asc'),
           supabaseFetch('stadiums?select=*')
         ]);
-        await loadDailyContent();
         (stadiumRows||[]).forEach(normalizeSupabaseStadium);
         const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeSupabaseMatch);
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
@@ -223,9 +222,8 @@ let data = [
       freeTodayBox.innerHTML=`<h2 class="card-title">${tvTitle}</h2>${tvList.length?tvList.map(m=>`<div class="tv-mini-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)} · ${smartDateLabel(m)}</small></span><span class="tv-channel">${m.tv.includes('M6')?'M6':'beIN'}</span></div>`).join(''):'<div class="empty-soft">Aucune diffusion TV à afficher.</div>'}<button class="home-btn" onclick="switchTab('tv')">Voir le guide TV →</button>`;
       const followedRows=followed.length?followed.slice(0,4).map(t=>{const next=upcoming.find(m=>m.home===t||m.away===t);return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?`${smartDateLabel(next)} · ${next.time}`:''}</small></div>`}).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
       monMondialBox.innerHTML=`<h2 class="card-title">⭐ Mes équipes</h2>${followedRows}<div class="mini-details">${followedTeams.size} équipe(s) suivie(s) · ${favs.size} favori(s)</div><button class="home-btn" onclick="switchTab('teams')">Voir mes équipes →</button>`;
-      const cities=[...new Set(data.map(m=>m.city))], preferredCity=dailyContent?.stadium_city, city=(preferredCity&&venueMeta[preferredCity])?preferredCity:cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
-      const fact = dailyContent?.fact_text ? `<div class="mini-details" style="margin:8px 0 0">${dailyContent.fact_title?`<b>${esc(dailyContent.fact_title)}</b><br>`:''}${esc(dailyContent.fact_text)}</div>` : '';
-      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div>${fact}<button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
+      const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
+      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
       homeUpcomingBox.innerHTML=`<h2 class="card-title">📅 Prochains matchs</h2>${upcoming.slice(0,5).map(m=>`<div class="upcoming-row" onclick="openDetail(${jsArg(m.id)})"><span>${smartDateLabel(m)}</span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></b><small>${m.time}</small></div>`).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}<button class="home-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
     }
     function renderHighlights(){
@@ -342,10 +340,7 @@ let data = [
     function renderFanZone(){
       if(!window.quizBox)return;
       const todayKey=localDateKey();
-      const qi=(new Date().getDate()+new Date().getMonth())%quiz.length;
-      const fallbackQuiz=quiz[qi];
-      const item=(dailyContent?.quiz_question&&dailyContent?.quiz_answer) ? {q:dailyContent.quiz_question,a:dailyContent.quiz_answer,o:(dailyContent.quiz_options&&dailyContent.quiz_options.length?dailyContent.quiz_options:fallbackQuiz.o)} : fallbackQuiz;
-      const answered=localStorage.getItem('wc26_quiz_'+todayKey);
+      const qi=(new Date().getDate()+new Date().getMonth())%quiz.length, item=quiz[qi], answered=localStorage.getItem('wc26_quiz_'+todayKey);
       quizBox.innerHTML=`<b>${esc(item.q)}</b>`+item.o.map(o=>`<button class="quiz-option ${answered? (o===item.a?'good':(o===answered?'bad':'')) : ''}" ${answered?'disabled':''} onclick="answerQuiz('${todayKey}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.a?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
       const now=new Date();
       let pollMatches=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
