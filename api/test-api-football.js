@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   try {
     const response = await fetch(
-      "https://v3.football.api-sports.io/leagues?search=World Cup",
+      "https://v3.football.api-sports.io/leagues?id=1",
       {
         headers: {
           "x-apisports-key": process.env.API_FOOTBALL_KEY,
@@ -11,14 +11,9 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    res.status(200).json({
-      success: true,
-      results: data.results,
-      response: data.response,
-    });
+    res.status(200).json(data);
   } catch (error) {
     res.status(500).json({
-      success: false,
       error: error.message,
     });
   }
