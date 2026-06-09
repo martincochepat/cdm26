@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#08182c" />
   <title>Guide Mondial 2026 | Calendrier, TV, stades et matchs</title>
   <meta name="description" content="Guide complet de la Coupe du Monde 2026 : calendrier des matchs, horaires français, chaînes TV, stades, groupes, carte interactive et favoris.">
+  <link rel="manifest" href="/manifest.webmanifest?v=27">
+  <link rel="icon" type="image/png" href="/favicon.png?v=27">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=27">
   <style>
     :root{--bg:#050914;--bg2:#08182c;--text:#f8fbff;--muted:#adc0d2;--line:#ffffff20;--deep:#061426;--red:#ef3340;--blue:#0066cc;--green:#00a859;--gold:#ffd166;--radius:28px;--shadow:0 24px 80px #0009}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 12% 8%,#174477 0 16%,transparent 42%),radial-gradient(circle at 88% 8%,#8c1534 0 18%,transparent 42%),radial-gradient(circle at 80% 92%,#087052 0 14%,transparent 35%),linear-gradient(135deg,var(--bg),var(--bg2) 56%,#07111f);color:var(--text);min-height:100vh}
@@ -214,15 +217,25 @@
     .modal-body{overscroll-behavior:contain}
     @media(min-width:781px){.modal{align-items:center!important}.modal-card{max-height:calc(100dvh - 48px)!important}.modal-body{max-height:calc(100dvh - 140px)!important}}
 
+
+    /* V27 — bannière d’installation PWA */
+    .install-banner{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);width:min(560px,calc(100% - 24px));z-index:9000;display:none;align-items:center;gap:14px;padding:14px;border:1px solid #ffffff22;border-radius:24px;background:linear-gradient(135deg,#071426f8,#101f3cf8 55%,#261124f8);box-shadow:0 24px 80px #000b;backdrop-filter:blur(20px);opacity:0;transition:.25s ease}
+    .install-banner.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
+    .install-banner img{width:48px;height:48px;border-radius:14px;box-shadow:0 10px 24px #0008;flex:0 0 auto}.install-banner-text{min-width:0;flex:1}.install-banner-text b{display:block;font-size:15px}.install-banner-text span{display:block;color:#adc0d2;font-size:12px;margin-top:2px}.install-banner-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.install-btn{width:auto;padding:11px 13px;border-radius:14px;background:linear-gradient(135deg,#ffd166,#ef3340);color:#071426;font-size:13px;font-weight:1000}.install-close{width:40px;height:40px;padding:0;border-radius:14px;background:#ffffff12;border:1px solid #ffffff20;color:#fff;font-size:18px}
+    .install-help{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:18px;background:#000a;backdrop-filter:blur(10px)}.install-help.open{display:flex}.install-help-card{width:min(430px,100%);border:1px solid #ffffff22;border-radius:28px;background:linear-gradient(145deg,#0b223c,#1b1025);box-shadow:0 30px 90px #000;padding:22px}.install-help-card h2{margin:0 0 8px;font-size:24px}.install-help-card p{margin:0 0 14px;color:#adc0d2;line-height:1.45}.install-steps-clean{display:grid;gap:10px;margin:14px 0}.install-step-clean{display:flex;gap:10px;align-items:flex-start;border:1px solid #ffffff16;background:#061426aa;border-radius:18px;padding:12px;color:#eaf5ff}.install-step-clean b{display:grid;place-items:center;width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#ffd166,#ef3340);color:#071426;flex:0 0 auto}.install-help-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.install-secondary{background:#ffffff12;border:1px solid #ffffff20;color:#fff}
+    @media(max-width:780px){.install-banner{bottom:14px;border-radius:22px}.install-banner img{width:44px;height:44px}.install-banner-text b{font-size:14px}.install-banner-text span{font-size:11px}.install-btn{padding:10px 11px;font-size:12px}.install-close{width:38px;height:38px}.install-banner-actions{gap:6px}body.mobile-search-open .install-banner,body.modal-lock .install-banner{display:none!important}}
+
   </style>
 
   <script>
-    // Nettoyage des anciens caches PWA pour éviter d'afficher une version cassée ou ancienne.
+    // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister())).catch(()=>{});
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js?v=27').catch(() => {});
+      });
     }
     if (window.caches) {
-      caches.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(()=>{});
+      caches.keys().then(keys => keys.filter(k => !k.includes('v27')).forEach(key => caches.delete(key))).catch(()=>{});
     }
   </script>
 </head>
@@ -277,6 +290,24 @@
   <footer class="public-footer"><div class="footer-brand"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026"><div><b>Guide Mondial 2026</b><span>Le guide francophone de la Coupe du Monde 2026</span></div></div><div class="footer-links"><button onclick="switchTab('matches')">Calendrier</button><button onclick="switchTab('tv')">Guide TV</button><button onclick="switchTab('stadiums')">Stades</button><button onclick="switchTab('map')">Carte interactive</button><button onclick="applyQuick('Favoris')">Favoris</button></div><small>© 2026 Guide Mondial</small></footer>
   </main>
   <div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()"><div class="modal-card"><div class="modal-head"><b>Détail du match</b><button class="close" onclick="closeModal()">Fermer</button></div><div class="modal-body" id="modalBody"></div></div></div>
+
+  <div class="install-banner" id="installBanner" aria-live="polite">
+    <img src="icon-192.png" alt="Guide Mondial 2026">
+    <div class="install-banner-text"><b>Installer Guide Mondial 2026</b><span>Accès rapide depuis l’écran d’accueil.</span></div>
+    <div class="install-banner-actions"><button class="install-btn" id="installBtn" type="button">Installer</button><button class="install-close" id="installClose" type="button" aria-label="Fermer">×</button></div>
+  </div>
+  <div class="install-help" id="installHelp" aria-hidden="true">
+    <div class="install-help-card">
+      <h2>📱 Installer l’application</h2>
+      <p>Ajoutez Guide Mondial 2026 à votre écran d’accueil pour l’ouvrir comme une vraie app.</p>
+      <div class="install-steps-clean">
+        <div class="install-step-clean"><b>1</b><span>Appuyez sur le bouton <strong>Partager</strong> de Safari.</span></div>
+        <div class="install-step-clean"><b>2</b><span>Choisissez <strong>Sur l’écran d’accueil</strong>.</span></div>
+        <div class="install-step-clean"><b>3</b><span>Validez avec <strong>Ajouter</strong>.</span></div>
+      </div>
+      <div class="install-help-actions"><button class="install-secondary" id="installLater" type="button">Plus tard</button><button id="installUnderstood" type="button">Compris</button></div>
+    </div>
+  </div>
   <script>
     const stadiums={"Mexico":"Estadio Azteca","Zapopan":"Estadio Akron","Guadalupe":"Estadio BBVA","Toronto":"BMO Field","Vancouver":"BC Place","Seattle":"Lumen Field","San Francisco":"Levi's Stadium","Los Angeles":"SoFi Stadium","Houston":"NRG Stadium","Dallas":"AT&T Stadium","Kansas City":"GEHA Field at Arrowhead Stadium","Atlanta":"Mercedes-Benz Stadium","Miami":"Hard Rock Stadium","Boston":"Gillette Stadium","Philadelphia":"Lincoln Financial Field","New York":"MetLife Stadium"};
 const data = [
@@ -572,8 +603,67 @@ const data = [
       });
     }
     window.switchTab=switchTab; window.toggleMobileMenu=toggleMobileMenu; window.applyQuick=applyQuick; window.openDetail=openDetail; window.openStadiumDetail=openStadiumDetail; window.openSearch=openSearch; window.closeSearch=closeSearch;
+
+
+    // V27 — installation PWA propre Android/iPhone
+    let deferredInstallPrompt = null;
+    const isIosDevice = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandaloneApp = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const installDismissedRecently = () => {
+      const ts = Number(localStorage.getItem('gm26_install_dismissed') || 0);
+      return ts && (Date.now() - ts < 30 * 24 * 60 * 60 * 1000);
+    };
+    function showInstallBanner(force=false){
+      const banner=document.getElementById('installBanner');
+      if(!banner || isStandaloneApp()) return;
+      const mobile=window.matchMedia('(max-width:780px)').matches;
+      if(!force && (!mobile || installDismissedRecently())) return;
+      banner.classList.add('show');
+    }
+    function hideInstallBanner(remember=true){
+      document.getElementById('installBanner')?.classList.remove('show');
+      if(remember) localStorage.setItem('gm26_install_dismissed', String(Date.now()));
+    }
+    function openInstallHelp(){
+      hideInstallBanner(false);
+      const help=document.getElementById('installHelp');
+      if(help){help.classList.add('open');help.setAttribute('aria-hidden','false')}
+    }
+    function closeInstallHelp(remember=true){
+      const help=document.getElementById('installHelp');
+      if(help){help.classList.remove('open');help.setAttribute('aria-hidden','true')}
+      if(remember) localStorage.setItem('gm26_install_dismissed', String(Date.now()));
+    }
+    async function handleInstallClick(){
+      if(deferredInstallPrompt){
+        deferredInstallPrompt.prompt();
+        try{await deferredInstallPrompt.userChoice;}catch(e){}
+        deferredInstallPrompt=null;
+        hideInstallBanner(true);
+        return;
+      }
+      openInstallHelp();
+    }
+    function setupInstallPrompt(){
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        showInstallBanner();
+      });
+      window.addEventListener('appinstalled', () => hideInstallBanner(true));
+      document.getElementById('installBtn')?.addEventListener('click', handleInstallClick);
+      document.getElementById('installClose')?.addEventListener('click', () => hideInstallBanner(true));
+      document.getElementById('installLater')?.addEventListener('click', () => closeInstallHelp(false));
+      document.getElementById('installUnderstood')?.addEventListener('click', () => closeInstallHelp(true));
+      document.getElementById('installHelp')?.addEventListener('click', e => { if(e.target.id==='installHelp') closeInstallHelp(false); });
+      setTimeout(() => {
+        if(isIosDevice() || deferredInstallPrompt) showInstallBanner();
+      }, 1600);
+    }
+
     init();
     attachNavigation();
+    setupInstallPrompt();
   </script>
 </body>
 </html>
