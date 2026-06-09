@@ -1,20 +1,8 @@
 export default async function handler(req, res) {
-  try {
-    const response = await fetch(
-      "https://v3.football.api-sports.io/leagues?id=1",
-      {
-        headers: {
-          "x-apisports-key": process.env.API_FOOTBALL_KEY,
-        },
-      }
-    );
-
-    const data = await response.json();
-
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-    });
-  }
+  res.status(200).json({
+    exists: !!process.env.API_FOOTBALL_KEY,
+    length: process.env.API_FOOTBALL_KEY
+      ? process.env.API_FOOTBALL_KEY.length
+      : 0
+  });
 }
