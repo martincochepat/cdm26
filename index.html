@@ -329,6 +329,8 @@
       .hero-stadium-day{display:none!important}
     }
 
+    /* V32 — raccourcis hero nettoyés */
+    .hero-benefits .benefit{cursor:pointer;transition:transform .18s ease,filter .18s ease}.hero-benefits .benefit:hover{transform:translateY(-2px);filter:brightness(1.08)}.hero-benefits .benefit:focus-visible{outline:2px solid #ffd166;outline-offset:4px;border-radius:18px}
   </style>
 
   <script>
@@ -339,7 +341,7 @@
       });
     }
     if (window.caches) {
-      caches.keys().then(keys => keys.filter(k => !k.includes('v30')).forEach(key => caches.delete(key))).catch(()=>{});
+      caches.keys().then(keys => keys.filter(k => !k.includes('v32')).forEach(key => caches.delete(key))).catch(()=>{});
     }
   </script>
 </head>
@@ -378,7 +380,7 @@
       <button data-nav="map">Carte</button>
       <button data-nav="fan">Fan zone</button>
     </div>
-    <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit"><i>📅</i><span>Calendrier complet</span></div><div class="benefit"><i>📺</i><span>Guide TV France</span></div><div class="benefit"><i>🏟️</i><span>Stades & infos</span></div><div class="benefit"><i>🌎</i><span>Carte interactive</span></div><div class="benefit"><i>⭐</i><span>Mes équipes favorites</span></div></div></div><aside class="hero-desktop-stadium" aria-label="Stade du jour">
+    <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit" onclick="switchTab('matches')" role="button" tabindex="0"><i>📅</i><span>Calendrier</span></div><div class="benefit" onclick="switchTab('tv')" role="button" tabindex="0"><i>📺</i><span>Guide TV</span></div><div class="benefit" onclick="switchTab('stadiums')" role="button" tabindex="0"><i>🏟️</i><span>Stades</span></div><div class="benefit" onclick="switchTab('map')" role="button" tabindex="0"><i>🌎</i><span>Carte</span></div><div class="benefit" onclick="switchTab('matches')" role="button" tabindex="0"><i>🔥</i><span>Matchs du jour</span></div></div></div><aside class="hero-desktop-stadium" aria-label="Stade du jour">
   <div class="hero-stadium-bg" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/0/04/Metlife_stadium_%28Aerial_view%29.jpg')"></div>
   <div class="hero-stadium-overlay"></div>
   <div class="hero-stadium-content">
@@ -399,7 +401,7 @@
 
     <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="teams">🌍 Équipes</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Arbre</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
 
-    <section id="view-home" class="view active"><div class="home-premium-grid"><div class="feature-card" id="featuredBox"></div><div class="feature-card" id="freeTodayBox"></div><div class="feature-card" id="monMondialBox"></div><div class="feature-card" id="stadiumDiscoveryBox"></div><div class="feature-card" id="homeUpcomingBox"></div></div><div class="world-cup-strip"><div><h2>🏆 La Coupe du Monde 2026</h2><p>11 juin — 19 juillet 2026 · 104 matchs · 16 villes · 3 pays</p></div><div class="strip-logos"><span>🇨🇦</span><span>🇺🇸</span><span>🇲🇽</span></div></div><div class="fav-cta"><div></div><button onclick="switchTab('home');document.getElementById('teamPickerPanel').scrollIntoView({behavior:'smooth'})">Choisir mes équipes</button></div><div class="panel dashboard" id="teamPickerPanel"><h2>⭐ Choisis tes équipes à suivre</h2><p class="mini">Elles seront mises en avant dans Mon Mondial et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div></section>
+    <section id="view-home" class="view active"><div class="home-premium-grid"><div class="feature-card" id="featuredBox"></div><div class="feature-card" id="freeTodayBox"></div><div class="feature-card" id="monMondialBox"></div><div class="feature-card" id="stadiumDiscoveryBox"></div><div class="feature-card" id="homeUpcomingBox"></div></div><div class="world-cup-strip"><div><h2>🏆 La Coupe du Monde 2026</h2><p>11 juin — 19 juillet 2026 · 104 matchs · 16 villes · 3 pays</p></div><div class="strip-logos"><span>🇨🇦</span><span>🇺🇸</span><span>🇲🇽</span></div></div><div class="panel dashboard" id="teamPickerPanel"><h2>⭐ Choisis tes équipes à suivre</h2><p class="mini">Elles seront mises en avant dans Mon Mondial et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div></section>
 
     <section id="view-matches" class="view"><section class="panel toolbar"><button id="mobileSearchClose" class="mobile-search-close" type="button">Fermer la recherche</button><input id="q" placeholder="Rechercher France, Brésil, stade, ville..." /><select id="phase"><option value="">Toutes phases</option></select><select id="group"><option value="">Tous groupes</option></select><select id="channel"><option value="">Toutes chaînes</option><option>M6</option><option>beIN Sports</option></select><button id="reset">Réinitialiser</button></section><section class="layout"><aside class="panel side"><h2>Accès rapide</h2><div class="chips" id="quick"></div><div class="actions"><button id="nextBtn">Voir le prochain match</button><button id="shareBtn">Partager l'app</button></div><p class="mini">Le calendrier global reste ici : tous les matchs, filtres, favoris, chaînes, stades et voyant direct automatique.</p></aside><section><div class="feature-grid"><div class="feature-card" id="todayBox"></div><div class="feature-card" id="tvBox"></div></div><div id="list" class="list"></div></section></section></section>
 
