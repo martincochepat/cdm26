@@ -229,17 +229,20 @@
     .install-help{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:18px;background:#000a;backdrop-filter:blur(10px)}.install-help.open{display:flex}.install-help-card{width:min(430px,100%);border:1px solid #ffffff22;border-radius:28px;background:linear-gradient(145deg,#0b223c,#1b1025);box-shadow:0 30px 90px #000;padding:22px}.install-help-card h2{margin:0 0 8px;font-size:24px}.install-help-card p{margin:0 0 14px;color:#adc0d2;line-height:1.45}.install-steps-clean{display:grid;gap:10px;margin:14px 0}.install-step-clean{display:flex;gap:10px;align-items:flex-start;border:1px solid #ffffff16;background:#061426aa;border-radius:18px;padding:12px;color:#eaf5ff}.install-step-clean b{display:grid;place-items:center;width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#ffd166,#ef3340);color:#071426;flex:0 0 auto}.install-help-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.install-secondary{background:#ffffff12;border:1px solid #ffffff20;color:#fff}
     @media(max-width:780px){.install-banner{bottom:14px;border-radius:22px}.install-banner img{width:44px;height:44px}.install-banner-text b{font-size:14px}.install-banner-text span{font-size:11px}.install-btn{padding:10px 11px;font-size:12px}.install-close{width:38px;height:38px}.install-banner-actions{gap:6px}body.mobile-search-open .install-banner,body.modal-lock .install-banner{display:none!important}}
 
+  
+    @media(max-width:780px){.hero-stadium-day{align-items:flex-start!important}.hero-stadium-day>div:last-child{width:100%}.hero-stadium-day button{flex:1;min-width:140px}}
+
   </style>
 
   <script>
     // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=28').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=30').catch(() => {});
       });
     }
     if (window.caches) {
-      caches.keys().then(keys => keys.filter(k => !k.includes('v27')).forEach(key => caches.delete(key))).catch(()=>{});
+      caches.keys().then(keys => keys.filter(k => !k.includes('v30')).forEach(key => caches.delete(key))).catch(()=>{});
     }
   </script>
 </head>
@@ -279,9 +282,9 @@
       <button data-nav="fan">Fan zone</button>
     </div>
     <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit"><i>📅</i><span>Calendrier complet</span></div><div class="benefit"><i>📺</i><span>Guide TV France</span></div><div class="benefit"><i>🏟️</i><span>Stades & infos</span></div><div class="benefit"><i>🌎</i><span>Carte interactive</span></div><div class="benefit"><i>⭐</i><span>Mes équipes favorites</span></div></div></div><div class="panel stats"><div class="stat"><b id="countAll">0</b><span>matchs intégrés</span></div><div class="stat"><b id="countM6">0</b><span>diffusés aussi sur M6/M6+</span></div><div class="stat"><b>16</b><span>villes hôtes</span></div><div class="stat"><b>104</b><span>matchs prévus au total</span></div></div></section>
-<div class="panel" style="margin:20px 0;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-<div><div style="font-size:12px;color:#ffd166;font-weight:800">🏟️ STADE DU JOUR</div><h3 style="margin:6px 0">MetLife Stadium</h3><div style="color:#adc0d2">New York • 82 500 places</div></div>
-<button onclick="document.querySelector('#stades')?.scrollIntoView({behavior:'smooth'})" style="width:auto">Découvrir</button>
+<div class="panel hero-stadium-day" style="margin:20px 0;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+<div><div style="font-size:12px;color:#ffd166;font-weight:900;letter-spacing:.08em">🏟️ STADE DU JOUR</div><h3 style="margin:6px 0">MetLife Stadium</h3><div style="color:#adc0d2">New York • 82 500 places • Finale 2026</div></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="openStadiumDetail('New York')" style="width:auto">Découvrir le stade</button><button onclick="switchTab('stadiums')" style="width:auto;background:#ffffff12;color:#fff;border:1px solid #ffffff24">Tous les stades</button></div>
 </div>
 
     <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="teams">🌍 Équipes</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Arbre</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
@@ -442,7 +445,7 @@ const data = [
       const followedRows=followed.length?followed.slice(0,4).map(t=>{const next=upcoming.find(m=>m.home===t||m.away===t);return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?dateLabel(next.date).replace('2026',''):''}</small></div>`}).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
       monMondialBox.innerHTML=`<h2 class="card-title">⭐ Mes équipes</h2>${followedRows}<div class="mini-details">${followedTeams.size} équipe(s) suivie(s) · ${favs.size} favori(s)</div><button class="home-btn" onclick="switchTab('teams')">Voir mes équipes →</button>`;
       const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
-      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button>`;
+      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
       homeUpcomingBox.innerHTML=`<h2 class="card-title">📅 Prochains matchs</h2>${upcoming.slice(0,5).map(m=>`<div class="upcoming-row" onclick="openDetail(${m.id})"><span>${dateLabel(m.date).replace('2026','')}</span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></b><small>${m.time}</small></div>`).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}<button class="home-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
     }
     function renderHighlights(){
@@ -586,6 +589,14 @@ const data = [
       openModal()
     }
     function showStadiumMatches(city){closeModal();q.value=city;activeTab='matches';renderAll();setTimeout(()=>list.scrollIntoView({behavior:'smooth'}),80)}
+
+    function openRandomStadium(){
+      const cities=Object.keys(venueMeta||{});
+      if(!cities.length) return switchTab('stadiums');
+      const city=cities[Math.floor(Math.random()*cities.length)];
+      openStadiumDetail(city);
+    }
+
     function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>x.id===id); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${m.round} · ${m.phase}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${m.time}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${m.id});openDetail(${m.id})">${favs.has(m.id)?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${m.id})">Partager ce match</button></div>`;openModal()}
     function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
