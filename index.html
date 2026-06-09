@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#08182c" />
   <title>Guide Mondial 2026 | Calendrier, TV, stades et matchs</title>
   <meta name="description" content="Guide complet de la Coupe du Monde 2026 : calendrier des matchs, horaires français, chaînes TV, stades, groupes, carte interactive et favoris.">
-  <link rel="manifest" href="/manifest.webmanifest?v=46">
-  <link rel="icon" type="image/png" href="/favicon.png?v=46">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=46">
+  <link rel="manifest" href="/manifest.webmanifest?v=47">
+  <link rel="icon" type="image/png" href="/favicon.png?v=47">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=47">
   <style>
     :root{--bg:#050914;--bg2:#08182c;--text:#f8fbff;--muted:#adc0d2;--line:#ffffff20;--deep:#061426;--red:#ef3340;--blue:#0066cc;--green:#00a859;--gold:#ffd166;--radius:28px;--shadow:0 24px 80px #0009}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 12% 8%,#174477 0 16%,transparent 42%),radial-gradient(circle at 88% 8%,#8c1534 0 18%,transparent 42%),radial-gradient(circle at 80% 92%,#087052 0 14%,transparent 35%),linear-gradient(135deg,var(--bg),var(--bg2) 56%,#07111f);color:var(--text);min-height:100vh}
@@ -268,7 +268,7 @@
     // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=46').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=47').catch(() => {});
       });
     }
     if (window.caches) {
@@ -290,7 +290,7 @@
         <button onclick="switchTab('tv')" class="nav-link" data-nav="tv">Guide TV</button>
         <button onclick="switchTab('teams')" class="nav-link" data-nav="teams">Équipes</button>
         <button onclick="switchTab('groups')" class="nav-link" data-nav="groups">Groupes</button>
-        <button onclick="switchTab('bracket')" class="nav-link" data-nav="bracket">Arbre</button>
+        <button onclick="switchTab('bracket')" class="nav-link" data-nav="bracket">Phase finale</button>
         <button onclick="switchTab('stadiums')" class="nav-link" data-nav="stadiums">Stades</button>
         <button onclick="switchTab('map')" class="nav-link" data-nav="map">Carte</button>
         <button onclick="switchTab('fan')" class="nav-link" data-nav="fan">Fan zone</button>
@@ -306,7 +306,7 @@
       <button data-nav="tv">Guide TV</button>
       <button data-nav="teams">Équipes</button>
       <button data-nav="groups">Groupes</button>
-      <button data-nav="bracket">Arbre</button>
+      <button data-nav="bracket">Phase finale</button>
       <button data-nav="stadiums">Stades</button>
       <button data-nav="map">Carte</button>
       <button data-nav="fan">Fan zone</button>
@@ -317,7 +317,7 @@
 <div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="openStadiumDetail('New York')" style="width:auto">Découvrir le stade</button><button onclick="switchTab('stadiums')" style="width:auto;background:#ffffff12;color:#fff;border:1px solid #ffffff24">Tous les stades</button></div>
 </div>
 
-    <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="teams">🌍 Équipes</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Arbre</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
+    <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="teams">🌍 Équipes</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Phase finale</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
 
     <section id="view-home" class="view active"><div class="home-premium-grid"><div class="feature-card" id="featuredBox"></div><div class="feature-card" id="freeTodayBox"></div><div class="feature-card" id="monMondialBox"></div><div class="feature-card" id="stadiumDiscoveryBox"></div><div class="feature-card" id="homeUpcomingBox"></div></div><div class="world-cup-strip"><div><h2>🏆 La Coupe du Monde 2026</h2><p>11 juin — 19 juillet 2026 · 104 matchs · 16 villes · 3 pays</p></div><div class="strip-logos"><span>🇨🇦</span><span>🇺🇸</span><span>🇲🇽</span></div></div><div class="fav-cta"><div></div><button onclick="switchTab('home');document.getElementById('teamPickerPanel').scrollIntoView({behavior:'smooth'})">Choisir mes équipes</button></div><div class="panel dashboard" id="teamPickerPanel"><h2>⭐ Choisis tes équipes à suivre</h2><p class="mini">Elles seront mises en avant dans Mon Mondial et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div></section>
 
@@ -328,7 +328,7 @@
 
     <section id="view-teams" class="view"><div class="panel dashboard"><h2>🌍 Équipes du Mondial</h2><p class="mini">Choisissez une sélection pour voir son calendrier, son groupe, ses stades et ses diffusions en France.</p><div id="teamsOverview" class="teams-overview"></div></div></section>
     <section id="view-groups" class="view"><div class="panel dashboard"><h2>📊 Classements des groupes</h2><p class="mini">Classements calculés automatiquement à partir des scores et statuts renseignés dans Supabase.</p><div id="groupsGrid" class="group-grid"></div></div></section>
-    <section id="view-bracket" class="view"><div class="panel dashboard"><h2>🏆 Arbre de la phase finale</h2><p class="mini">Vue simplifiée des matchs à élimination directe intégrés. Idéal pour consulter rapidement le chemin jusqu’à la finale.</p><div id="bracketBox" class="bracket"></div></div></section>
+    <section id="view-bracket" class="view"><div class="panel dashboard"><h2>🏆 Phase finale de la phase finale</h2><p class="mini">Suivez le tableau des matchs à élimination directe. Les équipes qualifiées apparaîtront au fur et à mesure des résultats.</p><div id="bracketBox" class="bracket"></div></div></section>
     <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Votes globaux des visiteurs : un vote par match et par appareil, synchronisé avec Supabase.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📊 Ambiance du jour</h2><p class="mini">Un résumé rapide de l'activité du jour : matchs, TV gratuite, pronostics et quiz.</p><div id="fanStatsBox"></div></div></div></section>
     <section id="view-stadiums" class="view"><div class="panel dashboard"><h2>🏟️ Les stades du Mondial</h2><p class="mini">Photos de stades, capacités, pays hôte et nombre de matchs intégrés dans cette version.</p><div id="stadiumGrid" class="stadium-grid"></div></div></section>
     <section id="view-map" class="view"><div class="panel host-map-page"><h2 class="section-title">🌎 Carte des villes hôtes</h2><p class="mini">Survole une ville pour voir son stade, clique pour ouvrir directement la fiche du stade.</p><div id="bigHostMap"></div><div id="cityList" class="city-list"></div></div></section>
@@ -730,7 +730,7 @@ let data = [
     }
     function renderBracket(){
       if(!window.bracketBox)return; const rounds=['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
-      bracketBox.innerHTML=rounds.map(r=>{let matches=data.filter(m=>m.phase===r|| (r==='Finale'&&m.phase==='Finale')).sort((a,b)=>matchStart(a)-matchStart(b)); if(!matches.length && r!=='Finale') matches=[]; return `<div class="round-col"><h3>${r}</h3>${matches.length?matches.map(m=>`<div class="bracket-match" onclick="openDetail(${jsArg(m.id)})"><b>${m.round} · ${dateLabel(m.date)} · ${m.time}</b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br>${flags[m.away]||'🏳️'} ${esc(m.away)}<br><span class="mini">${esc(m.city)}</span></div>`).join(''):'<div class="bracket-match"><b>À venir</b>Matchs à compléter quand le calendrier détaillé sera disponible.</div>'}</div>`}).join('')
+      bracketBox.innerHTML=rounds.map(r=>{let matches=data.filter(m=>m.phase===r|| (r==='Finale'&&m.phase==='Finale')).sort((a,b)=>matchStart(a)-matchStart(b)); if(!matches.length && r!=='Finale') matches=[]; return `<div class="round-col"><h3>${r}</h3>${matches.length?matches.map(m=>`<div class="bracket-match" onclick="openDetail(${jsArg(m.id)})"><b>${m.round} · ${dateLabel(m.date)} · ${m.time}</b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br>${flags[m.away]||'🏳️'} ${esc(m.away)}<br><span class="mini">${esc(m.city)}</span></div>`).join(''):'<div class="bracket-match"><b>À venir</b>Équipes à confirmer selon les résultats des groupes.</div>'}</div>`}).join('')
     }
     const quizFallback=[{id:'local-1',question:'Combien de pays accueillent la Coupe du Monde 2026 ?',correct_answer:'3',options:['2','3','4','5']},{id:'local-2',question:'Quel stade accueille la finale intégrée dans ce guide ?',correct_answer:'MetLife Stadium',options:['SoFi Stadium','MetLife Stadium','AT&T Stadium','Estadio Azteca']},{id:'local-3',question:'Quel pays hôte joue le match d’ouverture ?',correct_answer:'Mexique',options:['Canada','Mexique','États-Unis','Brésil']}];
     function localDateKey(d=new Date()){
