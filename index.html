@@ -343,7 +343,7 @@ const data = [
       [...new Set(data.map(m=>m.phase))].forEach(v=>phase.innerHTML+=`<option>${v}</option>`);
       [...new Set(data.filter(m=>m.phase.startsWith('Groupe')).map(m=>m.phase))].forEach(v=>group.innerHTML+=`<option>${v}</option>`);
       ['Mes équipes','France','Matchs gratuits','M6','beIN Sports','Aujourd’hui + à venir','Finale','16es de finale','Favoris'].forEach(t=>quick.innerHTML+=`<span class="chip" data-v="${t}">${t}</span>`);
-      ['q','phase','group','channel'].forEach(id=>$(id).addEventListener('input',renderAll));
+      ['q','phase','group','channel'].forEach(id=>{const el=$(id); el.addEventListener('input',renderAll); el.addEventListener('change',renderAll);});
       reset.onclick=()=>{q.value='';phase.value='';group.value='';channel.value='';renderAll()};
       quick.onclick=e=>{if(e.target.dataset.v)applyQuick(e.target.dataset.v)};
       nextBtn.onclick=goNext;shareBtn.onclick=shareApp;
@@ -518,6 +518,30 @@ const data = [
     function toggleFav(id){favs.has(id)?favs.delete(id):favs.add(id);localStorage.setItem('wc26_favs',JSON.stringify([...favs]));renderAll()}
     function goNext(){activeTab='matches';renderAll();let next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0]; if(next) setTimeout(()=>document.getElementById('match-'+next.id)?.scrollIntoView({behavior:'smooth',block:'center'}),80)}
     async function shareApp(){let shareData={title:'Guide Mondial 2026',text:'Calendrier, guide TV France, stades et matchs de la Coupe du Monde 2026',url:location.href}; if(navigator.share) await navigator.share(shareData); else {await navigator.clipboard.writeText(location.href); alert('Lien copié !')}}
+
+    function openSearch(){
+      activeTab='matches';
+      renderAll();
+      closeMobileMenu();
+      const toolbar=document.querySelector('#view-matches .toolbar');
+      const input=document.getElementById('q');
+      if(window.matchMedia('(max-width:780px)').matches){
+        document.body.classList.add('mobile-search-open');
+        setTimeout(()=>{ input?.focus(); },120);
+      }else{
+        document.body.classList.remove('mobile-search-open');
+        setTimeout(()=>{
+          toolbar?.scrollIntoView({behavior:'smooth',block:'start'});
+          input?.focus();
+        },80);
+      }
+    }
+    function closeSearch(){
+      document.body.classList.remove('mobile-search-open');
+      const input=document.getElementById('q');
+      input?.blur();
+    }
+
     function attachNavigation(){
       document.querySelectorAll('[data-nav]').forEach(btn=>{
         btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.nav)});
@@ -547,7 +571,7 @@ const data = [
         });
       });
     }
-    window.switchTab=switchTab; window.toggleMobileMenu=toggleMobileMenu; window.applyQuick=applyQuick; window.openDetail=openDetail; window.openStadiumDetail=openStadiumDetail;
+    window.switchTab=switchTab; window.toggleMobileMenu=toggleMobileMenu; window.applyQuick=applyQuick; window.openDetail=openDetail; window.openStadiumDetail=openStadiumDetail; window.openSearch=openSearch; window.closeSearch=closeSearch;
     init();
     attachNavigation();
   </script>
