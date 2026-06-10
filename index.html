@@ -349,7 +349,7 @@
       </nav>
       <div class="site-actions">
         <button class="icon-action" onclick="openSearch()">⌕</button>
-        <button class="fav-action" onclick="showFavorites()">⭐ Mes favoris</button>
+        <button class="fav-action" onclick="shareApp()">📤 Partager</button>
       </div>
     </header>
     <div class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
@@ -1001,8 +1001,8 @@ let data = [
       document.querySelectorAll('[data-tab]').forEach(btn=>{
         btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.tab)});
       });
-      const favBtn=document.querySelector('.fav-action');
-      if(favBtn){favBtn.addEventListener('click',e=>{e.preventDefault(); applyQuick('Favoris')});}
+      const shareBtn=document.querySelector('.fav-action');
+      if(shareBtn){shareBtn.addEventListener('click',e=>{e.preventDefault(); shareApp();});}
       const searchBtn=document.querySelector('.icon-action');
       if(searchBtn){searchBtn.addEventListener('click',e=>{e.preventDefault(); openSearch();});}
       document.getElementById('mobileSearchClose')?.addEventListener('click',()=>closeSearch());
