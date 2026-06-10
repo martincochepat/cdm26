@@ -1,6 +1,7 @@
 // Guide Mondial 2026 — sync API-Football -> Supabase
-// V59 backend live. Server-side only on Vercel.
+// V60 backend live. Server-side only on Vercel.
 // Updates only live fields: status, score_a, score_b, minute, winner, updated_at.
+// Improved matching FR/EN/API-Football team names.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -19,50 +20,169 @@ function normalizeText(value) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/&/g, "and")
+    .replace(/&/g, " and ")
+    .replace(/['’]/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
 
+const TEAM_ALIASES = {
+  // Pays hôtes / classiques
+  "mexico": "mexico",
+  "mexique": "mexico",
+  "south africa": "south africa",
+  "afrique du sud": "south africa",
+
+  "usa": "united states",
+  "u s a": "united states",
+  "united states": "united states",
+  "united states of america": "united states",
+  "etats unis": "united states",
+  "états unis": "united states",
+
+  "canada": "canada",
+
+  // Europe
+  "france": "france",
+  "germany": "germany",
+  "allemagne": "germany",
+  "spain": "spain",
+  "espagne": "spain",
+  "portugal": "portugal",
+  "england": "england",
+  "angleterre": "england",
+  "netherlands": "netherlands",
+  "pays bas": "netherlands",
+  "italy": "italy",
+  "italie": "italy",
+  "belgium": "belgium",
+  "belgique": "belgium",
+  "croatia": "croatia",
+  "croatie": "croatia",
+  "denmark": "denmark",
+  "danemark": "denmark",
+  "switzerland": "switzerland",
+  "suisse": "switzerland",
+  "sweden": "sweden",
+  "suede": "sweden",
+  "suède": "sweden",
+  "norway": "norway",
+  "norvege": "norway",
+  "norvège": "norway",
+  "scotland": "scotland",
+  "ecosse": "scotland",
+  "écosse": "scotland",
+  "poland": "poland",
+  "pologne": "poland",
+  "austria": "austria",
+  "autriche": "austria",
+  "serbia": "serbia",
+  "serbie": "serbia",
+  "turkiye": "turkiye",
+  "turkey": "turkiye",
+  "turquie": "turkiye",
+  "czech republic": "czechia",
+  "czechia": "czechia",
+  "republique tcheque": "czechia",
+  "république tchèque": "czechia",
+
+  // Amérique du Sud / Nord
+  "brazil": "brazil",
+  "bresil": "brazil",
+  "brésil": "brazil",
+  "argentina": "argentina",
+  "argentine": "argentina",
+  "uruguay": "uruguay",
+  "colombia": "colombia",
+  "colombie": "colombia",
+  "ecuador": "ecuador",
+  "equateur": "ecuador",
+  "équateur": "ecuador",
+  "paraguay": "paraguay",
+  "chile": "chile",
+  "chili": "chile",
+  "peru": "peru",
+  "perou": "peru",
+  "pérou": "peru",
+  "panama": "panama",
+  "costa rica": "costa rica",
+  "haiti": "haiti",
+  "haïti": "haiti",
+  "curacao": "curacao",
+  "curaçao": "curacao",
+  "jamaica": "jamaica",
+  "jamaique": "jamaica",
+  "jamaïque": "jamaica",
+
+  // Afrique
+  "morocco": "morocco",
+  "maroc": "morocco",
+  "senegal": "senegal",
+  "sénégal": "senegal",
+  "tunisia": "tunisia",
+  "tunisie": "tunisia",
+  "ghana": "ghana",
+  "nigeria": "nigeria",
+  "egypt": "egypt",
+  "egypte": "egypt",
+  "égypte": "egypt",
+  "algeria": "algeria",
+  "algerie": "algeria",
+  "algérie": "algeria",
+  "ivory coast": "ivory coast",
+  "cote d ivoire": "ivory coast",
+  "côte d ivoire": "ivory coast",
+  "cameroon": "cameroon",
+  "cameroun": "cameroon",
+  "congo dr": "congo dr",
+  "dr congo": "congo dr",
+  "rd congo": "congo dr",
+  "democratic republic of congo": "congo dr",
+  "republique democratique du congo": "congo dr",
+  "république démocratique du congo": "congo dr",
+  "cape verde": "cape verde",
+  "cabo verde": "cape verde",
+  "cap vert": "cape verde",
+
+  // Asie / Océanie
+  "japan": "japan",
+  "japon": "japan",
+  "south korea": "south korea",
+  "korea republic": "south korea",
+  "republic of korea": "south korea",
+  "coree du sud": "south korea",
+  "corée du sud": "south korea",
+  "australia": "australia",
+  "australie": "australia",
+  "iran": "iran",
+  "qatar": "qatar",
+  "saudi arabia": "saudi arabia",
+  "arabie saoudite": "saudi arabia",
+  "united arab emirates": "united arab emirates",
+  "uae": "united arab emirates",
+  "emirats arabes unis": "united arab emirates",
+  "émirats arabes unis": "united arab emirates",
+  "iraq": "iraq",
+  "irak": "iraq",
+  "uzbekistan": "uzbekistan",
+  "ouzbekistan": "uzbekistan",
+  "new zealand": "new zealand",
+  "nouvelle zelande": "new zealand",
+  "nouvelle zélande": "new zealand",
+};
+
 function teamKey(name) {
   const n = normalizeText(name);
+  return TEAM_ALIASES[n] || n;
+}
 
-  const aliases = {
-    "usa": "united states",
-    "u s a": "united states",
-    "united states of america": "united states",
-    "etats unis": "united states",
-    "états unis": "united states",
-
-    "south korea": "korea republic",
-    "republic of korea": "korea republic",
-    "coree du sud": "korea republic",
-    "corée du sud": "korea republic",
-
-    "czech republic": "czechia",
-    "republique tcheque": "czechia",
-    "république tchèque": "czechia",
-
-    "bosnia and herzegovina": "bosnia",
-    "bosnie herzégovine": "bosnia",
-    "bosnie herzegovine": "bosnia",
-
-    "ivory coast": "cote d ivoire",
-    "côte d ivoire": "cote d ivoire",
-
-    "cape verde": "cap vert",
-    "cabo verde": "cap vert",
-
-    "dr congo": "congo dr",
-    "democratic republic of congo": "congo dr",
-    "rd congo": "congo dr",
-
-    "uae": "united arab emirates",
-    "emirats arabes unis": "united arab emirates",
-    "émirats arabes unis": "united arab emirates",
-  };
-
-  return aliases[n] || n;
+function sameTeam(a, b) {
+  const ka = teamKey(a);
+  const kb = teamKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  // léger fallback si un nom contient l'autre après alias
+  return ka.includes(kb) || kb.includes(ka);
 }
 
 function toParisDateTime(iso) {
@@ -84,6 +204,13 @@ function toParisDateTime(iso) {
   }).format(d);
 
   return { date, time_fr };
+}
+
+function dateDistanceDays(a, b) {
+  if (!a || !b) return 999;
+  const da = new Date(a + "T00:00:00Z");
+  const db = new Date(b + "T00:00:00Z");
+  return Math.abs((da - db) / 86400000);
 }
 
 function normalizeStatus(apiStatus) {
@@ -180,30 +307,35 @@ async function supabaseGetMatches() {
 }
 
 function findLocalMatch(apiMatch, localMatches) {
-  // 1) Strict: same Paris date + same home/away names normalized.
-  let found = localMatches.find((m) =>
-    m.date === apiMatch.date &&
-    teamKey(m.team_a) === apiMatch.home_key &&
-    teamKey(m.team_b) === apiMatch.away_key
-  );
-  if (found) return found;
+  const candidates = [];
 
-  // 2) Same date + reversed names, just in case.
-  found = localMatches.find((m) =>
-    m.date === apiMatch.date &&
-    teamKey(m.team_a) === apiMatch.away_key &&
-    teamKey(m.team_b) === apiMatch.home_key
-  );
-  if (found) {
-    return { ...found, _reversed: true };
+  for (const m of localMatches) {
+    const sameOrder = sameTeam(m.team_a, apiMatch.team_a) && sameTeam(m.team_b, apiMatch.team_b);
+    const reversed = sameTeam(m.team_a, apiMatch.team_b) && sameTeam(m.team_b, apiMatch.team_a);
+    if (!sameOrder && !reversed) continue;
+
+    const dd = dateDistanceDays(m.date, apiMatch.date);
+
+    // Score plus bas = meilleur match.
+    let score = 0;
+    if (m.date === apiMatch.date) score += 0;
+    else if (dd <= 1) score += 10;
+    else if (dd <= 3) score += 25;
+    else score += 80;
+
+    if (reversed) score += 5;
+
+    // Bonus si l'heure correspond ou est proche en chaîne exacte.
+    if (m.time_fr && apiMatch.time_fr && m.time_fr === apiMatch.time_fr) score -= 3;
+
+    candidates.push({ match: { ...m, _reversed: reversed }, score, dd });
   }
 
-  // 3) Fallback: same teams regardless of date.
-  found = localMatches.find((m) =>
-    teamKey(m.team_a) === apiMatch.home_key &&
-    teamKey(m.team_b) === apiMatch.away_key
-  );
-  if (found) return found;
+  candidates.sort((a, b) => a.score - b.score);
+  const best = candidates[0];
+
+  // On accepte jusqu'à 3 jours d'écart pour gérer les erreurs date/timezone/import.
+  if (best && best.dd <= 3) return best.match;
 
   return null;
 }
@@ -231,13 +363,15 @@ function buildPatch(apiMatch, localMatch) {
   let score_b = apiMatch.score_b;
   let winner = apiMatch.winner;
 
-  // If local match is reversed compared with API, swap scores.
   if (localMatch._reversed) {
     score_a = apiMatch.score_b;
     score_b = apiMatch.score_a;
 
-    if (apiMatch.winner === apiMatch.team_a) winner = apiMatch.team_b;
-    else if (apiMatch.winner === apiMatch.team_b) winner = apiMatch.team_a;
+    if (apiMatch.winner === apiMatch.team_a) winner = localMatch.team_b;
+    else if (apiMatch.winner === apiMatch.team_b) winner = localMatch.team_a;
+  } else {
+    if (apiMatch.winner === apiMatch.team_a) winner = localMatch.team_a;
+    else if (apiMatch.winner === apiMatch.team_b) winner = localMatch.team_b;
   }
 
   return {
@@ -263,20 +397,25 @@ async function sync({ dryRun = false } = {}) {
 
   const updates = [];
   const unmatched = [];
+  const alreadyMatchedLocalIds = new Set();
 
   for (const apiMatch of apiMatches) {
-    const localMatch = findLocalMatch(apiMatch, localMatches);
+    const availableLocalMatches = localMatches.filter(m => !alreadyMatchedLocalIds.has(String(m.id)));
+    const localMatch = findLocalMatch(apiMatch, availableLocalMatches);
 
     if (!localMatch) {
       unmatched.push({
         date: apiMatch.date,
         time_fr: apiMatch.time_fr,
         api: `${apiMatch.team_a} vs ${apiMatch.team_b}`,
+        api_keys: `${apiMatch.home_key} vs ${apiMatch.away_key}`,
         status: apiMatch.status,
         score: `${apiMatch.score_a ?? "-"}-${apiMatch.score_b ?? "-"}`,
       });
       continue;
     }
+
+    alreadyMatchedLocalIds.add(String(localMatch.id));
 
     const patch = buildPatch(apiMatch, localMatch);
 
@@ -284,7 +423,9 @@ async function sync({ dryRun = false } = {}) {
       id: localMatch.id,
       local: `${localMatch.team_a} vs ${localMatch.team_b}`,
       api: `${apiMatch.team_a} vs ${apiMatch.team_b}`,
-      date: apiMatch.date,
+      date_local: localMatch.date,
+      date_api: apiMatch.date,
+      reversed: !!localMatch._reversed,
       patch,
     });
 
@@ -295,14 +436,15 @@ async function sync({ dryRun = false } = {}) {
 
   return {
     ok: true,
+    version: "API-FOOTBALL-V60",
     dryRun,
     api_fixtures_received: fixtures.length,
     api_matches_usable: apiMatches.length,
     local_matches_loaded: localMatches.length,
     updates_ready: updates.length,
     unmatched_count: unmatched.length,
-    sample_updates: updates.slice(0, 10),
-    sample_unmatched: unmatched.slice(0, 10),
+    sample_updates: updates.slice(0, 12),
+    sample_unmatched: unmatched.slice(0, 20),
     note: dryRun
       ? "Dry run uniquement : aucune donnée Supabase modifiée."
       : "Synchronisation terminée : Supabase a été mise à jour.",
@@ -322,6 +464,7 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     return json(res, 500, {
       ok: false,
+      version: "API-FOOTBALL-V60",
       error: String(err.message || err),
     });
   }
