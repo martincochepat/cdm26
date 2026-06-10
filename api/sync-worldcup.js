@@ -1,7 +1,7 @@
 // Guide Mondial 2026 — sync API-Football -> Supabase
-// V60 backend live. Server-side only on Vercel.
+// V61 backend live. Server-side only on Vercel.
 // Updates only live fields: status, score_a, score_b, minute, winner, updated_at.
-// Improved matching FR/EN/API-Football team names.
+// Improved matching FR/EN/API-Football team names + final aliases.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -85,6 +85,9 @@ const TEAM_ALIASES = {
   "czechia": "czechia",
   "republique tcheque": "czechia",
   "république tchèque": "czechia",
+  "rep tcheque": "czechia",
+  "rep tchèque": "czechia",
+  "rep tcheque": "czechia",
 
   // Amérique du Sud / Nord
   "brazil": "brazil",
@@ -119,6 +122,10 @@ const TEAM_ALIASES = {
   "maroc": "morocco",
   "senegal": "senegal",
   "sénégal": "senegal",
+  "bosnia and herzegovina": "bosnia and herzegovina",
+  "bosnia herzegovina": "bosnia and herzegovina",
+  "bosnie herzegovine": "bosnia and herzegovina",
+  "bosnie herzégovine": "bosnia and herzegovina",
   "tunisia": "tunisia",
   "tunisie": "tunisia",
   "ghana": "ghana",
@@ -142,7 +149,10 @@ const TEAM_ALIASES = {
   "république démocratique du congo": "congo dr",
   "cape verde": "cape verde",
   "cabo verde": "cape verde",
+  "cape verde islands": "cape verde",
   "cap vert": "cape verde",
+  "iles du cap vert": "cape verde",
+  "îles du cap vert": "cape verde",
 
   // Asie / Océanie
   "japan": "japan",
@@ -436,7 +446,7 @@ async function sync({ dryRun = false } = {}) {
 
   return {
     ok: true,
-    version: "API-FOOTBALL-V60",
+    version: "API-FOOTBALL-V61",
     dryRun,
     api_fixtures_received: fixtures.length,
     api_matches_usable: apiMatches.length,
@@ -464,7 +474,7 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     return json(res, 500, {
       ok: false,
-      version: "API-FOOTBALL-V60",
+      version: "API-FOOTBALL-V61",
       error: String(err.message || err),
     });
   }
