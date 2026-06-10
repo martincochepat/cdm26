@@ -281,7 +281,7 @@
     .news-preview{margin-top:18px;background:linear-gradient(135deg,#07182a,#09111f);border:1px solid #ffffff16;border-radius:24px;padding:20px;box-shadow:0 18px 50px #00000030}
     .news-preview-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;margin-bottom:14px}
     .news-preview h2{margin:0;color:#fff;font-size:26px}.news-preview p{margin:6px 0 0;color:#adc0d2}.news-preview a.news-all{color:#071426;background:#ffd166;border-radius:14px;padding:10px 14px;text-decoration:none;font-weight:950;white-space:nowrap}
-    .news-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.news-card-home{display:block;text-decoration:none;color:#eaf5ff;background:#ffffff08;border:1px solid #ffffff12;border-radius:18px;padding:16px;min-height:145px}.news-card-home:hover{background:#ffffff12;transform:translateY(-1px)}.news-card-home .cat{display:inline-flex;margin-bottom:10px;color:#ffd166;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.06em}.news-card-home h3{margin:0 0 8px;font-size:18px;line-height:1.15}.news-card-home p{font-size:13px;margin:0;color:#b9c9d8}.news-card-home small{display:block;margin-top:12px;color:#7f94aa;font-weight:800}
+    .news-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.news-card-home{display:block;text-decoration:none;color:#eaf5ff;background:#ffffff08;border:1px solid #ffffff12;border-radius:18px;padding:16px;min-height:145px}.news-card-home:hover{background:#ffffff12;transform:translateY(-1px)}.news-card-home .cat{display:inline-flex;margin-bottom:10px;color:#ffd166;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.06em}.news-card-home h3{margin:0 0 8px;font-size:18px;line-height:1.15}.news-card-home p{font-size:13px;margin:0;color:#b9c9d8}.news-card-home small{display:block;margin-top:12px;color:#7f94aa;font-weight:800}.news-card-img{height:108px;border-radius:14px;margin:-4px -4px 12px;background:#0b223c center/cover no-repeat;border:1px solid #ffffff12}
     @media(max-width:780px){.news-preview-head{display:grid}.news-preview-grid{grid-template-columns:1fr}.news-preview a.news-all{display:inline-flex;justify-content:center}}
 
 
@@ -1088,11 +1088,11 @@ let data = [
       const key='sb_publishable_F-2bOXBmO23_FfRv5KTqXg_jP2osQM2';
       const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
       try{
-        const res=await fetch(`${url}/rest/v1/articles?select=title,slug,excerpt,category,published_at&published=eq.true&order=published_at.desc&limit=3`,{headers:{apikey:key,Authorization:`Bearer ${key}`},cache:'no-store'});
+        const res=await fetch(`${url}/rest/v1/articles?select=title,slug,excerpt,category,published_at,image_url&published=eq.true&order=published_at.desc&limit=3`,{headers:{apikey:key,Authorization:`Bearer ${key}`},cache:'no-store'});
         if(!res.ok) throw new Error('articles indisponibles');
         const articles=await res.json();
         if(!articles.length){box.innerHTML='<a class="news-card-home" href="/actualites.html"><span class="cat">Bientôt</span><h3>Les actualités arrivent</h3><p>Cette section servira à publier les articles SEO du Mondial.</p></a>';return;}
-        box.innerHTML=articles.map(a=>`<a class="news-card-home" href="/article.html?slug=${encodeURIComponent(a.slug)}"><span class="cat">${esc(a.category||'Actualité')}</span><h3>${esc(a.title)}</h3><p>${esc(a.excerpt||'Lire l’article complet sur le Mondial 2026.')}</p><small>Lire l’article →</small></a>`).join('');
+        box.innerHTML=articles.map(a=>{const img=a.image_url?`<div class="news-card-img" style="background-image:url('${esc(a.image_url)}')"></div>`:'';return `<a class="news-card-home" href="/article.html?slug=${encodeURIComponent(a.slug)}">${img}<span class="cat">${esc(a.category||'Actualité')}</span><h3>${esc(a.title)}</h3><p>${esc(a.excerpt||'Lire l’article complet sur le Mondial 2026.')}</p><small>Lire l’article →</small></a>`}).join('');
       }catch(e){
         box.innerHTML='<a class="news-card-home" href="/actualites.html"><span class="cat">Actualités</span><h3>Section actualités</h3><p>Les derniers articles seront reliés à Supabase après création de la table.</p></a>';
       }

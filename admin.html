@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Administration Actualités | Guide Mondial 2026</title>
+  <link rel="icon" href="/favicon.png" />
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top,#0d2d4d,#050914 48%,#03060c);color:#eaf5ff;min-height:100vh}.wrap{width:min(100% - 28px,1080px);margin:auto;padding:18px 0 42px}.panel{background:#061426e8;border:1px solid #ffffff14;border-radius:24px;box-shadow:0 18px 50px #00000030}.header{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 18px;position:sticky;top:10px;z-index:10;backdrop-filter:blur(14px)}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;font-weight:950}.brand img{width:48px;height:48px}.back{color:#071426;background:#ffd166;text-decoration:none;font-weight:950;padding:10px 14px;border-radius:14px}.hero{margin-top:18px;padding:26px}.hero h1{font-size:clamp(34px,6vw,68px);line-height:.92;margin:0 0 10px}.hero p{color:#b9c9d8;line-height:1.6;margin:0}.grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px;margin-top:16px}.box{padding:20px}.box h2{margin:0 0 14px}label{display:block;margin:12px 0 7px;color:#dcecff;font-weight:900}input,textarea,select{width:100%;border:1px solid #ffffff18;background:#020b16;color:#eaf5ff;border-radius:14px;padding:13px 14px;font:inherit;outline:none}textarea{min-height:310px;line-height:1.55;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}button{border:0;border-radius:14px;padding:12px 15px;font-weight:950;cursor:pointer;color:#061426;background:#ffd166}button.secondary{color:#fff;background:#ffffff12;border:1px solid #ffffff20}.status{margin-top:12px;padding:12px;border-radius:14px;background:#ffffff0c;color:#dcecff}.status.ok{background:#00a85922;border:1px solid #00a85966}.status.err{background:#ef334022;border:1px solid #ef334066}.preview{margin-top:16px;border:1px solid #ffffff14;border-radius:22px;overflow:hidden;background:#ffffff08}.preview-img{height:190px;background:#0b223c center/cover no-repeat}.preview-body{padding:16px}.cat{display:inline-flex;color:#ffd166;font-weight:950;text-transform:uppercase;font-size:12px;letter-spacing:.06em;margin-bottom:8px}.preview h3{font-size:25px;line-height:1.12;margin:0 0 8px}.preview p{margin:0;color:#b9c9d8;line-height:1.55}.article-list{display:grid;gap:10px}.article-item{border:1px solid #ffffff12;background:#ffffff08;border-radius:16px;padding:12px}.article-item b{display:block}.article-item small{color:#8fa6bd}.hidden{display:none!important}.notice{padding:14px;border-radius:18px;background:#ffd16618;border:1px solid #ffd16644;color:#ffe7a8;line-height:1.5}@media(max-width:840px){.grid,.row{grid-template-columns:1fr}.header{display:grid}.hero{padding:20px}.box{padding:16px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="header panel">
+      <a class="brand" href="/"><img src="/guide-mondial-icon.svg" alt="Guide Mondial 2026"><span>Admin Guide Mondial 2026</span></a>
+      <a class="back" href="/actualites.html">Voir les actualités</a>
+    </header>
+
+    <section class="hero panel">
+      <h1>Panneau d'administration</h1>
+      <p>Connexion sécurisée via Supabase Auth. La publication est bloquée par les règles RLS si l'adresse email n'est pas autorisée.</p>
+    </section>
+
+    <section id="loginPanel" class="panel box" style="margin-top:16px">
+      <h2>Connexion admin</h2>
+      <div class="notice">Utilise le compte admin créé dans Supabase Auth. Ne partage pas cette URL publiquement.</div>
+      <label>Email</label><input id="email" type="email" autocomplete="email" placeholder="ton@email.fr">
+      <label>Mot de passe</label><input id="password" type="password" autocomplete="current-password" placeholder="Mot de passe">
+      <div class="btns"><button id="loginBtn">Se connecter</button></div>
+      <div id="loginStatus" class="status hidden"></div>
+    </section>
+
+    <section id="adminPanel" class="grid hidden">
+      <div class="panel box">
+        <h2>Nouvel article</h2>
+        <label>Titre</label><input id="title" placeholder="Ex : Calendrier Coupe du Monde 2026 : toutes les dates">
+        <div class="row">
+          <div><label>Catégorie</label><input id="category" value="Actualités" placeholder="Actualités, Calendrier, TV..."></div>
+          <div><label>Image URL</label><input id="imageUrl" placeholder="https://..."></div>
+        </div>
+        <label>Contenu</label><textarea id="content" placeholder="Écris ton article ici. Tu peux utiliser ## pour les grands titres et - pour les listes."></textarea>
+        <div class="btns">
+          <button id="publishBtn">Publier l'article</button>
+          <button id="draftBtn" class="secondary">Enregistrer en brouillon</button>
+          <button id="clearBtn" class="secondary">Vider</button>
+          <button id="logoutBtn" class="secondary">Déconnexion</button>
+        </div>
+        <div id="publishStatus" class="status hidden"></div>
+      </div>
+      <aside class="panel box">
+        <h2>Aperçu</h2>
+        <div class="preview">
+          <div id="previewImg" class="preview-img"></div>
+          <div class="preview-body"><span id="previewCat" class="cat">Actualités</span><h3 id="previewTitle">Titre de l'article</h3><p id="previewExcerpt">Le résumé sera généré automatiquement à partir du contenu.</p></div>
+        </div>
+        <h2 style="margin-top:20px">Derniers articles</h2>
+        <div id="articleList" class="article-list"><div class="article-item">Chargement...</div></div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL='https://lclnnxirkuuwexxcmmho.supabase.co';
+    const SUPABASE_KEY='sb_publishable_F-2bOXBmO23_FfRv5KTqXg_jP2osQM2';
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const $=id=>document.getElementById(id);
+    const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    function show(el){el.classList.remove('hidden')} function hide(el){el.classList.add('hidden')}
+    function setStatus(el,msg,type=''){el.textContent=msg;el.className='status '+type;show(el)}
+    function slugify(str){return String(str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90)}
+    function plainText(str){return String(str||'').replace(/[#>*_`~-]/g,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()}
+    function excerpt(str){const t=plainText(str);return t.length>165?t.slice(0,162).trim()+'...':t}
+    function uniqueSlug(title){const base=slugify(title)||'article';const d=new Date();return `${base}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`}
+    function updatePreview(){
+      $('previewTitle').textContent=$('title').value||"Titre de l'article";
+      $('previewCat').textContent=$('category').value||'Actualités';
+      $('previewExcerpt').textContent=excerpt($('content').value)||'Le résumé sera généré automatiquement à partir du contenu.';
+      const img=$('imageUrl').value.trim();$('previewImg').style.backgroundImage=img?`url('${img.replace(/'/g,'%27')}')`:'';
+    }
+    ['title','category','imageUrl','content'].forEach(id=>$(id).addEventListener('input',updatePreview));
+    async function refreshArticles(){
+      const {data,error}=await sb.from('articles').select('title,slug,published,published_at,created_at').order('created_at',{ascending:false}).limit(8);
+      if(error){$('articleList').innerHTML='<div class="article-item">Impossible de charger la liste.</div>';return;}
+      $('articleList').innerHTML=(data||[]).map(a=>`<div class="article-item"><b>${esc(a.title)}</b><small>${a.published?'Publié':'Brouillon'} · <a style="color:#ffd166" href="/article.html?slug=${encodeURIComponent(a.slug)}" target="_blank">ouvrir</a></small></div>`).join('')||'<div class="article-item">Aucun article.</div>';
+    }
+    async function checkSession(){
+      const {data:{session}}=await sb.auth.getSession();
+      if(session){hide($('loginPanel'));show($('adminPanel'));refreshArticles();}else{show($('loginPanel'));hide($('adminPanel'));}
+    }
+    $('loginBtn').addEventListener('click',async()=>{
+      setStatus($('loginStatus'),'Connexion en cours...');
+      const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+      if(error){setStatus($('loginStatus'),'Connexion refusée : '+error.message,'err');return;}
+      setStatus($('loginStatus'),'Connexion réussie.','ok');checkSession();
+    });
+    $('logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();checkSession();});
+    $('clearBtn').addEventListener('click',()=>{['title','imageUrl','content'].forEach(id=>$(id).value='');$('category').value='Actualités';updatePreview();});
+    async function saveArticle(published){
+      const title=$('title').value.trim(), content=$('content').value.trim();
+      if(!title||!content){setStatus($('publishStatus'),'Ajoute au minimum un titre et un contenu.','err');return;}
+      const payload={title,slug:uniqueSlug(title),excerpt:excerpt(content),content,category:$('category').value.trim()||'Actualités',image_url:$('imageUrl').value.trim()||null,published,published_at:published?new Date().toISOString():null};
+      setStatus($('publishStatus'),published?'Publication en cours...':'Enregistrement du brouillon...');
+      const {error}=await sb.from('articles').insert(payload);
+      if(error){setStatus($('publishStatus'),'Erreur : '+error.message,'err');return;}
+      setStatus($('publishStatus'),published?'Article publié ✅':'Brouillon enregistré ✅','ok');refreshArticles();
+    }
+    $('publishBtn').addEventListener('click',()=>saveArticle(true));
+    $('draftBtn').addEventListener('click',()=>saveArticle(false));
+    sb.auth.onAuthStateChange(()=>checkSession());
+    updatePreview();checkSession();
+  </script>
+</body>
+</html>
