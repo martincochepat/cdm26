@@ -1,22 +1,6 @@
 <!doctype html>
 <html lang="fr">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JX8PN6YR7K"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-JX8PN6YR7K');
-    </script>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-KZ9FKHN9');</script>
-    <!-- End Google Tag Manager -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#08182c" />
@@ -250,7 +234,7 @@
 
   
 
-    /* V36 — score/statut  stable sans casser détails/favoris */
+    /* V36 — score/statut Supabase stable sans casser détails/favoris */
     .score-pill{display:grid;place-items:center;min-width:86px;padding:8px 12px;border-radius:18px;background:linear-gradient(135deg,#ffffff18,#ffffff0a);border:1px solid #ffffff24;box-shadow:0 12px 26px #0005}
     .score-pill .score-line{font-size:clamp(24px,4vw,38px);font-weight:1000;letter-spacing:-.04em;color:#fff;line-height:1}
     .score-pill .score-state{margin-top:4px;font-size:11px;font-weight:950;color:#ffd166;text-transform:uppercase;white-space:nowrap}
@@ -306,10 +290,7 @@
     }
   </script>
 </head>
-<body><!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KZ9FKHN9"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+<body>
   <main class="wrap">
     <header class="site-header panel">
       <button class="mobile-menu" id="mobileMenuBtn" aria-label="Ouvrir le menu">☰</button>
@@ -326,7 +307,7 @@
         <button onclick="switchTab('bracket')" class="nav-link" data-nav="bracket">Phase finale</button>
         <button onclick="switchTab('stadiums')" class="nav-link" data-nav="stadiums">Stades</button>
         <button onclick="switchTab('map')" class="nav-link" data-nav="map">Carte</button>
-        <button onclick="switchTab('fan')" class="nav-link" data-nav="fan">Fan zone</button>
+        <a href="/guide.html" class="nav-link" style="text-decoration:none;display:inline-flex;align-items:center">📚 Guide</a><button onclick="switchTab('fan')" class="nav-link" data-nav="fan">Fan zone</button>
       </nav>
       <div class="site-actions">
         <button class="icon-action" onclick="openSearch()">⌕</button>
@@ -342,7 +323,7 @@
       <button data-nav="bracket">Phase finale</button>
       <button data-nav="stadiums">Stades</button>
       <button data-nav="map">Carte</button>
-      <button data-nav="fan">Fan zone</button>
+      <a href="/guide.html" style="padding:12px 10px;border-radius:14px;background:#ffffff0d;border:1px solid #ffffff16;color:#eaf5ff;font-weight:950;text-align:left;text-decoration:none">📚 Guide</a><button data-nav="fan">Fan zone</button>
     </div>
     <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit"><i>📅</i><span>Calendrier complet</span></div><div class="benefit"><i>📺</i><span>Guide TV France</span></div><div class="benefit"><i>🏟️</i><span>Stades & infos</span></div><div class="benefit"><i>🌎</i><span>Carte interactive</span></div><div class="benefit"><i>🔥</i><span>Matchs du jour</span></div></div></div><aside class="hero-info-card" id="heroInfoCard"><div class="hero-info-eyebrow">⚽ Chargement</div><div class="hero-info-title">Guide Mondial 2026</div><div class="hero-info-sub">Le prochain rendez-vous du tournoi s'affichera ici.</div></aside><div class="panel stats"><div class="stat"><b id="countAll">0</b><span>matchs intégrés</span></div><div class="stat"><b id="countM6">0</b><span>diffusés aussi sur M6/M6+</span></div><div class="stat"><b>16</b><span>villes hôtes</span></div><div class="stat"><b>104</b><span>matchs prévus au total</span></div></div></section>
 </div>
@@ -357,9 +338,9 @@
 
 
     <section id="view-teams" class="view"><div class="panel dashboard"><h2>🌍 Équipes du Mondial</h2><p class="mini">Choisissez une sélection pour voir son calendrier, son groupe, ses stades et ses diffusions en France.</p><div id="teamsOverview" class="teams-overview"></div></div></section>
-    <section id="view-groups" class="view"><div class="panel dashboard"><h2>📊 Classements des groupes</h2><p class="mini">Les classements évoluent après chaque résultat à partir des scores et statuts renseignés dans .</p><div id="groupsGrid" class="group-grid"></div></div></section>
+    <section id="view-groups" class="view"><div class="panel dashboard"><h2>📊 Classements des groupes</h2><p class="mini">Classements calculés automatiquement à partir des scores et statuts renseignés dans Supabase.</p><div id="groupsGrid" class="group-grid"></div></div></section>
     <section id="view-bracket" class="view"><div class="panel dashboard"><h2>🏆 Phase finale de la phase finale</h2><p class="mini">Suivez le tableau des matchs à élimination directe. Les équipes qualifiées apparaîtront au fur et à mesure des résultats.</p><div id="bracketBox" class="bracket"></div></div></section>
-    <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Vote et découvre l'avis de la communauté.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📊 Ambiance du jour</h2><p class="mini">Un résumé rapide de l'activité du jour : matchs, TV gratuite, pronostics et quiz.</p><div id="fanStatsBox"></div></div></div></section>
+    <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Votes globaux des visiteurs : un vote par match et par appareil, synchronisé avec Supabase.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📊 Ambiance du jour</h2><p class="mini">Un résumé rapide de l'activité du jour : matchs, TV gratuite, pronostics et quiz.</p><div id="fanStatsBox"></div></div></div></section>
     <section id="view-stadiums" class="view"><div class="panel dashboard"><h2>🏟️ Les stades du Mondial</h2><p class="mini">Photos de stades, capacités, pays hôte et nombre de matchs intégrés dans cette version.</p><div id="stadiumGrid" class="stadium-grid"></div></div></section>
     <section id="view-map" class="view"><div class="panel host-map-page"><h2 class="section-title">🌎 Carte des villes hôtes</h2><p class="mini">Survole une ville pour voir son stade, clique pour ouvrir directement la fiche du stade.</p><div id="bigHostMap"></div><div id="cityList" class="city-list"></div></div></section>
     
@@ -410,7 +391,7 @@ let data = [
     })();
 
     function jsArg(v){return '\'' + String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\''}
-    function normalizeMatch(row, index){
+    function normalizeSupabaseMatch(row, index){
       const id = String(row.id ?? `supabase-${index}`);
       const tv = row.channel || row.tv || row.broadcast || 'À confirmer';
       const isFree = row.free_tv === true || String(tv).toLowerCase().includes('m6');
@@ -433,7 +414,7 @@ let data = [
         _dynamic: true
       }
     }
-    function normalizeStadium(row){
+    function normalizeSupabaseStadium(row){
       const city = row.city || row.id || row.name;
       if(!city) return;
       if(row.name) stadiums[city] = row.name;
@@ -449,7 +430,7 @@ let data = [
         headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
         cache: 'no-store'
       });
-      if(!res.ok) throw new Error(` ${res.status}`);
+      if(!res.ok) throw new Error(`Supabase ${res.status}`);
       return res.json();
     }
     async function supabasePost(path, payload){
@@ -465,8 +446,8 @@ let data = [
         cache:'no-store'
       });
       if(!res.ok){
-        const msg = await res.text().catch(()=>` ${res.status}`);
-        throw new Error(msg || ` ${res.status}`);
+        const msg = await res.text().catch(()=>`Supabase ${res.status}`);
+        throw new Error(msg || `Supabase ${res.status}`);
       }
       return res.json();
     }
@@ -476,7 +457,7 @@ let data = [
         predictionsLoaded = true;
         if(activeTab==='fan') renderFanZone();
       }catch(err){
-        console.warn('Pronostics  indisponibles.', err);
+        console.warn('Pronostics Supabase indisponibles.', err);
         predictionsLoaded = false;
       }
     }
@@ -487,7 +468,7 @@ let data = [
         quizLoaded = quizRows.length > 0;
         if(activeTab==='fan') renderFanZone();
       }catch(err){
-        console.warn('Quiz  indisponible, utilisation du quiz local.', err);
+        console.warn('Quiz Supabase indisponible, utilisation du quiz local.', err);
         quizLoaded = false;
       }
     }
@@ -500,8 +481,8 @@ let data = [
           supabaseFetch('matches?select=*&order=date.asc,time_fr.asc'),
           supabaseFetch('stadiums?select=*')
         ]);
-        (stadiumRows||[]).forEach(normalizeStadium);
-        const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeMatch);
+        (stadiumRows||[]).forEach(normalizeSupabaseStadium);
+        const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeSupabaseMatch);
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
         dynamicMatches.forEach(m=>merged.set(String(m.id), m));
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
@@ -773,7 +754,7 @@ let data = [
           const gdClass=t.gd>0?'gd-positive':t.gd<0?'gd-negative':'';
           const gd=t.gd>0?`+${t.gd}`:String(t.gd);
           return `<tr><td class="rank">${i+1}</td><td class="team-cell">${flags[t.team]||'🏳️'} ${esc(t.team)}</td><td class="num">${t.played}</td><td class="num hide-mobile">${t.won}</td><td class="num hide-mobile">${t.draw}</td><td class="num hide-mobile">${t.lost}</td><td class="num ${gdClass}">${gd}</td><td class="num pts"><b>${t.pts}</b></td></tr>`
-        }).join('')}</tbody></table><div class="group-note">${hasResults?'Classement calculé automatiquement depuis les scores terminés renseignés dans .':'Aucun match terminé pour ce groupe pour le moment.'}</div></article>`
+        }).join('')}</tbody></table><div class="group-note">${hasResults?'Classement calculé automatiquement depuis les scores terminés renseignés dans Supabase.':'Aucun match terminé pour ce groupe pour le moment.'}</div></article>`
       }).join('')
     }
     function renderBracket(){
@@ -829,7 +810,7 @@ let data = [
         const quizKey=`wc26_quiz_${todayKey}_${item.id}`;
         const answered=localStorage.getItem(quizKey);
         const options=(item.options||[]).filter(Boolean);
-        const sourceLabel=quizLoaded?'Question du jour ':'Question locale de secours';
+        const sourceLabel=quizLoaded?'Question du jour Supabase':'Question locale de secours';
         quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered? (o===item.correct_answer?'good':(o===answered?'bad':'')) : ''}" ${answered?'disabled':''} onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
       }else{
         quizBox.innerHTML='<div class="empty-soft">Quiz indisponible pour le moment.</div>';
@@ -851,7 +832,7 @@ let data = [
         const freeCount=baseMatches.filter(m=>String(m.tv||'').includes('M6')).length;
         const totalVotes=(predictionRows||[]).length;
         const quizStatus=item?'Question prête':'Quiz indisponible';
-        fanStatsBox.innerHTML=`<div class="metric-grid" style="grid-template-columns:1fr 1fr;margin:0 0 12px"><div class="metric"><b>Matchs affichés</b>${baseMatches.length}</div><div class="metric"><b>Diffusions gratuites</b>${freeCount}</div><div class="metric"><b>Votes enregistrés</b>${totalVotes}</div><div class="metric"><b>Quiz du jour</b>${quizStatus}</div></div><div class="empty-soft">Astuce : les pronostics sont globaux, synchronisés avec , et limités à un vote par rencontre.</div>`;
+        fanStatsBox.innerHTML=`<div class="metric-grid" style="grid-template-columns:1fr 1fr;margin:0 0 12px"><div class="metric"><b>Matchs affichés</b>${baseMatches.length}</div><div class="metric"><b>Diffusions gratuites</b>${freeCount}</div><div class="metric"><b>Votes enregistrés</b>${totalVotes}</div><div class="metric"><b>Quiz du jour</b>${quizStatus}</div></div><div class="empty-soft">Astuce : les pronostics sont globaux, synchronisés avec Supabase, et limités à un vote par match et par appareil.</div>`;
       }
     }
     function answerQuiz(quizKey,ans){localStorage.setItem(quizKey,ans);renderFanZone()}
@@ -862,7 +843,7 @@ let data = [
         await savePrediction(id,opt);
         await loadPredictions();
       }catch(err){
-        console.warn('Vote  impossible.', err);
+        console.warn('Vote Supabase impossible.', err);
         alert('Vote déjà enregistré ou indisponible pour le moment.');
         await loadPredictions();
       }

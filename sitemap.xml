@@ -4,4 +4,8 @@
     <loc>https://guidemondial2026.fr/</loc>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://guidemondial2026.fr/guide.html</loc>
+    <priority>0.9</priority>
+  </url>
 </urlset>
