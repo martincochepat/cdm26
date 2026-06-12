@@ -322,6 +322,22 @@
     }
 
 
+  
+/* V72 — Hero uniquement sur l'accueil */
+body:not(.home-active) .hero{
+  display:none!important;
+}
+
+/* V72 — ancrage prochain match */
+.next-match-anchor{
+  scroll-margin-top:120px;
+}
+@media(max-width:780px){
+  .next-match-anchor{
+    scroll-margin-top:96px;
+  }
+}
+
   </style>
 
   <script>
@@ -689,7 +705,7 @@ let data = [
     }
     function updateChips(){document.querySelectorAll('.chip').forEach(c=>{let v=c.dataset.v;let active=(v==='Aujourd’hui + à venir'&&q.value==='upcoming')||(v==='Favoris'&&q.value==='favoris')||(v==='Mes équipes'&&q.value==='myteams')||((v==='M6'||v==='Matchs gratuits')&&channel.value==='M6')||(v==='beIN Sports'&&channel.value==='beIN Sports')||((v==='Finale'||v==='16es de finale')&&phase.value===v)||(v==='France'&&q.value.toLowerCase()==='france');c.classList.toggle('active',active)})}
     function filtered(){let query=q.value.toLowerCase().trim(),ph=phase.value,gr=group.value,ch=channel.value;return data.filter(m=>{let blob=Object.values(m).join(' ').toLowerCase();let mine=followedTeams.has(m.home)||followedTeams.has(m.away);let okQ=!query||(query==='upcoming'?!isPast(m):query==='favoris'?favs.has(String(m.id)):query==='myteams'?mine:blob.includes(query));return okQ&&(!ph||m.phase===ph)&&(!gr||m.phase===gr)&&(!ch||m.tv.includes(ch))}).sort((a,b)=>matchStart(a)-matchStart(b))}
-    function renderAll(){
+    function renderAll(){document.body.classList.toggle('home-active', activeTab==='home');
       document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===activeTab));
       document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));document.querySelectorAll('.mobile-drawer [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
@@ -1037,9 +1053,23 @@ let data = [
       input?.blur();
     }
 
+    
+    function scrollToNextMatchSoon(){
+      if(activeTab!=='matches') return;
+      setTimeout(()=>{
+        const next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0];
+        if(!next) return;
+        const el=document.getElementById('match-'+next.id);
+        if(el){
+          el.classList.add('next-match-anchor');
+          el.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+      },160);
+    }
+
     function attachNavigation(){
       document.querySelectorAll('[data-nav]').forEach(btn=>{
-        btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.nav)});
+        btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.nav); if(btn.dataset.nav==='matches') scrollToNextMatchSoon()});
       });
       document.querySelectorAll('[data-tab]').forEach(btn=>{
         btn.addEventListener('click',e=>{e.preventDefault(); switchTab(btn.dataset.tab)});
@@ -1125,6 +1155,7 @@ let data = [
       }, 1600);
     }
 
+    document.body.classList.toggle('home-active', (typeof activeTab==='undefined'||activeTab==='home'));
     init();
     attachNavigation();
     setupInstallPrompt();
