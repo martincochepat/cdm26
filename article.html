@@ -55,9 +55,12 @@
         const a=rows[0];
         if(!a){box.innerHTML='<h1>Article introuvable</h1><p>Cet article n’est pas publié ou n’existe pas.</p>';return;}
         document.title=`${a.title} | Guide Mondial 2026`;
-        document.querySelector('meta[name="description"]')?.setAttribute('content',a.excerpt||'Article Coupe du Monde 2026 sur Guide Mondial 2026.');
+        document.querySelector('meta[name="description"]')?.setAttribute('content',a.meta_description||a.excerpt||'Article Coupe du Monde 2026 sur Guide Mondial 2026.');
         const canonical=document.createElement('link');canonical.rel='canonical';canonical.href=`https://guidemondial2026.fr/article.html?slug=${encodeURIComponent(a.slug)}`;document.head.appendChild(canonical);
-        box.innerHTML=`<span class="cat">${esc(a.category||'Actualité')}</span><h1>${esc(a.title)}</h1><div class="meta">Publié le ${formatDate(a.published_at||a.created_at)}</div>${a.image_url?`<div class="hero-img" style="background-image:url('${esc(a.image_url)}')"></div>`:''}<p class="excerpt">${esc(a.excerpt||'')}</p><div class="content">${renderMarkdownLite(a.content)}</div><div class="cta"><strong>À garder sous la main :</strong> consulte aussi le <a href="/">calendrier complet, le guide TV et les favoris</a> sur Guide Mondial 2026.</div>`;
+        const ogDesc=a.meta_description||a.excerpt||'Article Coupe du Monde 2026 sur Guide Mondial 2026.';
+        [['property','og:title',a.title],['property','og:description',ogDesc],['property','og:type','article'],['property','og:url',canonical.href],['name','twitter:card',a.image_url?'summary_large_image':'summary']].forEach(([attr,name,content])=>{const m=document.createElement('meta');m.setAttribute(attr,name);m.setAttribute('content',content);document.head.appendChild(m);});
+        if(a.image_url){const m=document.createElement('meta');m.setAttribute('property','og:image');m.setAttribute('content',a.image_url);document.head.appendChild(m);} 
+        box.innerHTML=`<span class="cat">${esc(a.category||'Actualité')}</span><h1>${esc(a.title)}</h1><div class="meta">Publié le ${formatDate(a.published_at||a.created_at)}</div>${a.image_url?`<img class="hero-img" src="${esc(a.image_url)}" alt="${esc(a.image_alt||a.title||'Image article Guide Mondial 2026')}" loading="lazy">`:''}<p class="excerpt">${esc(a.excerpt||'')}</p><div class="content">${renderMarkdownLite(a.content)}</div><div class="cta"><strong>À garder sous la main :</strong> consulte aussi le <a href="/">calendrier complet, le guide TV et les favoris</a> sur Guide Mondial 2026.</div>`;
       }catch(e){box.innerHTML='<h1>Article indisponible</h1><p>La page fonctionne, mais la table Supabase articles n’est pas encore disponible.</p>';}
     }
     load();

@@ -29,7 +29,7 @@
       <label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password" placeholder="Mot de passe">
       <div class="btns"><button id="loginBtn" type="button">Se connecter</button><button id="resetSessionBtn" type="button" class="secondary">Réinitialiser la session</button></div>
       <div id="loginStatus" class="status hidden"></div>
-      <div class="tiny">V58 DEV — gestion complète des articles.</div>
+      <div class="tiny">V73 — articles + SEO complet.</div>
     </section>
 
     <section id="adminPanel" class="grid hidden">
@@ -37,6 +37,8 @@
         <h2 id="formTitle">Nouvel article</h2>
         <div id="editModeBox" class="edit-mode hidden">Mode modification : <b id="editArticleTitle"></b></div>
         <label for="title">Titre</label><input id="title" placeholder="Ex : Calendrier Coupe du Monde 2026 : toutes les dates">
+        <label for="slug">Slug SEO automatique</label><input id="slug" placeholder="Auto : calendrier-coupe-du-monde-2026">
+        <div class="upload-hint">Le slug se génère depuis le titre. Tu peux le modifier avant publication si besoin.</div>
         <div class="row">
           <div><label for="category">Catégorie</label><input id="category" value="Actualités" placeholder="Actualités, Calendrier, TV..."></div>
           <div><label for="imageUrl">Image URL</label><input id="imageUrl" placeholder="Image auto après upload"></div>
@@ -46,6 +48,9 @@
           <input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
           <div class="upload-hint">Choisis une image depuis ton ordinateur. Elle sera envoyée automatiquement dans Supabase Storage au moment de publier. L'URL reste modifiable si besoin.</div>
         </div>
+        <label for="imageAlt">Texte alternatif de l'image</label><input id="imageAlt" placeholder="Ex : Joueurs de l'équipe de France pendant la Coupe du Monde 2026">
+        <label for="metaDescription">Méta description SEO</label><textarea id="metaDescription" style="min-height:110px" maxlength="180" placeholder="Résumé SEO court affiché dans Google. Idéalement 145 à 160 caractères."></textarea>
+        <div class="upload-hint"><span id="metaCount">0</span>/180 caractères — conseillé : 145 à 160 caractères.</div>
         <label for="content">Contenu</label><textarea id="content" placeholder="Écris ton article ici. Tu peux utiliser ## pour les grands titres et - pour les listes."></textarea>
         <div class="btns">
           <button id="publishBtn" type="button">Publier l'article</button>
@@ -82,10 +87,45 @@
     const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     function show(el){el?.classList.remove('hidden')} function hide(el){el?.classList.add('hidden')}
     function setStatus(el,msg,type=''){ if(!el) return; el.textContent=msg; el.className='status '+type; show(el); }
-    function slugify(str){return String(str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90)}
+    const SEO_STOPWORDS=new Set(['le','la','les','un','une','des','du','de','d','a','à','au','aux','et','ou','en','sur','pour','avec','dans','par','ce','cet','cette','ces','tout','tous','toutes']);
+    let slugManuallyEdited=false;
+    function slugify(str){
+      return String(str||'')
+        .normalize('NFD').replace(/[̀-ͯ]/g,'')
+        .toLowerCase()
+        .replace(/coupe du monde/g,'coupe monde')
+        .split(/[^a-z0-9]+/)
+        .filter(w=>w&&(!SEO_STOPWORDS.has(w)||['coupe','monde','2026','fifa'].includes(w)))
+        .join('-')
+        .replace(/-+/g,'-').replace(/^-+|-+$/g,'')
+        .slice(0,85);
+    }
     function plainText(str){return String(str||'').replace(/[#>*_`~-]/g,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()}
     function excerpt(str){const t=plainText(str);return t.length>165?t.slice(0,162).trim()+'...':t}
-    function uniqueSlug(title){const base=slugify(title)||'article';const d=new Date();return `${base}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`}
+    function metaDescriptionValue(){
+      const manual=$('metaDescription')?.value.trim();
+      if(manual) return manual.slice(0,180);
+      const t=plainText($('content')?.value||'');
+      return (t.length>158?t.slice(0,155).trim()+'...':t) || excerpt($('content')?.value||'');
+    }
+    function suggestedAlt(){
+      const title=$('title')?.value.trim();
+      return title?`Illustration de l'article : ${title}`:'';
+    }
+    async function uniqueSlug(title){
+      const typed=slugify($('slug')?.value||'');
+      const base=typed || slugify(title) || 'article';
+      let candidate=base;
+      let n=2;
+      while(true){
+        let query=sb.from('articles').select('id').eq('slug',candidate).limit(1);
+        if(editingArticleId) query=query.neq('id',editingArticleId);
+        const {data,error}=await withTimeout(query,10000,'Vérification slug');
+        if(error) throw error;
+        if(!data||!data.length) return candidate;
+        candidate=`${base}-${n++}`;
+      }
+    }
     function withTimeout(promise, ms=15000, label='Opération'){
       let t;
       const timeout=new Promise((_,reject)=>{ t=setTimeout(()=>reject(new Error(`${label} trop longue : Supabase ne répond pas après ${Math.round(ms/1000)}s.`)),ms); });
@@ -94,10 +134,13 @@
     function updatePreview(){
       $('previewTitle').textContent=$('title').value||"Titre de l'article";
       $('previewCat').textContent=$('category').value||'Actualités';
-      $('previewExcerpt').textContent=excerpt($('content').value)||'Le résumé sera généré automatiquement à partir du contenu.';
+      $('previewExcerpt').textContent=metaDescriptionValue()||excerpt($('content').value)||'Le résumé sera généré automatiquement à partir du contenu.';
       const img=$('imageUrl').value.trim();$('previewImg').style.backgroundImage=img?`url('${img.replace(/'/g,'%27')}')`:'';
+      if($('metaCount')) $('metaCount').textContent=String(($('metaDescription')?.value||'').length);
     }
-    ['title','category','imageUrl','content'].forEach(id=>$(id)?.addEventListener('input',updatePreview));
+    $('title')?.addEventListener('input',()=>{ if(!slugManuallyEdited&&!editingArticleId) $('slug').value=slugify($('title').value); updatePreview(); });
+    $('slug')?.addEventListener('input',()=>{ slugManuallyEdited=true; $('slug').value=slugify($('slug').value); });
+    ['category','imageUrl','imageAlt','metaDescription','content'].forEach(id=>$(id)?.addEventListener('input',updatePreview));
     $('imageFile')?.addEventListener('change',()=>{
       const file=$('imageFile').files?.[0];
       if(file){
@@ -186,8 +229,8 @@
     $('logoutBtn')?.addEventListener('click',async()=>{await sb.auth.signOut();openLogin();});
 
     function resetForm(){
-      editingArticleId=null; editingArticleSlug=null;
-      ['title','imageUrl','content'].forEach(id=>$(id).value='');
+      editingArticleId=null; editingArticleSlug=null; slugManuallyEdited=false;
+      ['title','slug','imageUrl','imageAlt','metaDescription','content'].forEach(id=>{ if($(id)) $(id).value=''; });
       $('category').value='Actualités';
       if($('imageFile')) $('imageFile').value='';
       $('formTitle').textContent='Nouvel article';
@@ -224,14 +267,18 @@
     async function saveArticle(published){
       const title=$('title').value.trim(), content=$('content').value.trim();
       if(!title||!content){setStatus($('publishStatus'),'Ajoute au minimum un titre et un contenu.','err');return;}
-      const slug=editingArticleSlug || uniqueSlug(title);
       setStatus($('publishStatus'),editingArticleId?'Préparation de la mise à jour...':(published?'Préparation de la publication...':'Préparation du brouillon...'));
       try{
+        const slug=await uniqueSlug(title);
         const imageUrl=await uploadArticleImage(slug);
+        const meta_description=metaDescriptionValue();
+        const image_alt=($('imageAlt')?.value.trim()||suggestedAlt()||title).slice(0,180);
         const payload={
           title,
           slug,
           excerpt:excerpt(content),
+          meta_description,
+          image_alt,
           content,
           category:$('category').value.trim()||'Actualités',
           image_url:imageUrl,
@@ -261,12 +308,15 @@
     async function editArticle(id){
       try{
         setStatus($('publishStatus'),'Chargement de l’article à modifier...');
-        const {data,error}=await withTimeout(sb.from('articles').select('id,title,slug,content,category,image_url,published').eq('id',id).single(),15000,'Chargement article');
+        const {data,error}=await withTimeout(sb.from('articles').select('id,title,slug,content,category,image_url,image_alt,meta_description,published').eq('id',id).single(),15000,'Chargement article');
         if(error) throw error;
-        editingArticleId=data.id; editingArticleSlug=data.slug;
+        editingArticleId=data.id; editingArticleSlug=data.slug; slugManuallyEdited=true;
         $('title').value=data.title||'';
+        $('slug').value=data.slug||slugify(data.title||'');
         $('category').value=data.category||'Actualités';
         $('imageUrl').value=data.image_url||'';
+        $('imageAlt').value=data.image_alt||'';
+        $('metaDescription').value=data.meta_description||'';
         $('content').value=data.content||'';
         if($('imageFile')) $('imageFile').value='';
         $('formTitle').textContent='Modifier l’article';

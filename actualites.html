@@ -46,7 +46,7 @@
     function render(cat=''){
       const arr=cat?allArticles.filter(a=>(a.category||'Actualités')===cat):allArticles;
       if(!arr.length){grid.innerHTML='<div class="panel empty"><h2>Aucun article publié pour le moment</h2><p>Crée la table Supabase puis ajoute tes premiers articles publiés.</p></div>';return;}
-      grid.innerHTML=arr.map(a=>{const img=a.image_url?`<div class="card-img" style="background-image:url('${esc(a.image_url)}')"></div>`:'';return `<a class="card" href="/article.html?slug=${encodeURIComponent(a.slug)}">${img}<div class="card-body"><span class="cat">${esc(a.category||'Actualités')}</span><h2>${esc(a.title)}</h2><p>${esc(a.excerpt||'Lire l’article complet sur Guide Mondial 2026.')}</p><small>${formatDate(a.published_at||a.created_at)} · Lire l’article →</small></div></a>`}).join('');
+      grid.innerHTML=arr.map(a=>{const img=a.image_url?`<div class="card-img" style="background-image:url('${esc(a.image_url)}')"></div>`:'';return `<a class="card" href="/article.html?slug=${encodeURIComponent(a.slug)}">${img}<div class="card-body"><span class="cat">${esc(a.category||'Actualités')}</span><h2>${esc(a.title)}</h2><p>${esc(a.excerpt||a.meta_description||'Lire l’article complet sur Guide Mondial 2026.')}</p><small>${formatDate(a.published_at||a.created_at)} · Lire l’article →</small></div></a>`}).join('');
     }
     function renderCategories(){
       const cats=[...new Set(allArticles.map(a=>a.category||'Actualités'))];
@@ -55,7 +55,7 @@
     }
     async function load(){
       try{
-        const res=await fetch(`${SUPABASE_URL}/rest/v1/articles?select=id,title,slug,excerpt,category,published_at,created_at,image_url&published=eq.true&order=published_at.desc`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`},cache:'no-store'});
+        const res=await fetch(`${SUPABASE_URL}/rest/v1/articles?select=id,title,slug,excerpt,meta_description,category,published_at,created_at,image_url,image_alt&published=eq.true&order=published_at.desc`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`},cache:'no-store'});
         if(!res.ok) throw new Error('Supabase '+res.status);
         allArticles=await res.json();
         renderCategories();render();
