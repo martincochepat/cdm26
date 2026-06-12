@@ -358,15 +358,49 @@ body:not(.home-active) .hero{
   font-weight:1000;
 }
 
-/* ─── FAN ZONE GATING (quiz/pronos verrouillés) ─────────────────────────── */
-.fan-gated { position: relative; border-radius: 18px; overflow: hidden; }
-.fan-gated-preview { filter: blur(4px); pointer-events: none; user-select: none; opacity: .7; }
-.fan-gated-options { display: grid; gap: 8px; margin-top: 10px; }
-.fan-gated-option { background: #ffffff10; border: 1px solid #ffffff18; border-radius: 14px; padding: 10px 14px; color: #adc0d2; font-size: 14px; }
-.fan-locked-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #06142288; backdrop-filter: blur(2px); border-radius: 18px; border: 1px solid #ffffff14; cursor: pointer; }
-.fan-locked-inner { text-align: center; padding: 20px; }
-.fan-locked-icon { font-size: 32px; margin-bottom: 10px; }
-.fan-locked-text { color: #dcecff; font-weight: 900; font-size: 15px; margin-bottom: 14px; line-height: 1.4; }
-.fan-locked-btn { background: linear-gradient(90deg, #ffd166, #ff9f43); color: #061426; border: none; border-radius: 14px; padding: 12px 18px; font-weight: 950; font-size: 14px; cursor: pointer; }
-.fan-see-all-btn { width: 100%; margin-top: 12px; background: #ffffff0d; border: 1px solid #ffffff18; color: #dcecff; border-radius: 14px; padding: 12px; font-weight: 900; cursor: pointer; }
-.fan-see-all-btn:hover { background: #ffffff18; }
+/* ─── FIX MODALE AUTH ───────────────────────────────────────────────────── */
+.auth-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  background: #000000aa !important;
+  backdrop-filter: blur(12px) !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+.auth-modal[style*="display:none"],
+.auth-modal[style*="display: none"] {
+  display: none !important;
+}
+.auth-modal-card {
+  background: linear-gradient(145deg, #0b223c, #1b1025) !important;
+  border: 1px solid #ffffff22 !important;
+  border-radius: 28px !important;
+  padding: 40px 36px !important;
+  max-width: 460px !important;
+  width: 100% !important;
+  position: relative !important;
+  box-shadow: 0 40px 100px #000000aa !important;
+  z-index: 100000 !important;
+}
+.auth-modal-close {
+  position: absolute !important;
+  top: 18px !important;
+  right: 18px !important;
+  background: #ffffff15 !important;
+  border: 1px solid #ffffff22 !important;
+  color: #fff !important;
+  border-radius: 99px !important;
+  width: 36px !important;
+  height: 36px !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+@media(max-width:640px) {
+  .auth-modal-card { padding: 30px 20px !important; }
+}
