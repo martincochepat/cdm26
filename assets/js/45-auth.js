@@ -13,12 +13,19 @@ let leaderboardRows = [];
 async function authFetch(path, options = {}) {
   const session = await getSession();
   const token = session?.access_token || AUTH_SUPABASE_KEY;
-  const headers = Object.assign({
+  // Fusion correcte des headers — les options.headers enrichissent sans écraser apikey/Authorization
+  const headers = {
     apikey: AUTH_SUPABASE_KEY,
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
-  }, options.headers || {});
-  const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, Object.assign({ headers, cache: 'no-store' }, options));
+    ...(options.headers || {}),
+  };
+  const { headers: _, ...restOptions } = options;
+  const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, {
+    cache: 'no-store',
+    ...restOptions,
+    headers,
+  });
   if (!res.ok) throw new Error(await res.text());
   if (res.status === 204) return null;
   return res.json();
@@ -61,7 +68,7 @@ async function sendMagicLink(email) {
     },
     body: JSON.stringify({
       email,
-      options: { emailRedirectTo: window.location.origin }
+      options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` }
     })
   });
   if (!res.ok) {
@@ -133,7 +140,12 @@ async function handleAuthCallback() {
     expires_at: Math.floor(Date.now() / 1000) + Number(expires_in || 3600),
   };
   localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(session));
+  // Nettoie l'URL et redirige vers l'onglet Challenge
   window.history.replaceState({}, document.title, window.location.pathname);
+  // Ouvre automatiquement l'onglet Challenge après connexion
+  setTimeout(() => {
+    if (typeof switchTab === 'function') switchTab('fan');
+  }, 300);
   return true;
 }
 
