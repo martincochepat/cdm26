@@ -144,16 +144,17 @@ async function recalculateUserPoints(userId) {
   try {
     // Récupère tous les pronostics de l'utilisateur
     const preds = await authFetch(`match_predictions?user_id=eq.${userId}&select=match_id,choice`);
+    if (!preds || !preds.length) return;
 
     let points = 0;
     let correct = 0;
-    let total = (preds || []).length;
+    let total = preds.length;
 
-    for (const pred of (preds || [])) {
+    for (const pred of preds) {
       const match = data.find(m => String(m.id) === String(pred.match_id));
       if (!match || match.status !== 'finished') continue;
 
-      const opts = pollOptionsFor(match);
+      const opts = pollOptionsFor(match); // [home, 'Nul', away]
       const realResult = match.score_a > match.score_b ? opts[0]
         : match.score_a < match.score_b ? opts[2]
         : opts[1];
@@ -171,7 +172,7 @@ async function recalculateUserPoints(userId) {
 
     points += quizPoints;
 
-    // Met à jour le profil Supabase
+    // Met à jour le profil
     await authFetch(`user_profiles?id=eq.${userId}`, {
       method: 'PATCH',
       headers: { Prefer: 'return=minimal' },
@@ -183,12 +184,6 @@ async function recalculateUserPoints(userId) {
         updated_at: new Date().toISOString(),
       })
     });
-
-    // Rafraîchit currentProfile et le classement immédiatement
-    currentProfile = await loadProfile(userId);
-    await loadLeaderboard();
-    renderChallenge();
-
   } catch (err) {
     console.warn('Recalcul points échoué', err);
   }
@@ -297,7 +292,12 @@ function openAuthModal() {
 }
 function closeAuthModal() {
   const modal = document.getElementById('authModal');
-  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+  if (modal) { modal.style.display = 'none'; }
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  document.documentElement.style.overflow = '';
 }
 function showStep(n) {
   document.getElementById('authStep1').style.display = n === 1 ? 'block' : 'none';
