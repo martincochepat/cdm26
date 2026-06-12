@@ -595,7 +595,16 @@ let data = [
     const favs=new Set(JSON.parse(localStorage.getItem('wc26_favs')||'[]').map(String));
     const followedTeams=new Set(JSON.parse(localStorage.getItem('wc26_teams')||'["France"]')); let activeTab='home'; const $=id=>document.getElementById(id); const dateLabel=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long'}); const matchStart=m=>new Date(`${m.date}T${m.time}:00+02:00`); const matchEnd=m=>new Date(matchStart(m).getTime()+120*60000); const isLive=m=>new Date()>=matchStart(m)&&new Date()<=matchEnd(m); const isPast=m=>new Date()>matchEnd(m); const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const sameDay=(a,b)=>a.toDateString()===b.toDateString();
-    function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLive(m)?'En cours':'Terminé'; let d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),min=Math.floor(diff%3600000/60000); return d>0?`dans ${d}j ${h}h`:h>0?`dans ${h}h ${min}min`:`dans ${min}min`}
+    
+    function isMatchStillRelevantForTV(m){
+      const status=String(m.status||'').toLowerCase();
+      if(status==='finished' || status==='ft' || status==='aet' || status==='pen') return false;
+      const start=matchStart(m);
+      const end=new Date(start.getTime()+130*60000);
+      return new Date() <= end;
+    }
+
+function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLive(m)?'En cours':'Terminé'; let d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),min=Math.floor(diff%3600000/60000); return d>0?`dans ${d}j ${h}h`:h>0?`dans ${h}h ${min}min`:`dans ${min}min`}
     function matchStatusKey(m){const s=String(m.status||'').toLowerCase(); if(['live','inplay','in_play','1h','2h','ht'].includes(s)) return 'live'; if(['finished','ft','ended','terminé','termine'].includes(s)) return 'finished'; if(s==='upcoming') return 'upcoming'; if(isLive(m)) return 'live'; if(isPast(m)) return 'finished'; return 'upcoming'}
     function hasScore(m){return m.score_a!==null && m.score_a!==undefined && m.score_a!=='' && m.score_b!==null && m.score_b!==undefined && m.score_b!==''}
     function statusBadge(m){let k=matchStatusKey(m); if(k==='live') return `<span class="tag"><span class="live-dot"></span> EN DIRECT${m.minute?` · ${esc(m.minute)}'`:''}</span>`; if(k==='finished') return '<span class="tag">Terminé</span>'; return '<span class="tag">À venir</span>'}
