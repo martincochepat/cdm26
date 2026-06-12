@@ -338,7 +338,24 @@ body:not(.home-active) .hero{
   }
 }
 
-  </style>
+  
+/* V76 — Pronostics visiteurs */
+.prediction-card{margin-top:14px;border:1px solid #ffffff16;background:#06142699;border-radius:20px;padding:14px}
+.prediction-card h3{margin:0 0 8px;font-size:18px}
+.prediction-sub{color:#adc0d2;font-size:13px;line-height:1.45;margin:0 0 12px}
+.prediction-options{display:grid;gap:8px}
+.prediction-option{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;width:100%;text-align:left;background:#ffffff0d;border:1px solid #ffffff1f;border-radius:16px;padding:11px 12px;color:#fff}
+.prediction-option:hover{border-color:#ffd16688}
+.prediction-option.selected{background:linear-gradient(135deg,#ffd16624,#ef334024);border-color:#ffd166aa}
+.prediction-option[disabled]{cursor:default;opacity:.95}
+.prediction-option b{font-size:14px}
+.prediction-option span{font-size:12px;color:#adc0d2;font-weight:900}
+.prediction-bar{height:8px;background:#ffffff14;border-radius:999px;overflow:hidden;margin-top:7px}
+.prediction-bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ef3340,#0066cc);border-radius:999px}
+.prediction-note{margin-top:10px;color:#adc0d2;font-size:12px;line-height:1.4}
+.prediction-total{display:inline-flex;margin-top:8px;border:1px solid #ffffff18;background:#ffffff0a;border-radius:999px;padding:6px 9px;color:#dcecff;font-size:12px;font-weight:900}
+
+</style>
 
   <script>
     // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
@@ -1035,7 +1052,7 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
       openStadiumDetail(city);
     }
 
-    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}${matchGoalsBlock(m)}<div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;openModal()}
+    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}${matchGoalsBlock(m)}<div id="predictionBox"></div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;openModal();renderPredictionBox(m.id)}
     function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){id=String(id);let m=data.find(x=>String(x.id)===id); if(!m)return;let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
@@ -1169,6 +1186,103 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
     }
 
     document.body.classList.toggle('home-active', (typeof activeTab==='undefined'||activeTab==='home'));
+
+    // V76 — Pronostics visiteurs synchronisés Supabase
+    const GM26_SUPABASE_URL='https://lclnnxirkuuwexxcmmho.supabase.co';
+    const GM26_SUPABASE_KEY='sb_publishable_F-2bOXBmO23_FfRv5KTqXg_jP2osQM2';
+
+    function predictionStorageKey(matchId){return 'gm26_prediction_'+String(matchId)}
+
+    async function supabaseRequest(path, options={}){
+      const headers=Object.assign({
+        apikey:GM26_SUPABASE_KEY,
+        Authorization:`Bearer ${GM26_SUPABASE_KEY}`,
+        'Content-Type':'application/json'
+      }, options.headers||{});
+      const res=await fetch(`${GM26_SUPABASE_URL}/rest/v1/${path}`,Object.assign({headers,cache:'no-store'},options));
+      if(!res.ok) throw new Error(await res.text());
+      if(res.status===204) return null;
+      const text=await res.text();
+      return text?JSON.parse(text):null;
+    }
+
+    function predictionLabel(m,choice){
+      if(choice==='home') return m.home;
+      if(choice==='draw') return 'Match nul';
+      if(choice==='away') return m.away;
+      return choice;
+    }
+
+    async function fetchPredictions(matchId){
+      try{
+        const rows=await supabaseRequest(`match_predictions?select=choice,count&match_id=eq.${encodeURIComponent(matchId)}`);
+        const totals={home:0,draw:0,away:0};
+        (rows||[]).forEach(r=>{totals[r.choice]=Number(r.count||0)});
+        return totals;
+      }catch(e){
+        console.warn('Pronostics indisponibles',e);
+        return {home:0,draw:0,away:0};
+      }
+    }
+
+    async function submitPrediction(matchId,choice){
+      const key=predictionStorageKey(matchId);
+      const previous=localStorage.getItem(key);
+      if(previous) return previous;
+      const res=await fetch(`${GM26_SUPABASE_URL}/rest/v1/rpc/increment_match_prediction`,{
+        method:'POST',
+        headers:{
+          apikey:GM26_SUPABASE_KEY,
+          Authorization:`Bearer ${GM26_SUPABASE_KEY}`,
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({p_match_id:String(matchId),p_choice:choice})
+      });
+      if(!res.ok) throw new Error(await res.text());
+      localStorage.setItem(key,choice);
+      return choice;
+    }
+
+    async function renderPredictionBox(matchId){
+      const box=document.getElementById('predictionBox');
+      if(!box) return;
+      const m=data.find(x=>String(x.id)===String(matchId));
+      if(!m) return;
+      const already=localStorage.getItem(predictionStorageKey(matchId));
+      const totals=await fetchPredictions(matchId);
+      const total=totals.home+totals.draw+totals.away;
+      const options=['home','draw','away'];
+
+      box.innerHTML=`<div class="prediction-card">
+        <h3>🔥 Pronostic du match</h3>
+        <p class="prediction-sub">Qui va gagner ? Vote une seule fois par appareil.</p>
+        <div class="prediction-options">
+          ${options.map(choice=>{
+            const count=totals[choice]||0;
+            const pct=total?Math.round(count*100/total):0;
+            const selected=already===choice?'selected':'';
+            return `<button class="prediction-option ${selected}" ${already?'disabled':''} onclick="votePrediction(${jsArg(matchId)},'${choice}')">
+              <b>${esc(predictionLabel(m,choice))}</b>
+              <span>${pct}% · ${count}</span>
+              <div class="prediction-bar" style="grid-column:1/-1"><i style="width:${pct}%"></i></div>
+            </button>`;
+          }).join('')}
+        </div>
+        <span class="prediction-total">${total} vote${total>1?'s':''}</span>
+        <div class="prediction-note">${already?'Merci pour ton vote ✅':'Les résultats s’actualisent après ton vote.'}</div>
+      </div>`;
+    }
+
+    async function votePrediction(matchId,choice){
+      try{
+        await submitPrediction(matchId,choice);
+        await renderPredictionBox(matchId);
+      }catch(e){
+        console.error(e);
+        alert('Impossible d’enregistrer le pronostic pour le moment.');
+      }
+    }
+
     init();
     attachNavigation();
     setupInstallPrompt();
