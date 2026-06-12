@@ -216,32 +216,13 @@ function renderAuthBlock(myRank) {
           </div>
           <div class="challenge-pills">
             <div class="challenge-pill">✅ Vainqueur<b>+3 pts</b></div>
+            <div class="challenge-pill">🎯 Score exact<b>+5 pts</b></div>
             <div class="challenge-pill">🧠 Quiz<b>+2 pts</b></div>
           </div>
         </div>
         <button class="challenge-join-btn" onclick="openAuthModal()">
           🏆 Rejoindre le classement — inscription gratuite en 10 sec
         </button>
-      </div>
-      <!-- Modale inscription -->
-      <div id="authModal" class="auth-modal" style="display:none" onclick="if(event.target.id==='authModal')closeAuthModal()">
-        <div class="auth-modal-card">
-          <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
-          <div id="authStep1" class="auth-step">
-            <div class="auth-modal-icon">🏆</div>
-            <h2 class="auth-modal-title">Rejoins le classement</h2>
-            <p class="auth-modal-sub">Entre ton email — on t'envoie un lien magique pour te connecter. Pas de mot de passe.</p>
-            <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" class="auth-input">
-            <button class="auth-btn-primary" onclick="handleMagicLink()">Envoyer le lien →</button>
-            <div id="magicStatus" class="magic-status"></div>
-          </div>
-          <div id="authStep2" class="auth-step" style="display:none">
-            <div class="auth-modal-icon">📬</div>
-            <h2 class="auth-modal-title">Check tes mails !</h2>
-            <p class="auth-modal-sub">Un lien vient d'être envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter automatiquement.</p>
-            <p class="auth-modal-hint">Tu n'as pas reçu le mail ? Vérifie tes spams ou <button class="auth-link-btn" onclick="showStep(1)">réessaie</button>.</p>
-          </div>
-        </div>
       </div>
     `;
   }
@@ -286,8 +267,37 @@ function renderAuthBlock(myRank) {
 }
 
 function openAuthModal() {
+  // Injecte la modale dans le body si pas encore présente
+  if (!document.getElementById('authModal')) {
+    const div = document.createElement('div');
+    div.id = 'authModal';
+    div.className = 'auth-modal';
+    div.style.display = 'none';
+    div.onclick = (e) => { if(e.target.id === 'authModal') closeAuthModal(); };
+    div.innerHTML = `
+      <div class="auth-modal-card">
+        <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
+        <div id="authStep1" class="auth-step">
+          <div class="auth-modal-icon">🏆</div>
+          <h2 class="auth-modal-title">Rejoins le classement</h2>
+          <p class="auth-modal-sub">Entre ton email — on t'envoie un lien magique pour te connecter. Pas de mot de passe.</p>
+          <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" class="auth-input">
+          <button class="auth-btn-primary" onclick="handleMagicLink()">Envoyer le lien →</button>
+          <div id="magicStatus" class="magic-status"></div>
+        </div>
+        <div id="authStep2" class="auth-step" style="display:none">
+          <div class="auth-modal-icon">📬</div>
+          <h2 class="auth-modal-title">Check tes mails !</h2>
+          <p class="auth-modal-sub">Un lien vient d'être envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter automatiquement.</p>
+          <p class="auth-modal-hint">Tu n'as pas reçu le mail ? Vérifie tes spams ou <button class="auth-link-btn" onclick="showStep(1)">réessaie</button>.</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(div);
+  }
   const modal = document.getElementById('authModal');
-  if (modal) { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
 function closeAuthModal() {
   const modal = document.getElementById('authModal');
