@@ -355,33 +355,6 @@ body:not(.home-active) .hero{
 .prediction-note{margin-top:10px;color:#adc0d2;font-size:12px;line-height:1.4}
 .prediction-total{display:inline-flex;margin-top:8px;border:1px solid #ffffff18;background:#ffffff0a;border-radius:999px;padding:6px 9px;color:#dcecff;font-size:12px;font-weight:900}
 
-
-/* V77 — Pronostics rapides sur cartes match */
-.prediction-mini{margin:12px 0 14px;border:1px solid #ffffff14;background:#0614267a;border-radius:18px;padding:11px}
-.prediction-mini-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px;color:#ffd166;font-weight:1000;font-size:13px}
-.prediction-mini-head span:last-child{color:#adc0d2;font-size:12px;font-weight:900}
-.prediction-mini-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
-.prediction-mini button{padding:9px 8px;border-radius:14px;background:#ffffff0d;border:1px solid #ffffff1d;color:#fff;font-size:12px;font-weight:950}
-.prediction-mini button:hover{border-color:#ffd16688}
-.prediction-mini button.selected{background:linear-gradient(135deg,#ffd16628,#ef334028);border-color:#ffd166aa;color:#fff}
-.prediction-mini button[disabled]{opacity:.9;cursor:default}
-.prediction-mini small{display:block;margin-top:3px;color:#adc0d2;font-size:10px;font-weight:900}
-
-/* V77 — Hero mobile allégé */
-@media(max-width:780px){
-  .hero{min-height:auto!important;margin-bottom:12px!important}
-  .hero .title{padding:18px 16px!important}
-  .title .badge{display:none!important}
-  .hero-benefits{display:none!important}
-  .title h1{font-size:42px!important;line-height:.9!important;margin:0 0 10px!important}
-  .title .lead{font-size:14px!important;line-height:1.35!important;margin-bottom:0!important}
-}
-@media(max-width:780px){
-  .prediction-mini-options{grid-template-columns:1fr}
-  .prediction-mini button{display:flex;justify-content:space-between;align-items:center}
-  .prediction-mini small{display:inline;margin-top:0}
-}
-
 </style>
 
   <script>
@@ -830,7 +803,9 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
       const mine=favList.length?`<p class="small"><b>${favList.length}</b> match(s) en favori. Clique sur le filtre Favoris pour les voir.</p>`:'<p class="small">Ajoute des favoris pour créer ton programme perso.</p>';
       tvBox.innerHTML=`<h2>Guide TV gratuit</h2>${tv||'<p class="small">Aucune diffusion M6 trouvée.</p>'}${mine}`;
     }
-    function render(){let arr=filtered(),current='';list.innerHTML=arr.map(m=>{let k=matchStatusKey(m),live=k==='live',mine=followedTeams.has(m.home)||followedTeams.has(m.away),status=statusBadge(m),d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="date-title">${d}</h3>`):'',favBtn=`<button class="fav ${favs.has(String(m.id))?'on':''}" onclick="toggleFav(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Favori':'☆ Favori'}</button>`;return `${head}<article class="match ${live?'live':''}" id="match-${esc(m.id)}"><div class="match-head"><span class="tag">${esc(m.round)} · ${esc(m.phase)}</span><div class="match-actions">${mine?'<span class="tag">Mon équipe</span>':''}${favBtn}<button class="detail-btn" onclick="openDetail(${jsArg(m.id)})">Détails</button>${status}</div></div><div class="teams">${team(m.home)}${scoreCenter(m)}${team(m.away,'away')}</div>${matchScorersMini(m)}<div class="info"><div><b>Heure France</b><span class="time-main">${esc(m.time)}</span></div><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Ville</b>${esc(m.city)}</div><div><b>Diffusion FR</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div></article>`}).join('')||'<div class="panel empty">Aucun match trouvé avec ces filtres.</div>';renderPredictionMinisSoon()}function teamGroupName(t){
+    function render(){let arr=filtered(),current='';list.innerHTML=arr.map(m=>{let k=matchStatusKey(m),live=k==='live',mine=followedTeams.has(m.home)||followedTeams.has(m.away),status=statusBadge(m),d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="date-title">${d}</h3>`):'',favBtn=`<button class="fav ${favs.has(String(m.id))?'on':''}" onclick="toggleFav(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Favori':'☆ Favori'}</button>`;return `${head}<article class="match ${live?'live':''}" id="match-${esc(m.id)}"><div class="match-head"><span class="tag">${esc(m.round)} · ${esc(m.phase)}</span><div class="match-actions">${mine?'<span class="tag">Mon équipe</span>':''}${favBtn}<button class="detail-btn" onclick="openDetail(${jsArg(m.id)})">Détails</button>${status}</div></div><div class="teams">${team(m.home)}${scoreCenter(m)}${team(m.away,'away')}</div>${matchScorersMini(m)}<div class="info"><div><b>Heure France</b><span class="time-main">${esc(m.time)}</span></div><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Ville</b>${esc(m.city)}</div><div><b>Diffusion FR</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div></article>`}).join('')||'<div class="panel empty">Aucun match trouvé avec ces filtres.</div>'}
+
+    function teamGroupName(t){
       const m=data.find(x=>x.home===t||x.away===t);
       return m && m.phase && m.phase.startsWith('Groupe') ? m.phase : 'Phase à confirmer';
     }
@@ -1306,105 +1281,6 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
         console.error(e);
         alert('Impossible d’enregistrer le pronostic pour le moment.');
       }
-    }
-
-
-    // V77 — Pronostics rapides sur les cartes match
-    const GM26_SUPABASE_URL='https://lclnnxirkuuwexxcmmho.supabase.co';
-    const GM26_SUPABASE_KEY='sb_publishable_F-2bOXBmO23_FfRv5KTqXg_jP2osQM2';
-
-    function predictionStorageKey(matchId){return 'gm26_prediction_'+String(matchId)}
-
-    async function predictionSupabase(path, options={}){
-      const headers=Object.assign({
-        apikey:GM26_SUPABASE_KEY,
-        Authorization:`Bearer ${GM26_SUPABASE_KEY}`,
-        'Content-Type':'application/json'
-      }, options.headers||{});
-      const res=await fetch(`${GM26_SUPABASE_URL}/rest/v1/${path}`,Object.assign({headers,cache:'no-store'},options));
-      if(!res.ok) throw new Error(await res.text());
-      if(res.status===204) return null;
-      const text=await res.text();
-      return text?JSON.parse(text):null;
-    }
-
-    function predictionLabel(m,choice){
-      if(choice==='home') return m.home;
-      if(choice==='draw') return 'Nul';
-      if(choice==='away') return m.away;
-      return choice;
-    }
-
-    async function fetchPredictions(matchId){
-      try{
-        const rows=await predictionSupabase(`match_predictions?select=choice,count&match_id=eq.${encodeURIComponent(matchId)}`);
-        const totals={home:0,draw:0,away:0};
-        (rows||[]).forEach(r=>{totals[r.choice]=Number(r.count||0)});
-        return totals;
-      }catch(e){
-        console.warn('Pronostics indisponibles',e);
-        return {home:0,draw:0,away:0};
-      }
-    }
-
-    async function submitPrediction(matchId,choice){
-      const key=predictionStorageKey(matchId);
-      const previous=localStorage.getItem(key);
-      if(previous) return previous;
-      const res=await fetch(`${GM26_SUPABASE_URL}/rest/v1/rpc/increment_match_prediction`,{
-        method:'POST',
-        headers:{
-          apikey:GM26_SUPABASE_KEY,
-          Authorization:`Bearer ${GM26_SUPABASE_KEY}`,
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({p_match_id:String(matchId),p_choice:choice})
-      });
-      if(!res.ok) throw new Error(await res.text());
-      localStorage.setItem(key,choice);
-      return choice;
-    }
-
-    async function renderPredictionMini(matchId){
-      const box=document.getElementById('predictionMini-'+String(matchId));
-      if(!box) return;
-      const m=data.find(x=>String(x.id)===String(matchId));
-      if(!m) return;
-      const already=localStorage.getItem(predictionStorageKey(matchId));
-      const totals=await fetchPredictions(matchId);
-      const total=totals.home+totals.draw+totals.away;
-      const options=['home','draw','away'];
-      box.innerHTML=`<div class="prediction-mini">
-        <div class="prediction-mini-head"><span>🔥 Pronostic</span><span>${total} vote${total>1?'s':''}</span></div>
-        <div class="prediction-mini-options">
-          ${options.map(choice=>{
-            const count=totals[choice]||0;
-            const pct=total?Math.round(count*100/total):0;
-            const selected=already===choice?'selected':'';
-            return `<button class="${selected}" ${already?'disabled':''} onclick="event.stopPropagation();votePredictionMini(${jsArg(matchId)},'${choice}')">
-              ${esc(predictionLabel(m,choice))}<small>${pct}%</small>
-            </button>`;
-          }).join('')}
-        </div>
-      </div>`;
-    }
-
-    async function votePredictionMini(matchId,choice){
-      try{
-        await submitPrediction(matchId,choice);
-        await renderPredictionMini(matchId);
-      }catch(e){
-        console.error(e);
-        alert('Impossible d’enregistrer le pronostic pour le moment.');
-      }
-    }
-
-    function renderPredictionMinisSoon(){
-      setTimeout(()=>{
-        document.querySelectorAll('[data-prediction-mini]').forEach(el=>{
-          renderPredictionMini(el.dataset.predictionMini);
-        });
-      },140);
     }
 
     init();
