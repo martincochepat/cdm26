@@ -1,7 +1,7 @@
 // Guide Mondial 2026 — sync API-Football -> Supabase
-// V61 backend live. Server-side only on Vercel.
-// Updates only live fields: status, score_a, score_b, minute, winner, updated_at.
-// Improved matching FR/EN/API-Football team names + final aliases.
+// V71 backend live. Server-side only on Vercel.
+// Updates live fields + API-Football fixture id + match events/scorers.
+// Improved matching FR/EN/API-Football team names + events/scorers.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -301,7 +301,7 @@ async function fetchWorldCupFixtures() {
 async function supabaseGetMatches() {
   const url =
     `${SUPABASE_URL}/rest/v1/matches` +
-    `?select=id,date,time_fr,team_a,team_b,status,score_a,score_b,minute,winner` +
+    `?select=id,date,time_fr,team_a,team_b,status,score_a,score_b,minute,winner,api_fixture_id` +
     `&date=gte.2026-06-01&date=lte.2026-07-31`;
 
   const r = await fetch(url, {
@@ -368,6 +368,86 @@ async function supabasePatchMatch(matchId, patch) {
   if (!r.ok) throw new Error(`Supabase update match ${matchId} error ${r.status}: ${text}`);
 }
 
+function parisToday() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function shouldSyncEvents(apiMatch) {
+  if (!apiMatch?.api_fixture_id) return false;
+  if (apiMatch.status === "live") return true;
+  // On synchronise les événements uniquement pour les matchs du jour.
+  // Cela évite de consommer trop de requêtes API-Football sur les anciens matchs terminés.
+  return apiMatch.date === parisToday();
+}
+
+async function fetchFixtureEvents(apiFixtureId) {
+  const data = await apiFootball(`/fixtures/events?fixture=${encodeURIComponent(apiFixtureId)}`);
+  return Array.isArray(data.response) ? data.response : [];
+}
+
+function eventRowFromApi(event, apiMatch, localMatch, index) {
+  const elapsed = event?.time?.elapsed ?? null;
+  const extra = event?.time?.extra ?? null;
+  const team = event?.team?.name || "";
+  const player = event?.player?.name || "";
+  const assist = event?.assist?.name || "";
+  const type = event?.type || "";
+  const detail = event?.detail || "";
+  const comments = event?.comments || "";
+
+  return {
+    match_id: String(localMatch.id),
+    api_fixture_id: String(apiMatch.api_fixture_id),
+    event_index: index,
+    elapsed: elapsed === null || elapsed === undefined ? null : Number(elapsed),
+    extra: extra === null || extra === undefined ? null : Number(extra),
+    team_name: team,
+    player_name: player,
+    assist_name: assist,
+    event_type: type,
+    detail,
+    comments,
+    event_key: [apiMatch.api_fixture_id, index, elapsed ?? "", extra ?? "", type, detail, team, player, assist].join("|"),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function supabaseDeleteEventsForFixture(apiFixtureId) {
+  const url = `${SUPABASE_URL}/rest/v1/match_events?api_fixture_id=eq.${encodeURIComponent(apiFixtureId)}`;
+  const r = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      Prefer: "return=minimal",
+    },
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error(`Supabase delete events ${apiFixtureId} error ${r.status}: ${text}`);
+}
+
+async function supabaseInsertEvents(rows) {
+  if (!rows.length) return;
+  const url = `${SUPABASE_URL}/rest/v1/match_events`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(rows),
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error(`Supabase insert events error ${r.status}: ${text}`);
+}
+
 function buildPatch(apiMatch, localMatch) {
   let score_a = apiMatch.score_a;
   let score_b = apiMatch.score_b;
@@ -390,6 +470,7 @@ function buildPatch(apiMatch, localMatch) {
     score_b,
     minute: apiMatch.minute,
     winner,
+    api_fixture_id: apiMatch.api_fixture_id,
     updated_at: new Date().toISOString(),
   };
 }
@@ -407,6 +488,7 @@ async function sync({ dryRun = false } = {}) {
 
   const updates = [];
   const unmatched = [];
+  const eventCandidates = [];
   const alreadyMatchedLocalIds = new Set();
 
   for (const apiMatch of apiMatches) {
@@ -429,6 +511,10 @@ async function sync({ dryRun = false } = {}) {
 
     const patch = buildPatch(apiMatch, localMatch);
 
+    if (shouldSyncEvents(apiMatch)) {
+      eventCandidates.push({ apiMatch, localMatch });
+    }
+
     updates.push({
       id: localMatch.id,
       local: `${localMatch.team_a} vs ${localMatch.team_b}`,
@@ -444,15 +530,44 @@ async function sync({ dryRun = false } = {}) {
     }
   }
 
+  let eventsFixturesSynced = 0;
+  let eventsRowsReady = 0;
+  const eventErrors = [];
+
+  for (const item of eventCandidates) {
+    try {
+      const events = await fetchFixtureEvents(item.apiMatch.api_fixture_id);
+      const rows = events.map((event, index) => eventRowFromApi(event, item.apiMatch, item.localMatch, index));
+      eventsFixturesSynced += 1;
+      eventsRowsReady += rows.length;
+
+      if (!dryRun) {
+        await supabaseDeleteEventsForFixture(item.apiMatch.api_fixture_id);
+        await supabaseInsertEvents(rows);
+      }
+    } catch (eventErr) {
+      eventErrors.push({
+        fixture: item.apiMatch.api_fixture_id,
+        match: `${item.localMatch.team_a} vs ${item.localMatch.team_b}`,
+        error: String(eventErr.message || eventErr),
+      });
+    }
+  }
+
   return {
     ok: true,
-    version: "API-FOOTBALL-V61",
+    version: "API-FOOTBALL-V71",
     dryRun,
     api_fixtures_received: fixtures.length,
     api_matches_usable: apiMatches.length,
     local_matches_loaded: localMatches.length,
     updates_ready: updates.length,
     unmatched_count: unmatched.length,
+    event_fixtures_ready: eventCandidates.length,
+    event_fixtures_synced: eventsFixturesSynced,
+    event_rows_ready: eventsRowsReady,
+    event_errors_count: eventErrors.length,
+    sample_event_errors: eventErrors.slice(0, 5),
     sample_updates: updates.slice(0, 12),
     sample_unmatched: unmatched.slice(0, 20),
     note: dryRun
@@ -474,7 +589,7 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     return json(res, 500, {
       ok: false,
-      version: "API-FOOTBALL-V61",
+      version: "API-FOOTBALL-V71",
       error: String(err.message || err),
     });
   }
