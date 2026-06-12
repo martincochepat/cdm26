@@ -736,7 +736,11 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
       const finished=data.filter(m=>matchStatusKey(m)==='finished').sort((a,b)=>matchStart(b)-matchStart(a));
       const mine=upcoming.filter(m=>followedTeams.has(m.home)||followedTeams.has(m.away));
       const today=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
-      const tvToday=today.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'));
+      const tvToday=today.filter(m=>
+        (m.tv.includes('M6')||m.tv.includes('beIN')) &&
+        (matchStatusKey(m)==='live' || matchStatusKey(m)==='upcoming') &&
+        !isPast(m)
+      );
       const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
       const tvTitle=tvToday.length?'📺 Ce soir à la TV':'📺 Prochaines diffusions TV';
       const mainMatch=liveMatches[0] || upcoming[0] || finished[0];
