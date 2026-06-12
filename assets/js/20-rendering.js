@@ -190,11 +190,11 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
 
     // ─── Fan Zone : quiz et pronos avec gating compte ─────────────────────
     function renderLockedOverlay(label) {
-      return `<div class="fan-locked-overlay" onclick="openAuthModal()">
-        <div class="fan-locked-inner">
-          <div class="fan-locked-icon">🔒</div>
-          <div class="fan-locked-text">${label}</div>
-          <button class="fan-locked-btn">Créer mon compte →</button>
+      return `<div onclick="openAuthModal()" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#06142299;backdrop-filter:blur(4px);border-radius:18px;border:1px solid #ffffff14;cursor:pointer">
+        <div style="text-align:center;padding:20px">
+          <div style="font-size:32px;margin-bottom:10px">🔒</div>
+          <div style="color:#dcecff;font-weight:900;font-size:15px;margin-bottom:14px;line-height:1.4">${label}</div>
+          <button onclick="event.stopPropagation();openAuthModal()" style="background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;padding:12px 18px;font-weight:950;font-size:14px;cursor:pointer;font-family:inherit">Créer mon compte →</button>
         </div>
       </div>`;
     }
@@ -214,7 +214,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       // ── QUIZ ──────────────────────────────────────────────────────────────
       const item=getDailyQuiz();
       if(!isLoggedIn){
-        quizBox.innerHTML=`<div class="fan-gated"><div class="fan-gated-preview">${item?`<b>${esc(item.question)}</b><div class="fan-gated-options">${(item.options||[]).slice(0,4).map(o=>`<div class="fan-gated-option">${esc(o)}</div>`).join('')}</div>`:'<div class="empty-soft">Quiz du jour</div>'}</div>${renderLockedOverlay('Connecte-toi pour jouer au quiz et gagner des points')}</div>`;
+        quizBox.innerHTML=`<div style="position:relative;border-radius:18px;overflow:hidden"><div style="filter:blur(4px);pointer-events:none;user-select:none;opacity:.65">${item?`<b>${esc(item.question)}</b><div style="display:grid;gap:8px;margin-top:10px">${(item.options||[]).slice(0,4).map(o=>`<div style="background:#ffffff10;border:1px solid #ffffff18;border-radius:14px;padding:10px 14px;color:#adc0d2;font-size:14px">${esc(o)}</div>`).join('')}</div>`:'<div class="empty-soft">Quiz du jour</div>'}</div>${renderLockedOverlay('Connecte-toi pour jouer au quiz et gagner des points')}</div>`;
       } else if(item){
         const quizKey=`wc26_quiz_${localDateKey()}_${item.id}`;
         const answered=localStorage.getItem(quizKey);
@@ -231,9 +231,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       let pollTitle=pollMatches.some(m=>sameDay(matchStart(m),now))?'Pronostics du jour':'Prochains pronostics';
 
       if(!isLoggedIn){
-        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><div class="fan-gated"><div class="fan-gated-preview">${pollMatches.slice(0,2).map(m=>`<div class="poll-match-card" style="opacity:.5;pointer-events:none"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}</div><div class="fan-gated-options">${['─','─','─'].map(o=>`<div class="fan-gated-option">${o}</div>`).join('')}</div></div>`).join('')}</div>${renderLockedOverlay('Connecte-toi pour pronostiquer et grimper dans le classement')}</div><button class="fan-see-all-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
+        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><div style="position:relative;border-radius:18px;overflow:hidden"><div style="filter:blur(4px);pointer-events:none;user-select:none;opacity:.65">${pollMatches.slice(0,2).map(m=>`<div class="poll-match-card" style="opacity:.5;pointer-events:none"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}</div><div style="display:grid;gap:6px;margin-top:8px">${['─','─','─'].map(o=>`<div style="background:#ffffff10;border:1px solid #ffffff18;border-radius:12px;padding:8px 12px;color:#adc0d2">${o}</div>`).join('')}</div></div>`).join('')}</div>${renderLockedOverlay('Connecte-toi pour pronostiquer et grimper dans le classement')}</div><button onclick="switchTab('matches')" style="display:block;width:100%;margin-top:12px;background:#ffffff0d;border:1px solid #ffffff18;color:#dcecff;-webkit-text-fill-color:#dcecff;border-radius:14px;padding:12px;font-weight:900;cursor:pointer;font-family:inherit">Voir tous les matchs →</button>`;
       } else {
-        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Synchronisé entre tous les joueurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}<button class="fan-see-all-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
+        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Synchronisé entre tous les joueurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}<button onclick="switchTab('matches')" style="display:block;width:100%;margin-top:12px;background:#ffffff0d;border:1px solid #ffffff18;color:#dcecff;-webkit-text-fill-color:#dcecff;border-radius:14px;padding:12px;font-weight:900;cursor:pointer;font-family:inherit">Voir tous les matchs →</button>`;
       }
 
       // ── STATS ─────────────────────────────────────────────────────────────
