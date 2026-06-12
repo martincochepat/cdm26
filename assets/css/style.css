@@ -357,3 +357,7 @@ body:not(.home-active) .hero{
   padding:10px 12px;
   font-weight:1000;
 }
+
+/* AUTH MODAL DISPLAY FIX */
+.auth-modal { display: none !important; }
+.auth-modal.auth-modal-open { display: flex !important; }

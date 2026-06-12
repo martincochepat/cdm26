@@ -86,7 +86,7 @@ let data = [
     }
     async function loadPredictions(){
       try{
-        predictionRows = await supabaseFetch('match_predictions?select=match_id,choice,user_key');
+        predictionRows = await supabaseFetch('match_predictions?select=match_id,choice,user_key,user_id');
         predictionsLoaded = true;
         if(activeTab==='fan') renderFanZone();
       }catch(err){

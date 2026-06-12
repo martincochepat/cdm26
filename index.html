@@ -49,7 +49,7 @@
         <button onclick="switchTab('bracket')" class="nav-link" data-nav="bracket">Phase finale</button>
         <button onclick="switchTab('stadiums')" class="nav-link" data-nav="stadiums">Stades</button>
         <button onclick="switchTab('map')" class="nav-link" data-nav="map">Carte</button>
-        <a href="/actualites.html" class="nav-link" style="text-decoration:none;display:inline-flex;align-items:center">📰 Actus</a><button onclick="switchTab('fan')" class="nav-link" data-nav="fan">Fan zone</button>
+        <a href="/actualites.html" class="nav-link" style="text-decoration:none;display:inline-flex;align-items:center">📰 Actus</a><button onclick="switchTab('fan')" class="nav-link" data-nav="fan">🔥 Challenge</button>
       </nav>
       <div class="site-actions">
         <button class="icon-action" onclick="openSearch()">⌕</button>
@@ -65,12 +65,12 @@
       <button data-nav="bracket">Phase finale</button>
       <button data-nav="stadiums">Stades</button>
       <button data-nav="map">Carte</button>
-      <a href="/actualites.html" style="padding:12px 10px;border-radius:14px;background:#ffffff0d;border:1px solid #ffffff16;color:#eaf5ff;font-weight:950;text-align:left;text-decoration:none">📰 Actus</a><button data-nav="fan">Fan zone</button>
+      <a href="/actualites.html" style="padding:12px 10px;border-radius:14px;background:#ffffff0d;border:1px solid #ffffff16;color:#eaf5ff;font-weight:950;text-align:left;text-decoration:none">📰 Actus</a><button data-nav="fan">🔥 Challenge</button>
     </div>
     <section class="hero"><div class="panel title"><div class="brand-mark"><img src="guide-mondial-icon.svg" alt="Guide Mondial 2026" onerror="this.style.display='none'"><div class="brand-text"><span>GUIDE</span><span>MONDIAL</span><span class="year">2026</span></div></div><div class="badge">Coupe du Monde 2026 — Canada • Mexique • USA</div><h1>Guide Mondial <span class="grad">2026</span></h1><p class="lead">Le compagnon ultime de la Coupe du Monde 2026</p><div class="hero-kpis"><div><b>104</b><span>Matchs</span></div><div><b>16</b><span>Villes</span></div><div><b>3</b><span>Pays</span></div></div><div class="hero-benefits"><div class="benefit"><i>📅</i><span>Calendrier complet</span></div><div class="benefit"><i>📺</i><span>Guide TV France</span></div><div class="benefit"><i>🏟️</i><span>Stades & infos</span></div><div class="benefit"><i>🌎</i><span>Carte interactive</span></div><div class="benefit"><i>🔥</i><span>Matchs du jour</span></div></div></div><aside class="hero-info-card" id="heroInfoCard"><div class="hero-info-eyebrow">⚽ Chargement</div><div class="hero-info-title">Guide Mondial 2026</div><div class="hero-info-sub">Le prochain rendez-vous du tournoi s'affichera ici.</div></aside><div class="panel stats"><div class="stat"><b id="countAll">0</b><span>matchs intégrés</span></div><div class="stat"><b id="countM6">0</b><span>diffusés aussi sur M6/M6+</span></div><div class="stat"><b>16</b><span>villes hôtes</span></div><div class="stat"><b>104</b><span>matchs prévus au total</span></div></div></section>
 </div>
 
-    <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="teams">🌍 Équipes</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Phase finale</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🎮 Fan zone</button></section>
+    <section class="panel tabs" id="tabs"><button class="tab active" data-tab="home">🏠 Mon Mondial</button><button class="tab" data-tab="matches">📅 Tous les matchs</button><button class="tab" data-tab="tv">📺 Guide TV</button><button class="tab" data-tab="teams">🌍 Équipes</button><button class="tab" data-tab="groups">📊 Groupes</button><button class="tab" data-tab="bracket">🏆 Phase finale</button><button class="tab" data-tab="stadiums">🏟️ Stades</button><button class="tab" data-tab="map">🌎 Carte</button><button class="tab" data-tab="fan">🔥 Challenge</button></section>
 
     <section id="view-home" class="view active"><div class="home-premium-grid"><div class="feature-card" id="featuredBox"></div><div class="feature-card" id="freeTodayBox"></div><div class="feature-card" id="monMondialBox"></div><div class="feature-card" id="stadiumDiscoveryBox"></div><div class="feature-card" id="homeUpcomingBox"></div></div><div class="news-preview"><div class="news-preview-head"><div><h2>📰 Dernières actualités Coupe du Monde 2026</h2><p>Analyses, programme TV, stades, favoris et guides pratiques pour suivre le Mondial.</p></div><a class="news-all" href="/actualites.html">Voir toutes les actus</a></div><div class="news-preview-grid" id="homeNewsGrid"><a class="news-card-home" href="/actualites.html"><span class="cat">Actualités</span><h3>Chargement des derniers articles...</h3><p>Les nouveautés du Mondial vont s’afficher ici.</p></a></div></div><div class="panel dashboard" id="teamPickerPanel"><h2>⭐ Choisis tes équipes à suivre</h2><p class="mini">Elles seront mises en avant dans Mon Mondial et via le filtre “Mes équipes”.</p><div class="team-picker" id="teamPicker"></div></div></section>
 
@@ -82,7 +82,7 @@
     <section id="view-teams" class="view"><div class="panel dashboard"><h2>🌍 Équipes du Mondial</h2><p class="mini">Choisissez une sélection pour voir son calendrier, son groupe, ses stades et ses diffusions en France.</p><div id="teamsOverview" class="teams-overview"></div></div></section>
     <section id="view-groups" class="view"><div class="panel dashboard"><h2>📊 Classements des groupes</h2><p class="mini">Classements calculés automatiquement à partir des scores et statuts renseignés dans Supabase.</p><div id="groupsGrid" class="group-grid"></div></div></section>
     <section id="view-bracket" class="view"><div class="panel dashboard"><h2>🏆 Phase finale de la phase finale</h2><p class="mini">Suivez le tableau des matchs à élimination directe. Les équipes qualifiées apparaîtront au fur et à mesure des résultats.</p><div id="bracketBox" class="bracket"></div></div></section>
-    <section id="view-fan" class="view"><div class="v11-grid"><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Votes globaux des visiteurs : un vote par match et par appareil, synchronisé avec Supabase.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📊 Ambiance du jour</h2><p class="mini">Un résumé rapide de l'activité du jour : matchs, TV gratuite, pronostics et quiz.</p><div id="fanStatsBox"></div></div></div></section>
+    <section id="view-fan" class="view"><div id="challengeBox" class="challenge-top"></div><div class="v11-grid"><div class="fan-card"><h2>🧠 Quiz du jour</h2><p class="mini">Une petite touche ludique pour donner envie de revenir.</p><div id="quizBox"></div></div><div class="fan-card"><h2>🔥 Pronostic rapide</h2><p class="mini">Votes globaux des visiteurs : un vote par match et par appareil, synchronisé avec Supabase.</p><div id="pollBox"></div></div><div class="fan-card"><h2>📊 Ambiance du jour</h2><p class="mini">Un résumé rapide de l'activité du jour : matchs, TV gratuite, pronostics et quiz.</p><div id="fanStatsBox"></div></div><div class="fan-card"><h2>📣 Partager le guide</h2><p class="mini">Un accès rapide au calendrier, aux chaînes TV françaises, aux stades et aux favoris.</p><button onclick="shareApp()">Partager Guide Mondial 2026</button></div></div></section>
     <section id="view-stadiums" class="view"><div class="panel dashboard"><h2>🏟️ Les stades du Mondial</h2><p class="mini">Photos de stades, capacités, pays hôte et nombre de matchs intégrés dans cette version.</p><div id="stadiumGrid" class="stadium-grid"></div></div></section>
     <section id="view-map" class="view"><div class="panel host-map-page"><h2 class="section-title">🌎 Carte des villes hôtes</h2><p class="mini">Survole une ville pour voir son stade, clique pour ouvrir directement la fiche du stade.</p><div id="bigHostMap"></div><div id="cityList" class="city-list"></div></div></section>
     
@@ -112,6 +112,7 @@
 <script src="/assets/js/20-rendering.js?v=79" defer></script>
 <script src="/assets/js/30-navigation-install.js?v=79" defer></script>
 <script src="/assets/js/40-predictions.js?v=79" defer></script>
+<script src="/assets/js/45-auth.js?v=3" defer></script>
 <script src="/assets/js/50-bootstrap.js?v=79" defer></script>
 
   <script>
@@ -136,3 +137,4 @@
 
 </body>
 </html>
+<!-- Style modale auth injecté -->

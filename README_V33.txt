@@ -1,4 +1,4 @@
-Guide Mondial 2026 V33 - Supabase dynamique
+Guide Mondial 2026 V33 
 
 Upload tous les fichiers a la racine GitHub.
 Test: https://guidemondial2026.fr?v=33
