@@ -253,6 +253,14 @@
     @media(max-width:640px){.score-pill{min-width:72px;padding:7px 10px}.score-pill .score-line{font-size:28px}.score-detail{grid-template-columns:1fr;gap:8px;text-align:center}.score-detail-team.away{text-align:center}.score-detail-center{font-size:36px}}
 
 
+    /* V71 — buteurs / événements de match */
+    .goal-events{margin:14px 0 16px;border:1px solid #ffffff18;background:linear-gradient(180deg,#ffffff10,#ffffff06);border-radius:22px;padding:14px}
+    .goal-events h3{margin:0 0 10px;font-size:17px;letter-spacing:-.02em}
+    .goal-row{display:grid;grid-template-columns:54px 1fr;gap:10px;align-items:start;padding:10px 0;border-top:1px solid #ffffff12}
+    .goal-row:first-of-type{border-top:0}.goal-minute{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#ffd16622;border:1px solid #ffd16655;color:#ffd166;font-weight:1000;padding:5px 8px;white-space:nowrap}.goal-player{font-weight:1000;color:#fff}.goal-meta{display:block;color:#adc0d2;font-size:12px;margin-top:2px}.match-scorers-mini{margin:-4px 0 12px;padding:10px 12px;border-radius:16px;background:#06142688;border:1px solid #ffffff12;color:#dcecff;font-size:13px;line-height:1.45}.match-scorers-mini b{color:#ffd166}
+    @media(max-width:640px){.goal-events{padding:12px;border-radius:18px}.goal-row{grid-template-columns:48px 1fr}.match-scorers-mini{font-size:12px}}
+
+
     /* V38 — classements automatiques des groupes */
     .standings .rank{width:32px;color:#ffd166;font-weight:1000;text-align:center}.standings .team-cell{font-weight:900}.standings .num{text-align:center}.standings .pts{font-size:16px;color:#fff}.standings .gd-positive{color:#7df0b2}.standings .gd-negative{color:#ff9aa8}.group-card.has-results{border-color:#ffd16655;background:linear-gradient(180deg,#ffffff14,#ffd16608)}.group-card .group-note{margin-top:10px;color:#adc0d2;font-size:12px;line-height:1.45}
     @media(max-width:640px){.standings{font-size:12px}.standings th,.standings td{padding:7px 4px}.standings .hide-mobile{display:none}.standings .pts{font-size:15px}}
@@ -419,6 +427,7 @@ let data = [
     let predictionsLoaded = false;
     let quizRows = [];
     let quizLoaded = false;
+    let matchEventsByMatchId = {};
     const predictionUserKey = (()=>{
       let key = localStorage.getItem('gm26_prediction_user_key');
       if(!key){
@@ -513,13 +522,47 @@ let data = [
     async function savePrediction(matchId, choice){
       return supabasePost('match_predictions', {match_id:String(matchId), choice:String(choice), user_key:predictionUserKey});
     }
+
+    function normalizeMatchEvents(rows){
+      const byMatch = {};
+      (rows||[]).forEach(e=>{
+        const key = String(e.match_id || '');
+        if(!key) return;
+        if(!byMatch[key]) byMatch[key] = [];
+        byMatch[key].push(e);
+      });
+      Object.values(byMatch).forEach(list=>list.sort((a,b)=>Number(a.elapsed||0)-Number(b.elapsed||0) || Number(a.extra||0)-Number(b.extra||0)));
+      return byMatch;
+    }
+    function matchEvents(m){return matchEventsByMatchId[String(m.id)] || []}
+    function goalEvents(m){
+      return matchEvents(m).filter(e=>{
+        const type=String(e.event_type||'').toLowerCase();
+        const detail=String(e.detail||'').toLowerCase();
+        if(detail.includes('missed')) return false;
+        return type==='goal' || detail.includes('goal') || detail.includes('penalty');
+      });
+    }
+    function goalMinute(e){return `${esc(e.elapsed||'')}${e.extra?`+${esc(e.extra)}`:''}'`}
+    function matchScorersMini(m){
+      const goals=goalEvents(m);
+      if(!goals.length) return '';
+      return `<div class="match-scorers-mini"><b>Buteurs :</b> ${goals.map(e=>`⚽ ${goalMinute(e)} ${esc(e.player_name||'Buteur')} (${esc(e.team_name||'')})`).join(' · ')}</div>`;
+    }
+    function matchGoalsBlock(m){
+      const goals=goalEvents(m);
+      if(!goals.length) return '';
+      return `<div class="goal-events"><h3>⚽ Buteurs</h3>${goals.map(e=>`<div class="goal-row"><span class="goal-minute">${goalMinute(e)}</span><div><span class="goal-player">${esc(e.player_name||'Buteur')}</span><span class="goal-meta">${esc(e.team_name||'')} ${e.assist_name?`· Passe : ${esc(e.assist_name)}`:''}${e.detail?` · ${esc(e.detail)}`:''}</span></div></div>`).join('')}</div>`;
+    }
     async function loadDynamicData(){
       try{
-        const [matchRows, stadiumRows] = await Promise.all([
+        const [matchRows, stadiumRows, eventRows] = await Promise.all([
           supabaseFetch('matches?select=*&order=date.asc,time_fr.asc'),
-          supabaseFetch('stadiums?select=*')
+          supabaseFetch('stadiums?select=*'),
+          supabaseFetch('match_events?select=match_id,api_fixture_id,elapsed,extra,event_type,detail,player_name,assist_name,team_name,comments&order=elapsed.asc')
         ]);
         (stadiumRows||[]).forEach(normalizeSupabaseStadium);
+        matchEventsByMatchId = normalizeMatchEvents(eventRows);
         const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeSupabaseMatch);
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
         dynamicMatches.forEach(m=>merged.set(String(m.id), m));
@@ -668,7 +711,7 @@ let data = [
       const finished=data.filter(m=>matchStatusKey(m)==='finished').sort((a,b)=>matchStart(b)-matchStart(a));
       const mine=upcoming.filter(m=>followedTeams.has(m.home)||followedTeams.has(m.away));
       const today=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
-      const tvToday=today.filter(m=>(m.tv.includes('M6')||m.tv.includes('beIN')) && !isPast(m) && matchStatusKey(m)!=='finished');
+      const tvToday=today.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'));
       const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
       const tvTitle=tvToday.length?'📺 Ce soir à la TV':'📺 Prochaines diffusions TV';
       const mainMatch=liveMatches[0] || upcoming[0] || finished[0];
@@ -714,7 +757,7 @@ let data = [
       const mine=favList.length?`<p class="small"><b>${favList.length}</b> match(s) en favori. Clique sur le filtre Favoris pour les voir.</p>`:'<p class="small">Ajoute des favoris pour créer ton programme perso.</p>';
       tvBox.innerHTML=`<h2>Guide TV gratuit</h2>${tv||'<p class="small">Aucune diffusion M6 trouvée.</p>'}${mine}`;
     }
-    function render(){let arr=filtered(),current='';list.innerHTML=arr.map(m=>{let k=matchStatusKey(m),live=k==='live',mine=followedTeams.has(m.home)||followedTeams.has(m.away),status=statusBadge(m),d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="date-title">${d}</h3>`):'',favBtn=`<button class="fav ${favs.has(String(m.id))?'on':''}" onclick="toggleFav(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Favori':'☆ Favori'}</button>`;return `${head}<article class="match ${live?'live':''}" id="match-${esc(m.id)}"><div class="match-head"><span class="tag">${esc(m.round)} · ${esc(m.phase)}</span><div class="match-actions">${mine?'<span class="tag">Mon équipe</span>':''}${favBtn}<button class="detail-btn" onclick="openDetail(${jsArg(m.id)})">Détails</button>${status}</div></div><div class="teams">${team(m.home)}${scoreCenter(m)}${team(m.away,'away')}</div><div class="info"><div><b>Heure France</b><span class="time-main">${esc(m.time)}</span></div><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Ville</b>${esc(m.city)}</div><div><b>Diffusion FR</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div></article>`}).join('')||'<div class="panel empty">Aucun match trouvé avec ces filtres.</div>'}
+    function render(){let arr=filtered(),current='';list.innerHTML=arr.map(m=>{let k=matchStatusKey(m),live=k==='live',mine=followedTeams.has(m.home)||followedTeams.has(m.away),status=statusBadge(m),d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="date-title">${d}</h3>`):'',favBtn=`<button class="fav ${favs.has(String(m.id))?'on':''}" onclick="toggleFav(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Favori':'☆ Favori'}</button>`;return `${head}<article class="match ${live?'live':''}" id="match-${esc(m.id)}"><div class="match-head"><span class="tag">${esc(m.round)} · ${esc(m.phase)}</span><div class="match-actions">${mine?'<span class="tag">Mon équipe</span>':''}${favBtn}<button class="detail-btn" onclick="openDetail(${jsArg(m.id)})">Détails</button>${status}</div></div><div class="teams">${team(m.home)}${scoreCenter(m)}${team(m.away,'away')}</div>${matchScorersMini(m)}<div class="info"><div><b>Heure France</b><span class="time-main">${esc(m.time)}</span></div><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Ville</b>${esc(m.city)}</div><div><b>Diffusion FR</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div></article>`}).join('')||'<div class="panel empty">Aucun match trouvé avec ces filtres.</div>'}
 
     function teamGroupName(t){
       const m=data.find(x=>x.home===t||x.away===t);
@@ -963,7 +1006,7 @@ let data = [
       openStadiumDetail(city);
     }
 
-    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}<div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;openModal()}
+    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}${matchGoalsBlock(m)}<div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;openModal()}
     function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){id=String(id);let m=data.find(x=>String(x.id)===id); if(!m)return;let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
