@@ -247,7 +247,44 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }
     }
 
-    function answerQuiz(quizKey,ans){localStorage.setItem(quizKey,ans);renderFanZone()}
+    async function answerQuiz(quizKey, ans) {
+      // Sauvegarde locale immédiate
+      localStorage.setItem(quizKey, ans);
+      renderFanZone();
+
+      // Si connecté → enregistre dans Supabase et attribue les points
+      if(typeof currentUser === 'undefined' || !currentUser) return;
+
+      try {
+        const item = getDailyQuiz();
+        if(!item) return;
+        const isCorrect = ans === item.correct_answer;
+        const pointsEarned = isCorrect ? 2 : 0;
+        const questionId = quizKey; // unique par jour + question
+
+        // Insère dans user_quiz_answers (ignore si déjà répondu grâce à UNIQUE)
+        await supabasePost('user_quiz_answers', {
+          user_id: currentUser.id,
+          question_id: questionId,
+          answer: ans,
+          is_correct: isCorrect,
+          points_earned: pointsEarned,
+        });
+
+        // Recalcule les points du classement
+        if(typeof recalculateUserPoints === 'function') {
+          await recalculateUserPoints(currentUser.id);
+          // Rafraîchit le bloc challenge
+          if(typeof renderChallenge === 'function') {
+            if(typeof loadLeaderboard === 'function') await loadLeaderboard();
+            renderChallenge();
+          }
+        }
+      } catch(err) {
+        // Erreur silencieuse (doublon ou indisponible) — la réponse locale est déjà sauvegardée
+        console.warn('Quiz Supabase:', err.message || err);
+      }
+    }
     async function votePoll(id,opt){
       id=String(id);
       if(myPrediction(id)){renderFanZone();return}
