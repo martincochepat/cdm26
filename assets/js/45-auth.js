@@ -216,7 +216,6 @@ function renderAuthBlock(myRank) {
           </div>
           <div class="challenge-pills">
             <div class="challenge-pill">✅ Vainqueur<b>+3 pts</b></div>
-            <div class="challenge-pill">🎯 Score exact<b>+5 pts</b></div>
             <div class="challenge-pill">🧠 Quiz<b>+2 pts</b></div>
           </div>
         </div>
