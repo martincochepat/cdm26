@@ -13,19 +13,12 @@ let leaderboardRows = [];
 async function authFetch(path, options = {}) {
   const session = await getSession();
   const token = session?.access_token || AUTH_SUPABASE_KEY;
-  // Fusion correcte des headers — les options.headers enrichissent sans écraser apikey/Authorization
-  const headers = {
+  const headers = Object.assign({
     apikey: AUTH_SUPABASE_KEY,
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  };
-  const { headers: _, ...restOptions } = options;
-  const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, {
-    cache: 'no-store',
-    ...restOptions,
-    headers,
-  });
+  }, options.headers || {});
+  const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, Object.assign({ headers, cache: 'no-store' }, options));
   if (!res.ok) throw new Error(await res.text());
   if (res.status === 204) return null;
   return res.json();
@@ -68,7 +61,7 @@ async function sendMagicLink(email) {
     },
     body: JSON.stringify({
       email,
-      options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` }
+      options: { emailRedirectTo: window.location.origin }
     })
   });
   if (!res.ok) {
@@ -140,12 +133,7 @@ async function handleAuthCallback() {
     expires_at: Math.floor(Date.now() / 1000) + Number(expires_in || 3600),
   };
   localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(session));
-  // Nettoie l'URL et redirige vers l'onglet Challenge
   window.history.replaceState({}, document.title, window.location.pathname);
-  // Ouvre automatiquement l'onglet Challenge après connexion
-  setTimeout(() => {
-    if (typeof switchTab === 'function') switchTab('fan');
-  }, 300);
   return true;
 }
 
@@ -221,19 +209,40 @@ function renderAuthBlock(myRank) {
   if (!currentUser) {
     return `
       <div class="challenge-hero">
-        <div class="challenge-headline">🔥 Qui pronostique le mieux ?</div>
-        <p class="challenge-sub">Vote sur chaque match et réponds au quiz du jour.<br>Gagne des points dès que les résultats tombent.</p>
-        <div class="challenge-points-preview">
-          <span>✅ Vainqueur correct</span><b>+3 pts</b>
-          <span>🎯 Score exact</span><b>+5 pts</b>
-          <span>🧠 Quiz du jour</span><b>+2 pts</b>
+        <div class="challenge-top-row">
+          <div>
+            <div class="challenge-headline">🔥 Qui pronostique le mieux ?</div>
+            <p class="challenge-sub">Vote sur chaque match, réponds au quiz du jour.<br>Les points tombent dès que les résultats sont officiels.</p>
+          </div>
+          <div class="challenge-pills">
+            <div class="challenge-pill">✅ Vainqueur<b>+3 pts</b></div>
+            <div class="challenge-pill">🎯 Score exact<b>+5 pts</b></div>
+            <div class="challenge-pill">🧠 Quiz<b>+2 pts</b></div>
+          </div>
         </div>
-        <p class="challenge-sub" style="margin-top:8px">Inscription en 10 secondes, juste ton email.</p>
-        <div id="magicLinkForm" class="magic-form">
-          <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email">
-          <button onclick="handleMagicLink()">Rejoindre le classement →</button>
+        <button class="challenge-join-btn" onclick="openAuthModal()">
+          🏆 Rejoindre le classement — inscription gratuite en 10 sec
+        </button>
+      </div>
+      <!-- Modale inscription -->
+      <div id="authModal" class="auth-modal" style="display:none" onclick="if(event.target.id==='authModal')closeAuthModal()">
+        <div class="auth-modal-card">
+          <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
+          <div id="authStep1" class="auth-step">
+            <div class="auth-modal-icon">🏆</div>
+            <h2 class="auth-modal-title">Rejoins le classement</h2>
+            <p class="auth-modal-sub">Entre ton email — on t'envoie un lien magique pour te connecter. Pas de mot de passe.</p>
+            <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" class="auth-input">
+            <button class="auth-btn-primary" onclick="handleMagicLink()">Envoyer le lien →</button>
+            <div id="magicStatus" class="magic-status"></div>
+          </div>
+          <div id="authStep2" class="auth-step" style="display:none">
+            <div class="auth-modal-icon">📬</div>
+            <h2 class="auth-modal-title">Check tes mails !</h2>
+            <p class="auth-modal-sub">Un lien vient d'être envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter automatiquement.</p>
+            <p class="auth-modal-hint">Tu n'as pas reçu le mail ? Vérifie tes spams ou <button class="auth-link-btn" onclick="showStep(1)">réessaie</button>.</p>
+          </div>
         </div>
-        <div id="magicStatus" class="magic-status"></div>
       </div>
     `;
   }
@@ -241,16 +250,16 @@ function renderAuthBlock(myRank) {
   if (!currentProfile) {
     return `
       <div class="challenge-hero">
-        <div class="challenge-headline">👋 Bienvenue !</div>
-        <p class="challenge-sub">Connecté avec <b>${esc(currentUser.email)}</b><br>Choisis ton pseudo pour apparaître dans le classement.</p>
-        <div class="magic-form">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-            ${['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯'].map(e =>
+        <div class="challenge-headline">👋 Dernière étape !</div>
+        <p class="challenge-sub">Connecté avec <b>${esc(currentUser.email)}</b><br>Choisis ton avatar et ton pseudo pour apparaître dans le classement.</p>
+        <div class="auth-pseudo-form">
+          <div class="emoji-picker">
+            ${['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯','🌟','💪'].map(e =>
               `<button class="emoji-btn" onclick="selectEmoji('${e}')" id="emoji-${e}">${e}</button>`
             ).join('')}
           </div>
-          <input id="pseudoInput" type="text" placeholder="Ton pseudo (ex: MartinC)" maxlength="20" autocomplete="off">
-          <button onclick="handleCreateProfile()">Choisir mon pseudo →</button>
+          <input id="pseudoInput" type="text" class="auth-input" placeholder="Choisis ton pseudo (ex: MartinC)" maxlength="20" autocomplete="off">
+          <button class="auth-btn-primary" onclick="handleCreateProfile()">C'est parti ! →</button>
         </div>
         <div id="pseudoStatus" class="magic-status"></div>
         <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
@@ -260,21 +269,34 @@ function renderAuthBlock(myRank) {
 
   return `
     <div class="challenge-hero connected">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="font-size:32px">${esc(currentProfile.avatar_emoji)}</span>
+      <div class="challenge-user-row">
+        <span class="challenge-avatar">${esc(currentProfile.avatar_emoji)}</span>
         <div>
           <div class="challenge-headline" style="margin:0">${esc(currentProfile.pseudo)}</div>
-          <div class="challenge-sub" style="margin:0">
-            ${myRank ? `🏅 <b>#${myRank}</b> au classement · ` : ''}
-            <b>${currentProfile.points} pts</b> · 
-            ${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronostics · 
-            ${currentProfile.quiz_correct} quiz
+          <div class="challenge-stats-row">
+            ${myRank ? `<span class="challenge-badge">🏅 #${myRank}</span>` : ''}
+            <span class="challenge-badge">${currentProfile.points} pts</span>
+            <span class="challenge-badge">${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronostics</span>
+            <span class="challenge-badge">${currentProfile.quiz_correct} quiz ✓</span>
           </div>
         </div>
       </div>
       <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
     </div>
   `;
+}
+
+function openAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (modal) { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+}
+function closeAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+}
+function showStep(n) {
+  document.getElementById('authStep1').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('authStep2').style.display = n === 2 ? 'block' : 'none';
 }
 
 function renderLeaderboard(myRank) {
@@ -331,9 +353,10 @@ async function handleMagicLink() {
   if (status) status.innerHTML = 'Envoi en cours...';
   try {
     await sendMagicLink(email);
-    if (status) status.innerHTML = '📬 <b>Check tes mails !</b> Clique sur le lien pour te connecter. (Vérifie tes spams si besoin)';
-    const form = document.getElementById('magicLinkForm');
-    if (form) form.style.opacity = '0.5';
+    const emailEl = document.getElementById('magicEmail');
+    const sentDisplay = document.getElementById('sentEmailDisplay');
+    if (sentDisplay && emailEl) sentDisplay.textContent = emailEl.value;
+    showStep(2);
   } catch (err) {
     if (status) status.innerHTML = `<span class="err">Erreur : ${esc(err.message)}</span>`;
   }
