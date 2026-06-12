@@ -355,6 +355,23 @@ body:not(.home-active) .hero{
 .prediction-note{margin-top:10px;color:#adc0d2;font-size:12px;line-height:1.4}
 .prediction-total{display:inline-flex;margin-top:8px;border:1px solid #ffffff18;background:#ffffff0a;border-radius:999px;padding:6px 9px;color:#dcecff;font-size:12px;font-weight:900}
 
+
+/* V77 — Pronostics directement sur les cartes match */
+.prediction-mini{margin:12px 0 14px;border:1px solid #ffffff14;background:#0614267a;border-radius:18px;padding:11px}
+.prediction-mini-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px;color:#ffd166;font-weight:1000;font-size:13px}
+.prediction-mini-head span:last-child{color:#adc0d2;font-size:12px;font-weight:900}
+.prediction-mini-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.prediction-mini button{padding:9px 8px;border-radius:14px;background:#ffffff0d;border:1px solid #ffffff1d;color:#fff;font-size:12px;font-weight:950}
+.prediction-mini button:hover{border-color:#ffd16688}
+.prediction-mini button.selected{background:linear-gradient(135deg,#ffd16628,#ef334028);border-color:#ffd166aa;color:#fff}
+.prediction-mini button[disabled]{opacity:.9;cursor:default}
+.prediction-mini small{display:block;margin-top:3px;color:#adc0d2;font-size:10px;font-weight:900}
+@media(max-width:780px){
+  .prediction-mini-options{grid-template-columns:1fr}
+  .prediction-mini button{display:flex;justify-content:space-between;align-items:center}
+  .prediction-mini small{display:inline;margin-top:0}
+}
+
 </style>
 
   <script>
@@ -1052,7 +1069,7 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
       openStadiumDetail(city);
     }
 
-    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}${matchGoalsBlock(m)}<div id="predictionBox"></div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;openModal();renderPredictionBox(m.id)}
+    function openDetail(id){modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}${matchGoalsBlock(m)}<div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;openModal();renderPredictionBox(m.id)}
     function closeModal(){modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){id=String(id);let m=data.find(x=>String(x.id)===id); if(!m)return;let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
@@ -1281,6 +1298,51 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
         console.error(e);
         alert('Impossible d’enregistrer le pronostic pour le moment.');
       }
+    }
+
+
+    async function renderPredictionMini(matchId){
+      const box=document.getElementById('predictionMini-'+String(matchId));
+      if(!box) return;
+      const m=data.find(x=>String(x.id)===String(matchId));
+      if(!m) return;
+      const already=localStorage.getItem(predictionStorageKey(matchId));
+      const totals=await fetchPredictions(matchId);
+      const total=totals.home+totals.draw+totals.away;
+      const options=['home','draw','away'];
+      box.innerHTML=`<div class="prediction-mini">
+        <div class="prediction-mini-head"><span>🔥 Pronostic</span><span>${total} vote${total>1?'s':''}</span></div>
+        <div class="prediction-mini-options">
+          ${options.map(choice=>{
+            const count=totals[choice]||0;
+            const pct=total?Math.round(count*100/total):0;
+            const selected=already===choice?'selected':'';
+            return `<button class="${selected}" ${already?'disabled':''} onclick="event.stopPropagation();votePredictionMini(${jsArg(matchId)},'${choice}')">
+              ${esc(predictionLabel(m,choice))}<small>${pct}%</small>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
+    async function votePredictionMini(matchId,choice){
+      try{
+        await submitPrediction(matchId,choice);
+        await renderPredictionMini(matchId);
+        const detailBox=document.getElementById('predictionBox');
+        if(detailBox) await renderPredictionBox(matchId);
+      }catch(e){
+        console.error(e);
+        alert('Impossible d’enregistrer le pronostic pour le moment.');
+      }
+    }
+
+    function renderPredictionMinisSoon(){
+      setTimeout(()=>{
+        document.querySelectorAll('[data-prediction-mini]').forEach(el=>{
+          renderPredictionMini(el.dataset.predictionMini);
+        });
+      },80);
     }
 
     init();
