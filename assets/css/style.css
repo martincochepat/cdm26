@@ -358,51 +358,26 @@ body:not(.home-active) .hero{
   font-weight:1000;
 }
 
-/* ─── CHALLENGE + AUTH ──────────────────────────────────────────────────── */
-.challenge-top { margin-bottom: 0; }
-.challenge-leaderboard { background: #061426e8; border: 1px solid #ffffff14; border-radius: 22px; padding: 20px; margin-top: 12px; }
-.challenge-empty { text-align: center; padding: 28px; color: #8fa6bd; border: 1px dashed #ffffff18; border-radius: 18px; margin-top: 12px; }
-.lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #ffffff0a; }
-.lb-row:last-child { border-bottom: none; }
-.lb-row.lb-me { background: #ffd16610; border-radius: 14px; padding: 12px; margin: 4px -12px; }
-.lb-rank { font-size: 22px; width: 34px; text-align: center; flex-shrink: 0; }
-.lb-avatar { font-size: 24px; flex-shrink: 0; }
-.lb-info { flex: 1; min-width: 0; }
-.lb-info b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lb-bar { height: 5px; background: #ffffff10; border-radius: 99px; margin-top: 6px; }
-.lb-bar-fill { height: 100%; background: linear-gradient(90deg, #ffd166, #ff6b6b); border-radius: 99px; transition: width .5s; }
-.lb-pts { text-align: right; flex-shrink: 0; }
-.lb-pts b { display: block; font-size: 20px; font-weight: 950; color: #ffd166; }
-.lb-pts small { font-size: 11px; color: #8fa6bd; }
-.lb-cta { text-align: center; margin-top: 16px; padding: 14px; background: #ffffff08; border-radius: 14px; color: #8fa6bd; font-size: 14px; }
 
-/* Fan zone gating */
-.fan-gated { position: relative; border-radius: 18px; overflow: hidden; }
+/* ─── V80 CHALLENGE + LEADERBOARD ──────────────────────────────────────── */
 
-/* AUTH MODAL */
-.auth-modal { display: none !important; position: fixed; inset: 0; background: #000000bb; backdrop-filter: blur(12px); z-index: 99999; align-items: center; justify-content: center; padding: 20px; }
-.auth-modal.auth-modal-open { display: flex !important; }
+/* Leaderboard */
+.challenge-leaderboard{background:#061426e8;border:1px solid #ffffff14;border-radius:22px;padding:20px;margin-top:12px}
+.challenge-empty{text-align:center;padding:28px;color:#8fa6bd;border:1px dashed #ffffff18;border-radius:18px;margin-top:12px}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff0a}
+.lb-row:last-child{border-bottom:none}
+.lb-row.lb-me{background:#ffd16610;border-radius:14px;padding:12px;margin:4px -12px}
+.lb-rank{font-size:22px;width:34px;text-align:center;flex-shrink:0}
+.lb-avatar{font-size:24px;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-info b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-bar{height:5px;background:#ffffff10;border-radius:99px;margin-top:6px}
+.lb-bar-fill{height:100%;background:linear-gradient(90deg,#ffd166,#ff6b6b);border-radius:99px;transition:width .5s}
+.lb-pts{text-align:right;flex-shrink:0}
+.lb-pts b{display:block;font-size:20px;font-weight:950;color:#ffd166}
+.lb-pts small{font-size:11px;color:#8fa6bd}
+.lb-cta{text-align:center;margin-top:16px;padding:14px;background:#ffffff08;border-radius:14px;color:#8fa6bd;font-size:14px}
 
-/* Quiz/Poll options */
-.quiz-option, .poll-option { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; margin-top: 8px; background: #ffffff10; border: 1px solid #ffffff1f; border-radius: 16px; text-align: left; padding: 10px 14px; color: #fff; }
-.quiz-option.good { border-color: #00a85988; background: #00a85922; }
-.quiz-option.bad { border-color: #ef334088; background: #ef334022; }
-
-/* Pronostics */
-.prediction-card { margin-top: 14px; border: 1px solid #ffffff16; background: #06142699; border-radius: 20px; padding: 14px; }
-.prediction-card h3 { margin: 0 0 8px; font-size: 18px; }
-.prediction-sub { color: #adc0d2; font-size: 13px; line-height: 1.45; margin: 0 0 12px; }
-.prediction-options { display: grid; gap: 8px; }
-.prediction-option { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; width: 100%; text-align: left; background: #ffffff0d; border: 1px solid #ffffff1f; border-radius: 16px; padding: 11px 12px; color: #fff; }
-.prediction-option:hover { border-color: #ffd16688; }
-.prediction-option.selected { background: linear-gradient(135deg, #ffd16624, #ef334024); border-color: #ffd166aa; }
-.prediction-option[disabled] { cursor: default; opacity: .95; }
-.prediction-option b { font-size: 14px; }
-.prediction-option span { font-size: 12px; color: #adc0d2; font-weight: 900; }
-.prediction-bar { height: 8px; background: #ffffff14; border-radius: 999px; overflow: hidden; margin-top: 7px; }
-.prediction-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd166, #ef3340, #0066cc); border-radius: 999px; }
-.prediction-note { margin-top: 10px; color: #adc0d2; font-size: 12px; line-height: 1.4; }
-.prediction-total { display: inline-flex; margin-top: 8px; border: 1px solid #ffffff18; background: #ffffff0a; border-radius: 999px; padding: 6px 9px; color: #dcecff; font-size: 12px; font-weight: 900; }
-
-/* Quick predict */
-.quick-predict-btn { margin: 10px 0 12px; width: 100%; border: 1px solid #ffd16655; background: linear-gradient(135deg, #ffd16622, #ef334022); color: #fff; border-radius: 16px; padding: 10px 12px; font-weight: 1000; }
+/* AUTH MODAL — override total */
+.auth-modal{display:none!important;position:fixed;inset:0;background:#000000bb;backdrop-filter:blur(12px);z-index:99999;align-items:center;justify-content:center;padding:20px}
+.auth-modal.auth-modal-open{display:flex!important}
