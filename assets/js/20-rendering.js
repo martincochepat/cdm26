@@ -9,7 +9,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     function smartDateLabel(m){
       const now=new Date(), d=matchStart(m);
       const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1);
-      if(sameDay(d,now)) return 'Aujourd’hui';
+      if(sameDay(d,now)) return 'Aujourd\u2019hui';
       if(sameDay(d,tomorrow)) return 'Demain';
       return dateLabel(m.date).replace('2026','').trim();
     }
@@ -54,7 +54,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         return;
       }
       const status=live?'🔴 Match en cours':(upcoming?'⏳ Prochain match':'✅ Dernier résultat');
-      const score=(hasScore(m)||live)?`<div class="hero-info-vs">${esc(m.score_a ?? 0)} - ${esc(m.score_b ?? 0)}</div>`:`<div class="hero-info-vs">VS</div>`;
       const minute=live&&m.minute?` · ${esc(m.minute)}'`:'';
       el.innerHTML=`<div class="hero-info-eyebrow">${status}${minute}</div><div class="hero-info-title">${flags[m.home]||'🏳️'} ${esc(m.home)}<br><span class="grad">${hasScore(m)||live?`${esc(m.score_a ?? 0)} - ${esc(m.score_b ?? 0)}`:'VS'}</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="hero-info-sub">${smartDateLabel(m)} · ${esc(m.time)} · ${esc(m.city)}</div><div class="hero-info-meta"><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Diffusion</b>${esc(m.tv)}</div></div><div class="hero-info-actions"><button onclick="openDetail(${jsArg(m.id)})">Voir le match</button><button class="secondary" onclick="switchTab('matches')">Calendrier</button></div>`;
     }
@@ -98,7 +97,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const freeCount=matches.filter(m=>m.tv.includes('M6')).length;
       modal.querySelector('.modal-card').classList.remove('stadium-modal');
       modal.querySelector('.modal-head b').textContent='Fiche équipe';
-      modalBody.innerHTML=`<div class="team-detail-hero"><div class="flag-hero">${flags[t]||'🏳️'}</div><div><div class="tag">${esc(group)} · Coupe du Monde 2026</div><h2>${esc(t)}</h2><p>${matches.length} match(s) intégré(s) · ${freeCount} diffusion(s) gratuite(s) M6/M6+ · ${followedTeams.has(t)?'équipe suivie':'équipe non suivie'}</p></div></div><div class="metric-grid"><div class="metric"><b>Groupe</b>${esc(group)}</div><div class="metric"><b>Prochain match</b>${next?`${dateLabel(next.date)} · ${next.time}`:'À confirmer'}</div><div class="metric"><b>Matchs gratuits</b>${freeCount}</div></div><div class="team-detail-grid"><div class="team-detail-card"><h3>📅 Calendrier de l’équipe</h3>${matches.map(m=>{const opponent=m.home===t?m.away:m.home;return `<div class="team-match-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[t]||'🏳️'} ${esc(t)} vs ${flags[opponent]||'🏳️'} ${esc(opponent)}<br><small>${dateLabel(m.date)} · ${esc(m.city)} · ${esc(m.tv)}</small></span>${m.tv.includes('M6')?'<span class="free-badge">M6/M6+</span>':''}</div>`}).join('')||'<div class="empty-soft">Aucun match intégré.</div>'}</div><div class="team-detail-card"><h3>🏟️ Stades joués</h3>${stadiumCities.map(city=>`<div class="team-stadium-row" onclick="openStadiumDetail('${esc(city)}')"><b>📍</b><span>${esc(stadiums[city]||city)}<br><small>${esc(city)} · ${esc(venueMeta[city]?.country||'')}</small></span><span class="tag">Voir</span></div>`).join('')||'<div class="empty-soft">Aucun stade intégré.</div>'}<h3 style="margin-top:18px">🧭 Parcours</h3><div class="team-path"><div>Phase de groupes<span>${esc(group)}</span></div><div>16es de finale<span>Selon classement du groupe</span></div><div>Phase finale<span>À suivre pendant la compétition</span></div></div></div></div><div class="team-actions"><button onclick="toggleTeam('${esc(t)}');openTeamDetail('${esc(t)}')">${followedTeams.has(t)?'Ne plus suivre':'Suivre cette équipe'}</button><button onclick="q.value='${esc(t)}';switchTab('matches')">Voir ses matchs</button><button onclick="shareApp()">Partager le guide</button></div>`;
+      modalBody.innerHTML=`<div class="team-detail-hero"><div class="flag-hero">${flags[t]||'🏳️'}</div><div><div class="tag">${esc(group)} · Coupe du Monde 2026</div><h2>${esc(t)}</h2><p>${matches.length} match(s) intégré(s) · ${freeCount} diffusion(s) gratuite(s) M6/M6+ · ${followedTeams.has(t)?'équipe suivie':'équipe non suivie'}</p></div></div><div class="metric-grid"><div class="metric"><b>Groupe</b>${esc(group)}</div><div class="metric"><b>Prochain match</b>${next?`${dateLabel(next.date)} · ${next.time}`:'À confirmer'}</div><div class="metric"><b>Matchs gratuits</b>${freeCount}</div></div><div class="team-detail-grid"><div class="team-detail-card"><h3>📅 Calendrier de l'équipe</h3>${matches.map(m=>{const opponent=m.home===t?m.away:m.home;return `<div class="team-match-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[t]||'🏳️'} ${esc(t)} vs ${flags[opponent]||'🏳️'} ${esc(opponent)}<br><small>${dateLabel(m.date)} · ${esc(m.city)} · ${esc(m.tv)}</small></span>${m.tv.includes('M6')?'<span class="free-badge">M6/M6+</span>':''}</div>`}).join('')||'<div class="empty-soft">Aucun match intégré.</div>'}</div><div class="team-detail-card"><h3>🏟️ Stades joués</h3>${stadiumCities.map(city=>`<div class="team-stadium-row" onclick="openStadiumDetail('${esc(city)}')"><b>📍</b><span>${esc(stadiums[city]||city)}<br><small>${esc(city)} · ${esc(venueMeta[city]?.country||'')}</small></span><span class="tag">Voir</span></div>`).join('')||'<div class="empty-soft">Aucun stade intégré.</div>'}<h3 style="margin-top:18px">🧭 Parcours</h3><div class="team-path"><div>Phase de groupes<span>${esc(group)}</span></div><div>16es de finale<span>Selon classement du groupe</span></div><div>Phase finale<span>À suivre pendant la compétition</span></div></div></div></div><div class="team-actions"><button onclick="toggleTeam('${esc(t)}');openTeamDetail('${esc(t)}')">${followedTeams.has(t)?'Ne plus suivre':'Suivre cette équipe'}</button><button onclick="q.value='${esc(t)}';switchTab('matches')">Voir ses matchs</button><button onclick="shareApp()">Partager le guide</button></div>`;
       openModal();
     }
 
@@ -106,7 +105,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     function openStadium(city){q.value=city;activeTab='matches';renderAll();setTimeout(()=>list.scrollIntoView({behavior:'smooth'}),80)}
     function renderMapPage(){bigHostMap.innerHTML=renderHostMap('', 'big');cityList.innerHTML=Object.keys(venueMeta).map(city=>{let v=venueMeta[city],n=data.filter(m=>m.city===city).length;return `<div class="city-pill" onclick="openStadiumDetail('${esc(city)}')"><b>📍 ${esc(city)}</b><br><span class="small">${esc(stadiums[city])} · ${n} match(s)</span></div>`}).join('')}
     function renderTvGuide(){const arr=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b));let current='';tvGuideFull.innerHTML=arr.map(m=>{let d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="tv-day">${d}</h3>`):'';return `${head}<div class="tv-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[m.home]||'🏳️'} ${esc(m.home)} - ${flags[m.away]||'🏳️'} ${esc(m.away)}<br><small>${esc(m.stadium)} · ${esc(m.city)}</small></span><span>${m.tv.includes('M6')?'<span class="free-badge">M6/M6+</span> ':''}${esc(m.tv)}</span></div>`}).join('')}
-
 
     function groupData(){
       const groups={};
@@ -155,7 +153,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       if(!window.bracketBox)return; const rounds=['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
       bracketBox.innerHTML=rounds.map(r=>{let matches=data.filter(m=>m.phase===r|| (r==='Finale'&&m.phase==='Finale')).sort((a,b)=>matchStart(a)-matchStart(b)); if(!matches.length && r!=='Finale') matches=[]; return `<div class="round-col"><h3>${r}</h3>${matches.length?matches.map(m=>`<div class="bracket-match" onclick="openDetail(${jsArg(m.id)})"><b>${m.round} · ${dateLabel(m.date)} · ${m.time}</b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br>${flags[m.away]||'🏳️'} ${esc(m.away)}<br><span class="mini">${esc(m.city)}</span></div>`).join(''):'<div class="bracket-match"><b>À venir</b>Équipes à confirmer selon les résultats des groupes.</div>'}</div>`}).join('')
     }
-    const quizFallback=[{id:'local-1',question:'Combien de pays accueillent la Coupe du Monde 2026 ?',correct_answer:'3',options:['2','3','4','5']},{id:'local-2',question:'Quel stade accueille la finale intégrée dans ce guide ?',correct_answer:'MetLife Stadium',options:['SoFi Stadium','MetLife Stadium','AT&T Stadium','Estadio Azteca']},{id:'local-3',question:'Quel pays hôte joue le match d’ouverture ?',correct_answer:'Mexique',options:['Canada','Mexique','États-Unis','Brésil']}];
+    const quizFallback=[{id:'local-1',question:'Combien de pays accueillent la Coupe du Monde 2026 ?',correct_answer:'3',options:['2','3','4','5']},{id:'local-2',question:'Quel stade accueille la finale intégrée dans ce guide ?',correct_answer:'MetLife Stadium',options:['SoFi Stadium','MetLife Stadium','AT&T Stadium','Estadio Azteca']},{id:'local-3',question:'Quel pays hôte joue le match d\u2019ouverture ?',correct_answer:'Mexique',options:['Canada','Mexique','États-Unis','Brésil']}];
     function localDateKey(d=new Date()){
       const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
       return `${y}-${m}-${day}`;
@@ -189,46 +187,66 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const row=(predictionRows||[]).find(r=>String(r.match_id)===id && String(r.user_key)===String(predictionUserKey));
       return row?.choice || '';
     }
+
+    // ─── Fan Zone : quiz et pronos avec gating compte ─────────────────────
+    function renderLockedOverlay(label) {
+      return `<div class="fan-locked-overlay" onclick="openAuthModal()">
+        <div class="fan-locked-inner">
+          <div class="fan-locked-icon">🔒</div>
+          <div class="fan-locked-text">${label}</div>
+          <button class="fan-locked-btn">Créer mon compte →</button>
+        </div>
+      </div>`;
+    }
+
     function renderPollMatch(m){
       const opts=pollOptionsFor(m);
       const {counts,total}=predictionStats(m.id);
       const voted=myPrediction(m.id);
       const loading=!predictionsLoaded;
-      return `<div class="poll-match-card"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}${loading?' · chargement des votes globaux...':` · ${total} vote(s)`}</div>${opts.map(o=>{let pct=total?Math.round(((counts[o]||0)/total)*100):0;let selected=voted===o;return `<button class="poll-option ${selected?'good':''}" ${(voted||loading)?'disabled':''} onclick="votePoll(${jsArg(m.id)},'${esc(o)}')"><span>${esc(o)} ${selected?'✅':''}</span><b>${pct}%</b></button><div class="progress"><span style="width:${pct}%"></span></div>`}).join('')}${voted?`<div class="mini" style="margin-top:8px;color:#ffd166">Votre pronostic : <b>${esc(voted)}</b></div>`:''}</div>`;
+      return `<div class="poll-match-card"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}${loading?' · chargement...':` · ${total} vote(s)`}</div>${opts.map(o=>{let pct=total?Math.round(((counts[o]||0)/total)*100):0;let selected=voted===o;return `<button class="poll-option ${selected?'good':''}" ${(voted||loading)?'disabled':''} onclick="votePoll(${jsArg(m.id)},'${esc(o)}')"><span>${esc(o)} ${selected?'✅':''}</span><b>${pct}%</b></button><div class="progress"><span style="width:${pct}%"></span></div>`}).join('')}${voted?`<div class="mini" style="margin-top:8px;color:#ffd166">Votre pronostic : <b>${esc(voted)}</b></div>`:''}</div>`;
     }
+
     function renderFanZone(){
-      if(!window.quizBox)return;
-      const todayKey=localDateKey();
+      if(!window.quizBox) return;
+      const isLoggedIn = typeof currentUser !== 'undefined' && currentUser !== null;
+
+      // ── QUIZ ──────────────────────────────────────────────────────────────
       const item=getDailyQuiz();
-      if(item){
-        const quizKey=`wc26_quiz_${todayKey}_${item.id}`;
+      if(!isLoggedIn){
+        quizBox.innerHTML=`<div class="fan-gated"><div class="fan-gated-preview">${item?`<b>${esc(item.question)}</b><div class="fan-gated-options">${(item.options||[]).slice(0,4).map(o=>`<div class="fan-gated-option">${esc(o)}</div>`).join('')}</div>`:'<div class="empty-soft">Quiz du jour</div>'}</div>${renderLockedOverlay('Connecte-toi pour jouer au quiz et gagner des points')}</div>`;
+      } else if(item){
+        const quizKey=`wc26_quiz_${localDateKey()}_${item.id}`;
         const answered=localStorage.getItem(quizKey);
         const options=(item.options||[]).filter(Boolean);
-        const sourceLabel=quizLoaded?'Question du jour Supabase':'Question locale de secours';
-        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered? (o===item.correct_answer?'good':(o===answered?'bad':'')) : ''}" ${answered?'disabled':''} onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
-      }else{
+        const sourceLabel=quizLoaded?'Question du jour':'Question locale';
+        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered?(o===item.correct_answer?'good':(o===answered?'bad':'')):''}\" ${answered?'disabled':''} onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
+      } else {
         quizBox.innerHTML='<div class="empty-soft">Quiz indisponible pour le moment.</div>';
       }
+
+      // ── PRONOSTICS : 3 prochains matchs uniquement ────────────────────────
       const now=new Date();
-      let pollMatches=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
-      let pollTitle='Pronostics du jour';
-      if(!pollMatches.length){
-        const next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0];
-        if(next){
-          pollMatches=data.filter(m=>sameDay(matchStart(m),matchStart(next))).sort((a,b)=>matchStart(a)-matchStart(b));
-          pollTitle='Prochains pronostics';
-        }
+      let pollMatches=data.filter(m=>!isPast(m)&&matchStatusKey(m)!=='finished').sort((a,b)=>matchStart(a)-matchStart(b)).slice(0,3);
+      let pollTitle=pollMatches.some(m=>sameDay(matchStart(m),now))?'Pronostics du jour':'Prochains pronostics';
+
+      if(!isLoggedIn){
+        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><div class="fan-gated"><div class="fan-gated-preview">${pollMatches.slice(0,2).map(m=>`<div class="poll-match-card" style="opacity:.5;pointer-events:none"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}</div><div class="fan-gated-options">${['─','─','─'].map(o=>`<div class="fan-gated-option">${o}</div>`).join('')}</div></div>`).join('')}</div>${renderLockedOverlay('Connecte-toi pour pronostiquer et grimper dans le classement')}</div><button class="fan-see-all-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
+      } else {
+        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Synchronisé entre tous les joueurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}<button class="fan-see-all-btn" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
       }
-      pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Résultats globaux synchronisés entre les visiteurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}`;
+
+      // ── STATS ─────────────────────────────────────────────────────────────
       if(window.fanStatsBox){
-        const todayMatches=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
+        const todayMatches=data.filter(m=>sameDay(matchStart(m),now));
         const baseMatches=todayMatches.length?todayMatches:pollMatches;
         const freeCount=baseMatches.filter(m=>String(m.tv||'').includes('M6')).length;
         const totalVotes=(predictionRows||[]).length;
         const quizStatus=item?'Question prête':'Quiz indisponible';
-        fanStatsBox.innerHTML=`<div class="metric-grid" style="grid-template-columns:1fr 1fr;margin:0 0 12px"><div class="metric"><b>Matchs affichés</b>${baseMatches.length}</div><div class="metric"><b>Diffusions gratuites</b>${freeCount}</div><div class="metric"><b>Votes enregistrés</b>${totalVotes}</div><div class="metric"><b>Quiz du jour</b>${quizStatus}</div></div><div class="empty-soft">Astuce : les pronostics sont globaux, synchronisés avec Supabase, et limités à un vote par match et par appareil.</div>`;
+        fanStatsBox.innerHTML=`<div class="metric-grid" style="grid-template-columns:1fr 1fr;margin:0 0 12px"><div class="metric"><b>Matchs affichés</b>${baseMatches.length}</div><div class="metric"><b>Diffusions gratuites</b>${freeCount}</div><div class="metric"><b>Votes enregistrés</b>${totalVotes}</div><div class="metric"><b>Quiz du jour</b>${quizStatus}</div></div>`;
       }
     }
+
     function answerQuiz(quizKey,ans){localStorage.setItem(quizKey,ans);renderFanZone()}
     async function votePoll(id,opt){
       id=String(id);
@@ -268,7 +286,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       </svg><span class="map-ocean">Atlantique</span><span class="map-compass">Pacifique ← · Nord ↑</span>${cities}</div>`
     }
 
-
     let __modalScrollY=0;
     function lockModalScroll(){
       __modalScrollY=window.scrollY||document.documentElement.scrollTop||0;
@@ -307,7 +324,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       let v=venueMeta[city]||{}, matches=data.filter(m=>m.city===city).sort((a,b)=>matchStart(a)-matchStart(b)), img=photoList(city)[0]||'';
       modal.querySelector('.modal-card').classList.add('stadium-modal');
       modal.querySelector('.modal-head b').textContent='Fiche du stade';
-      modalBody.innerHTML=`<div class="tag">Ville hôte · ${esc(v.country||'')}</div><div class="detail-title">🏟️ ${esc(stadiums[city]||city)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(stadiums[city]||'Stade')} — ${esc(city)}"><img src="${img}" alt="${esc(stadiums[city]||'Stade')}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Où se trouve la ville ?</b><span>Carte interactive</span></div><p class="small">Survole les autres points ou clique pour changer de stade.</p>${renderHostMap(city)}</div></div><div class="metric-grid"><div class="metric"><b>Ville</b>${esc(city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Matchs intégrés</b>${matches.length}</div><div class="metric"><b>Stade</b>${esc(stadiums[city]||'')}</div></div><h3 class="section-title" style="margin-top:18px">Matchs dans ce stade</h3><div class="stadium-detail-list">${matches.map(m=>`<div class="mini-match" onclick="openDetail(${jsArg(m.id)})"><div><div class="mini-teams">${m.time} · ${flags[m.home]||'🏳️'} ${esc(m.home)} - ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="small">${dateLabel(m.date)} · ${esc(m.phase)} · ${esc(m.tv)}</div></div>${m.tv.includes('M6')?'<span class="free-badge">M6/M6+</span>':''}</div>`).join('')||'<div class="empty-soft">Aucun match intégré pour ce stade.</div>'}</div><div class="actions"><button onclick="showStadiumMatches('${esc(city)}')">Voir dans tous les matchs</button><button onclick="shareApp()">Partager l’app</button></div>`;
+      modalBody.innerHTML=`<div class="tag">Ville hôte · ${esc(v.country||'')}</div><div class="detail-title">🏟️ ${esc(stadiums[city]||city)}</div><div class="venue-grid"><div class="venue-photo" data-label="${esc(stadiums[city]||'Stade')} — ${esc(city)}"><img src="${img}" alt="${esc(stadiums[city]||'Stade')}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Où se trouve la ville ?</b><span>Carte interactive</span></div><p class="small">Survole les autres points ou clique pour changer de stade.</p>${renderHostMap(city)}</div></div><div class="metric-grid"><div class="metric"><b>Ville</b>${esc(city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Fuseau local</b>${esc(v.timezone||'À confirmer')}</div><div class="metric"><b>Matchs intégrés</b>${matches.length}</div><div class="metric"><b>Stade</b>${esc(stadiums[city]||'')}</div></div><h3 class="section-title" style="margin-top:18px">Matchs dans ce stade</h3><div class="stadium-detail-list">${matches.map(m=>`<div class="mini-match" onclick="openDetail(${jsArg(m.id)})"><div><div class="mini-teams">${m.time} · ${flags[m.home]||'🏳️'} ${esc(m.home)} - ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="small">${dateLabel(m.date)} · ${esc(m.phase)} · ${esc(m.tv)}</div></div>${m.tv.includes('M6')?'<span class="free-badge">M6/M6+</span>':''}</div>`).join('')||'<div class="empty-soft">Aucun match intégré pour ce stade.</div>'}</div><div class="actions"><button onclick="showStadiumMatches('${esc(city)}')">Voir dans tous les matchs</button><button onclick="shareApp()">Partager l'app</button></div>`;
       openModal()
     }
     function showStadiumMatches(city){closeModal();q.value=city;activeTab='matches';renderAll();setTimeout(()=>list.scrollIntoView({behavior:'smooth'}),80)}
@@ -350,7 +367,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       input?.blur();
     }
 
-    
     function scrollToNextMatchSoon(){
       if(activeTab!=='matches') return;
       setTimeout(()=>{
