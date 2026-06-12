@@ -26,9 +26,23 @@
 
     async function fetchPredictions(matchId){
       try{
-        const rows=await supabaseRequest(`match_predictions?select=choice,count&match_id=eq.${encodeURIComponent(matchId)}`);
+        const rows=await supabaseRequest(`match_predictions?select=choice&match_id=eq.${encodeURIComponent(matchId)}`);
         const totals={home:0,draw:0,away:0};
-        (rows||[]).forEach(r=>{totals[r.choice]=Number(r.count||0)});
+
+        (rows||[]).forEach(r=>{
+          const raw=String(r.choice||'').trim().toLowerCase();
+          if(raw==='home' || raw==='domicile') totals.home++;
+          else if(raw==='draw' || raw==='nul' || raw==='match nul') totals.draw++;
+          else if(raw==='away' || raw==='extérieur' || raw==='exterieur') totals.away++;
+          else{
+            const m=data.find(x=>String(x.id)===String(matchId));
+            if(m){
+              if(raw===String(m.home||'').trim().toLowerCase()) totals.home++;
+              else if(raw===String(m.away||'').trim().toLowerCase()) totals.away++;
+            }
+          }
+        });
+
         return totals;
       }catch(e){
         console.warn('Pronostics indisponibles',e);
