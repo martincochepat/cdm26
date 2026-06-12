@@ -1,0 +1,373 @@
+// Guide Mondial 2026 — Module Auth + Classement Challenge
+// V1 — Magic Link Supabase + Pseudo + Points pronostics/quiz
+
+const AUTH_SUPABASE_URL = 'https://lclnnxirkuuwexxcmmho.supabase.co';
+const AUTH_SUPABASE_KEY = 'sb_publishable_F-2bOXBmO23_FfRv5KTqXg_jP2osQM2';
+
+let currentUser = null;
+let currentProfile = null;
+let leaderboardRows = [];
+
+// ─── Helpers Supabase Auth ─────────────────────────────────────────────────
+
+async function authFetch(path, options = {}) {
+  const session = await getSession();
+  const token = session?.access_token || AUTH_SUPABASE_KEY;
+  const headers = Object.assign({
+    apikey: AUTH_SUPABASE_KEY,
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }, options.headers || {});
+  const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, Object.assign({ headers, cache: 'no-store' }, options));
+  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function getSession() {
+  try {
+    const raw = localStorage.getItem('sb-lclnnxirkuuwexxcmmho-auth-token');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Vérifie expiration
+    if (parsed?.expires_at && Date.now() / 1000 > parsed.expires_at) return null;
+    return parsed;
+  } catch (_) { return null; }
+}
+
+async function getUser() {
+  const session = await getSession();
+  if (!session?.access_token) return null;
+  try {
+    const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: AUTH_SUPABASE_KEY,
+        Authorization: `Bearer ${session.access_token}`,
+      }
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (_) { return null; }
+}
+
+// ─── Magic Link ────────────────────────────────────────────────────────────
+
+async function sendMagicLink(email) {
+  const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/otp`, {
+    method: 'POST',
+    headers: {
+      apikey: AUTH_SUPABASE_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.msg || err.message || 'Erreur envoi email');
+  }
+  return true;
+}
+
+async function signOut() {
+  const session = await getSession();
+  if (session?.access_token) {
+    await fetch(`${AUTH_SUPABASE_URL}/auth/v1/logout`, {
+      method: 'POST',
+      headers: {
+        apikey: AUTH_SUPABASE_KEY,
+        Authorization: `Bearer ${session.access_token}`,
+      }
+    }).catch(() => {});
+  }
+  localStorage.removeItem('sb-lclnnxirkuuwexxcmmho-auth-token');
+  currentUser = null;
+  currentProfile = null;
+  renderChallenge();
+}
+
+// ─── Profil utilisateur ────────────────────────────────────────────────────
+
+async function loadProfile(userId) {
+  try {
+    const rows = await authFetch(`user_profiles?id=eq.${userId}&select=*`);
+    return rows && rows[0] ? rows[0] : null;
+  } catch (_) { return null; }
+}
+
+async function createProfile(userId, pseudo, avatarEmoji = '⚽') {
+  const rows = await authFetch('user_profiles', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({ id: userId, pseudo, avatar_emoji: avatarEmoji })
+  });
+  return rows && rows[0] ? rows[0] : null;
+}
+
+async function loadLeaderboard() {
+  try {
+    leaderboardRows = await authFetch(
+      'user_profiles?select=pseudo,avatar_emoji,points,predictions_correct,predictions_total,quiz_correct&order=points.desc&limit=50'
+    );
+  } catch (_) { leaderboardRows = []; }
+}
+
+// ─── Gestion du token dans l'URL (retour Magic Link) ──────────────────────
+
+async function handleAuthCallback() {
+  const hash = window.location.hash;
+  if (!hash.includes('access_token')) return false;
+
+  const params = new URLSearchParams(hash.replace('#', ''));
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  const expires_in = params.get('expires_in');
+
+  if (!access_token) return false;
+
+  const session = {
+    access_token,
+    refresh_token,
+    expires_at: Math.floor(Date.now() / 1000) + Number(expires_in || 3600),
+  };
+  localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(session));
+  window.history.replaceState({}, document.title, window.location.pathname);
+  return true;
+}
+
+// ─── Calcul des points ─────────────────────────────────────────────────────
+// Appelé automatiquement quand loadDynamicData() met à jour les matchs
+
+async function recalculateUserPoints(userId) {
+  try {
+    // Récupère tous les pronostics de l'utilisateur
+    const preds = await authFetch(`match_predictions?user_id=eq.${userId}&select=match_id,choice`);
+    if (!preds || !preds.length) return;
+
+    let points = 0;
+    let correct = 0;
+    let total = preds.length;
+
+    for (const pred of preds) {
+      const match = data.find(m => String(m.id) === String(pred.match_id));
+      if (!match || match.status !== 'finished') continue;
+
+      const opts = pollOptionsFor(match); // [home, 'Nul', away]
+      const realResult = match.score_a > match.score_b ? opts[0]
+        : match.score_a < match.score_b ? opts[2]
+        : opts[1];
+
+      if (pred.choice === realResult) {
+        points += 3;
+        correct++;
+      }
+    }
+
+    // Points quiz
+    const quizAnswers = await authFetch(`user_quiz_answers?user_id=eq.${userId}&select=points_earned`);
+    const quizPoints = (quizAnswers || []).reduce((sum, r) => sum + (r.points_earned || 0), 0);
+    const quizCorrect = (quizAnswers || []).filter(r => r.points_earned > 0).length;
+
+    points += quizPoints;
+
+    // Met à jour le profil
+    await authFetch(`user_profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        points,
+        predictions_correct: correct,
+        predictions_total: total,
+        quiz_correct: quizCorrect,
+        updated_at: new Date().toISOString(),
+      })
+    });
+  } catch (err) {
+    console.warn('Recalcul points échoué', err);
+  }
+}
+
+// ─── Rendu ─────────────────────────────────────────────────────────────────
+
+function renderChallenge() {
+  const box = document.getElementById('challengeBox');
+  if (!box) return;
+
+  const myRank = currentProfile
+    ? leaderboardRows.findIndex(r => r.pseudo === currentProfile.pseudo) + 1
+    : 0;
+
+  box.innerHTML = `
+    ${renderAuthBlock(myRank)}
+    ${renderLeaderboard(myRank)}
+  `;
+}
+
+function renderAuthBlock(myRank) {
+  if (!currentUser) {
+    return `
+      <div class="challenge-hero">
+        <div class="challenge-headline">🔥 Qui pronostique le mieux ?</div>
+        <p class="challenge-sub">Vote sur chaque match et réponds au quiz du jour.<br>Gagne des points dès que les résultats tombent.</p>
+        <div class="challenge-points-preview">
+          <span>✅ Vainqueur correct</span><b>+3 pts</b>
+          <span>🎯 Score exact</span><b>+5 pts</b>
+          <span>🧠 Quiz du jour</span><b>+2 pts</b>
+        </div>
+        <p class="challenge-sub" style="margin-top:8px">Inscription en 10 secondes, juste ton email.</p>
+        <div id="magicLinkForm" class="magic-form">
+          <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email">
+          <button onclick="handleMagicLink()">Rejoindre le classement →</button>
+        </div>
+        <div id="magicStatus" class="magic-status"></div>
+      </div>
+    `;
+  }
+
+  if (!currentProfile) {
+    return `
+      <div class="challenge-hero">
+        <div class="challenge-headline">👋 Bienvenue !</div>
+        <p class="challenge-sub">Connecté avec <b>${esc(currentUser.email)}</b><br>Choisis ton pseudo pour apparaître dans le classement.</p>
+        <div class="magic-form">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            ${['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯'].map(e =>
+              `<button class="emoji-btn" onclick="selectEmoji('${e}')" id="emoji-${e}">${e}</button>`
+            ).join('')}
+          </div>
+          <input id="pseudoInput" type="text" placeholder="Ton pseudo (ex: MartinC)" maxlength="20" autocomplete="off">
+          <button onclick="handleCreateProfile()">Choisir mon pseudo →</button>
+        </div>
+        <div id="pseudoStatus" class="magic-status"></div>
+        <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="challenge-hero connected">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:32px">${esc(currentProfile.avatar_emoji)}</span>
+        <div>
+          <div class="challenge-headline" style="margin:0">${esc(currentProfile.pseudo)}</div>
+          <div class="challenge-sub" style="margin:0">
+            ${myRank ? `🏅 <b>#${myRank}</b> au classement · ` : ''}
+            <b>${currentProfile.points} pts</b> · 
+            ${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronostics · 
+            ${currentProfile.quiz_correct} quiz
+          </div>
+        </div>
+      </div>
+      <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
+    </div>
+  `;
+}
+
+function renderLeaderboard(myRank) {
+  if (!leaderboardRows.length) {
+    return `<div class="challenge-empty">Aucun joueur pour l'instant — sois le premier ! 🏆</div>`;
+  }
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const rows = leaderboardRows.map((r, i) => {
+    const isMe = currentProfile && r.pseudo === currentProfile.pseudo;
+    const rank = i + 1;
+    const maxPts = leaderboardRows[0].points || 1;
+    const pct = Math.max(4, Math.round((r.points / maxPts) * 100));
+
+    return `
+      <div class="lb-row ${isMe ? 'lb-me' : ''}">
+        <span class="lb-rank">${medals[i] || rank}</span>
+        <span class="lb-avatar">${esc(r.avatar_emoji)}</span>
+        <div class="lb-info">
+          <b>${esc(r.pseudo)}</b>
+          <div class="lb-bar"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <span class="lb-pts"><b>${r.points}</b><small>pts</small></span>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="challenge-leaderboard">
+      <h3 style="margin:0 0 14px">🏆 Classement</h3>
+      ${rows}
+      ${!currentUser ? `<div class="lb-cta">Rejoins le classement pour apparaître ici ↑</div>` : ''}
+    </div>
+  `;
+}
+
+// ─── Handlers UI ───────────────────────────────────────────────────────────
+
+let selectedEmoji = '⚽';
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById(`emoji-${e}`);
+  if (btn) btn.classList.add('active');
+}
+
+async function handleMagicLink() {
+  const email = document.getElementById('magicEmail')?.value?.trim();
+  const status = document.getElementById('magicStatus');
+  if (!email || !email.includes('@')) {
+    if (status) status.innerHTML = '<span class="err">Entre une adresse email valide.</span>';
+    return;
+  }
+  if (status) status.innerHTML = 'Envoi en cours...';
+  try {
+    await sendMagicLink(email);
+    if (status) status.innerHTML = '📬 <b>Check tes mails !</b> Clique sur le lien pour te connecter. (Vérifie tes spams si besoin)';
+    const form = document.getElementById('magicLinkForm');
+    if (form) form.style.opacity = '0.5';
+  } catch (err) {
+    if (status) status.innerHTML = `<span class="err">Erreur : ${esc(err.message)}</span>`;
+  }
+}
+
+async function handleCreateProfile() {
+  const pseudo = document.getElementById('pseudoInput')?.value?.trim();
+  const status = document.getElementById('pseudoStatus');
+  if (!pseudo || pseudo.length < 2) {
+    if (status) status.innerHTML = '<span class="err">Pseudo trop court (2 caractères minimum).</span>';
+    return;
+  }
+  if (pseudo.length > 20) {
+    if (status) status.innerHTML = '<span class="err">Pseudo trop long (20 caractères maximum).</span>';
+    return;
+  }
+  if (status) status.innerHTML = 'Création du profil...';
+  try {
+    const profile = await createProfile(currentUser.id, pseudo, selectedEmoji);
+    if (!profile) throw new Error('Profil non créé');
+    currentProfile = profile;
+    await loadLeaderboard();
+    renderChallenge();
+    if (typeof renderFanZone === 'function') renderFanZone();
+  } catch (err) {
+    const msg = err.message.includes('unique') ? 'Ce pseudo est déjà pris, choisis-en un autre.' : err.message;
+    if (status) status.innerHTML = `<span class="err">${esc(msg)}</span>`;
+  }
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+
+async function initAuth() {
+  // Gère le retour du Magic Link
+  await handleAuthCallback();
+
+  // Charge l'utilisateur et son profil
+  currentUser = await getUser();
+  if (currentUser) {
+    currentProfile = await loadProfile(currentUser.id);
+    if (currentProfile) {
+      await recalculateUserPoints(currentUser.id);
+      currentProfile = await loadProfile(currentUser.id);
+    }
+  }
+
+  await loadLeaderboard();
+  renderChallenge();
+}
