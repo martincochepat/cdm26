@@ -29,8 +29,27 @@ async function getSession() {
     const raw = localStorage.getItem('sb-lclnnxirkuuwexxcmmho-auth-token');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Vérifie expiration
-    if (parsed?.expires_at && Date.now() / 1000 > parsed.expires_at) return null;
+    if (!parsed?.access_token) return null;
+    // Si le token expire dans moins de 5 min, on le rafraîchit
+    if (parsed?.expires_at && Date.now() / 1000 > parsed.expires_at - 300) {
+      if (!parsed?.refresh_token) return null;
+      try {
+        const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { apikey: AUTH_SUPABASE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: parsed.refresh_token })
+        });
+        if (!res.ok) { localStorage.removeItem('sb-lclnnxirkuuwexxcmmho-auth-token'); return null; }
+        const data = await res.json();
+        const newSession = {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
+        };
+        localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(newSession));
+        return newSession;
+      } catch (_) { return null; }
+    }
     return parsed;
   } catch (_) { return null; }
 }
@@ -230,7 +249,7 @@ function renderAuthBlock(myRank) {
           </div>
         </div>
         <button onclick="openAuthModal()" style="display:block;width:100%;padding:20px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:18px;font-weight:950;font-size:17px;cursor:pointer;box-shadow:0 14px 40px #ffd16633;font-family:inherit;text-align:center">
-          🏆 Rejoindre le classement — inscription gratuite en 10 sec
+          🏆 Se connecter / Rejoindre le classement
         </button>
       </div>
     `;
