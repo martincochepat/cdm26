@@ -262,13 +262,17 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const pointsEarned = isCorrect ? 2 : 0;
         const questionId = quizKey; // unique par jour + question
 
-        // Insère dans user_quiz_answers (ignore si déjà répondu grâce à UNIQUE)
-        await supabasePost('user_quiz_answers', {
-          user_id: currentUser.id,
-          question_id: questionId,
-          answer: ans,
-          is_correct: isCorrect,
-          points_earned: pointsEarned,
+        // Insère dans user_quiz_answers avec token auth (ignore si déjà répondu)
+        await authFetch('user_quiz_answers', {
+          method: 'POST',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            question_id: questionId,
+            answer: ans,
+            is_correct: isCorrect,
+            points_earned: pointsEarned,
+          }),
         });
 
         // Recalcule les points du classement
