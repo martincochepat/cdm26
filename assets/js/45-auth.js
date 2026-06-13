@@ -13,11 +13,11 @@ let leaderboardRows = [];
 async function authFetch(path, options = {}) {
   const session = await getSession();
   const token = session?.access_token || AUTH_SUPABASE_KEY;
-  const headers = Object.assign(options.headers || {}, {
+  const headers = Object.assign({
     apikey: AUTH_SUPABASE_KEY,
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
-  });
+  }, options.headers || {});
   const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, Object.assign({ headers, cache: 'no-store' }, options));
   if (!res.ok) throw new Error(await res.text());
   if (res.status === 204) return null;
@@ -154,11 +154,10 @@ async function recalculateUserPoints(userId) {
   try {
     // Récupère tous les pronostics de l'utilisateur
     const preds = await authFetch(`match_predictions?user_id=eq.${userId}&select=match_id,choice`);
-    if (!preds || !preds.length) return;
 
     let points = 0;
     let correct = 0;
-    let total = preds.length;
+    let total = (preds || []).length;
 
     for (const pred of preds) {
       const match = data.find(m => String(m.id) === String(pred.match_id));
