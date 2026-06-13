@@ -21,7 +21,9 @@ async function authFetch(path, options = {}) {
   const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, Object.assign({ headers, cache: 'no-store' }, options));
   if (!res.ok) throw new Error(await res.text());
   if (res.status === 204) return null;
-  return res.json();
+  const text = await res.text();
+  if (!text) return null;
+  try { return JSON.parse(text); } catch(_) { return null; }
 }
 
 async function getSession() {
