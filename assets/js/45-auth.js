@@ -228,18 +228,28 @@ function renderChallenge() {
     ? leaderboardRows.findIndex(r => r.pseudo === currentProfile.pseudo) + 1
     : 0;
 
-  box.innerHTML = `
+  const newHtml = `
     ${renderAuthBlock(myRank)}
     ${renderBonusBlock()}
     ${renderLeaderboard(myRank)}
     <div id="predictionHistoryContainer"></div>
   `;
 
+  // Ne réécrit le DOM que si le contenu a réellement changé (évite le flash/scroll-jump)
+  if (box.innerHTML.trim() !== newHtml.trim()) {
+    // Préserve le scroll de la page pendant la mise à jour
+    const scrollY = window.scrollY;
+    box.innerHTML = newHtml;
+    window.scrollTo(0, scrollY);
+  }
+
   // Charge l'historique de façon async (nécessite authFetch)
   if (currentUser) {
     renderPredictionHistory().then(html => {
       const container = document.getElementById('predictionHistoryContainer');
-      if (container) container.innerHTML = html;
+      if (container && container.innerHTML.trim() !== html.trim()) {
+        container.innerHTML = html;
+      }
     });
   }
 }
