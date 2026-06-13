@@ -56,7 +56,16 @@
         payload.user_id = currentUser.id;
       }
 
-      await supabasePost('match_predictions', payload);
+      // Utilise authFetch si connecté pour envoyer le bon token
+      if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
+        await authFetch('match_predictions', {
+          method: 'POST',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await supabasePost('match_predictions', payload);
+      }
 
       // Recharge les pronostics pour mettre à jour l'affichage
       await loadPredictions();
