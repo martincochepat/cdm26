@@ -229,7 +229,7 @@ function renderAuthBlock(myRank) {
           </div>
         </div>
         <button onclick="openAuthModal()" style="display:block;width:100%;padding:20px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:18px;font-weight:950;font-size:17px;cursor:pointer;box-shadow:0 14px 40px #ffd16633;font-family:inherit;text-align:center">
-          🏆 Rejoindre le classement — inscription gratuite en 10 sec
+          🏆 Se connecter · Rejoindre le classement
         </button>
       </div>
     `;
