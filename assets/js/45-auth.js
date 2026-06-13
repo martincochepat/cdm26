@@ -267,15 +267,17 @@ function renderAuthBlock(myRank) {
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap" id="notifBtnContainer"></div>
-      <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">Se déconnecter</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div id="notifBtnContainer"></div>
+        <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">Se déconnecter</button>
+      </div>
     </div>
   `;
-  // Injecter le bouton notifs après render
+  // Injecter le bouton notifs après que le DOM soit prêt
   setTimeout(async () => {
     const container = document.getElementById('notifBtnContainer');
     if (container) container.innerHTML = await renderNotificationBtn();
-  }, 100);
+  }, 800);
 }
 
 
@@ -450,7 +452,7 @@ async function handleCreateProfile() {
 
 // ─── Notifications OneSignal ───────────────────────────────────────────────
 
-async function initNotifications() {
+function initNotifications() {
   if (!window.OneSignalDeferred) return;
   window.OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
@@ -461,31 +463,22 @@ async function initNotifications() {
   });
 }
 
-async function getNotificationState() {
-  if (!window.OneSignalDeferred) return 'unsupported';
-  return new Promise(resolve => {
-    window.OneSignalDeferred.push(async function(OneSignal) {
-      const permission = await OneSignal.Notifications.permission;
-      resolve(permission ? 'enabled' : 'disabled');
-    });
-  });
-}
-
 async function toggleNotifications() {
   if (!window.OneSignalDeferred) {
     alert('Les notifications ne sont pas disponibles sur ce navigateur.');
     return;
   }
   window.OneSignalDeferred.push(async function(OneSignal) {
-    const permission = await OneSignal.Notifications.permission;
-    if (permission) {
-      await OneSignal.Notifications.requestPermission();
+    const subscribed = await OneSignal.User.PushSubscription.optedIn;
+    if (subscribed) {
       await OneSignal.User.PushSubscription.optOut();
     } else {
       await OneSignal.Notifications.requestPermission();
     }
-    // Rafraîchit le bloc
-    renderChallenge();
+    setTimeout(() => {
+      const container = document.getElementById('notifBtnContainer');
+      if (container) renderNotificationBtn().then(html => { container.innerHTML = html; });
+    }, 500);
   });
 }
 
@@ -496,7 +489,7 @@ async function renderNotificationBtn() {
       const permission = await OneSignal.Notifications.permission;
       const subscribed = await OneSignal.User.PushSubscription.optedIn;
       if (permission && subscribed) {
-        resolve('<button onclick="toggleNotifications()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Notifs activées</button>');
+        resolve('<button onclick="toggleNotifications()" style="background:transparent;border:1px solid #00a85955;color:#00a859;-webkit-text-fill-color:#00a859;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Notifs activées</button>');
       } else {
         resolve('<button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button>');
       }
