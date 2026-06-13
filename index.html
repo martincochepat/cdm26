@@ -24,7 +24,35 @@
     // PWA légère : pas de cache agressif, juste ce qu'il faut pour rendre l'app installable.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=49').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=49').then(reg => {
+          // Vérifie immédiatement s'il y a une nouvelle version
+          reg.update();
+          // Si un nouveau SW est en attente, on l'active et on recharge
+          if (reg.waiting) {
+            reg.waiting.postMessage('skipWaiting');
+          }
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && reg.active) {
+                newWorker.postMessage('skipWaiting');
+              }
+            });
+          });
+        }).catch(() => {});
+      });
+      // Recharge automatiquement quand un nouveau SW prend le contrôle
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+      // Re-vérifie les mises à jour quand l'app revient au premier plan
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          navigator.serviceWorker.getRegistration().then(reg => reg && reg.update());
+        }
       });
     }
     if (window.caches) {
