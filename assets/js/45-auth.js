@@ -267,9 +267,13 @@ function renderAuthBlock(myRank) {
           </div>
         </div>
       </div>
-      <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">Se déconnecter</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div id="notifBtnContainer"><button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button></div>
+        <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">Se déconnecter</button>
+      </div>
     </div>
   `;
+  setTimeout(refreshNotifBtn, 1000);
 }
 
 
@@ -436,9 +440,66 @@ async function handleCreateProfile() {
     await loadLeaderboard();
     renderChallenge();
     if (typeof renderFanZone === 'function') renderFanZone();
+    // Activation auto des notifications à la création du compte
+    enableNotifications();
   } catch (err) {
     const msg = err.message.includes('unique') ? 'Ce pseudo est déjà pris, choisis-en un autre.' : err.message;
     if (status) status.innerHTML = `<span class="err">${esc(msg)}</span>`;
+  }
+}
+
+// ─── Notifications OneSignal ───────────────────────────────────────────────
+
+async function initNotifications() {
+  if (!window.OneSignalDeferred) return;
+  window.OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: 'b3e956ce-d830-4ad3-9fc9-383ac8c5bb87',
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true,
+    });
+    refreshNotifBtn();
+  });
+}
+
+function isNotifSubscribed() {
+  try {
+    return !!(window.OneSignal && window.OneSignal.User && window.OneSignal.User.PushSubscription && window.OneSignal.User.PushSubscription.optedIn);
+  } catch(_) { return false; }
+}
+
+function refreshNotifBtn() {
+  const container = document.getElementById('notifBtnContainer');
+  if (!container) return;
+  if (isNotifSubscribed()) {
+    container.innerHTML = '<button onclick="toggleNotifications()" style="background:transparent;border:1px solid #00a85955;color:#00a859;-webkit-text-fill-color:#00a859;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Notifs activées</button>';
+  } else {
+    container.innerHTML = '<button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button>';
+  }
+}
+
+async function enableNotifications() {
+  if (!window.OneSignal) return;
+  try {
+    await window.OneSignal.Notifications.requestPermission();
+    setTimeout(refreshNotifBtn, 500);
+  } catch(_) {}
+}
+
+async function toggleNotifications() {
+  if (!window.OneSignal) {
+    alert('Notifications non disponibles sur ce navigateur.');
+    return;
+  }
+  try {
+    if (isNotifSubscribed()) {
+      await window.OneSignal.User.PushSubscription.optOut();
+    } else {
+      await window.OneSignal.Notifications.requestPermission();
+    }
+    setTimeout(refreshNotifBtn, 500);
+  } catch(err) {
+    console.warn('Notif error:', err);
   }
 }
 
@@ -460,4 +521,5 @@ async function initAuth() {
 
   await loadLeaderboard();
   renderChallenge();
+  initNotifications();
 }

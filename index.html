@@ -31,6 +31,10 @@
       caches.keys().then(keys => keys.filter(k => !k.includes('v37')).forEach(key => caches.delete(key))).catch(()=>{});
     }
   </script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+  </script>
 </head>
 <body>
   <main class="wrap">
