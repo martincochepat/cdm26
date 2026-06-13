@@ -14,6 +14,14 @@ async function loadDynamicData(){
         supabaseStatus = 'online';
         supabaseLastSync = new Date();
         renderAll();
+        // Rafraîchit le bloc Challenge (points, historique) si connecté
+        if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
+          recalculateUserPoints(currentUser.id).then(()=>{
+            if(typeof loadLeaderboard === 'function') loadLeaderboard().then(()=>{
+              if(typeof renderChallenge === 'function') renderChallenge();
+            });
+          });
+        }
       }catch(err){
         console.warn('Données dynamiques indisponibles, conservation des données locales.', err);
         supabaseStatus = 'offline';
