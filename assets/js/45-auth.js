@@ -280,7 +280,7 @@ function openAuthModal() {
     div.id = 'authModal';
     div.onclick = function(e) { if(e.target.id==='authModal') closeAuthModal(); };
     div.setAttribute('style','position:fixed;inset:0;background:#000000bb;backdrop-filter:blur(12px);z-index:99999;display:none;align-items:center;justify-content:center;padding:20px');
-    div.innerHTML = `<div style="background:linear-gradient(145deg,#0b223c,#1b1025);border:1px solid #ffffff22;border-radius:28px;padding:36px 32px;max-width:460px;width:100%;position:relative;box-shadow:0 40px 100px #000000aa"><button onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:#ffffff15;border:1px solid #ffffff22;color:#fff;-webkit-text-fill-color:#fff;border-radius:99px;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit">✕</button><div id="authStep1"><div style="font-size:52px;text-align:center;margin-bottom:14px">🏆</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Rejoins le classement</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 20px;font-size:15px;text-align:center">Entre ton email, on t'envoie un lien magique. Pas de mot de passe.</p><input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none"><button onclick="handleMagicLink()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Envoyer le lien →</button><div id="magicStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8;text-align:center"></div></div><div id="authStep2" style="display:none"><div style="font-size:52px;text-align:center;margin-bottom:14px">📬</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Check tes mails !</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 16px;font-size:15px;text-align:center">Un lien a été envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter.</p></div></div>`;
+    div.innerHTML = `<div style="background:linear-gradient(145deg,#0b223c,#1b1025);border:1px solid #ffffff22;border-radius:28px;padding:36px 32px;max-width:460px;width:100%;position:relative;box-shadow:0 40px 100px #000000aa"><button onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:#ffffff15;border:1px solid #ffffff22;color:#fff;-webkit-text-fill-color:#fff;border-radius:99px;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit">✕</button><div id="authStep1"><div style="font-size:52px;text-align:center;margin-bottom:14px">🏆</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Rejoins le classement</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 20px;font-size:15px;text-align:center">Entre ton email, on t'envoie un lien magique. Pas de mot de passe.</p><input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none"><button onclick="handleMagicLink()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Envoyer le lien →</button><div id="magicStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8;text-align:center"></div></div><div id="authStep2" style="display:none"><div style="font-size:52px;text-align:center;margin-bottom:14px">📬</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Entre ton code</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 20px;font-size:15px;text-align:center">Code envoyé à <b id="sentEmailDisplay"></b></p><input id="otpCode" type="number" placeholder="123456" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px;color:#eaf5ff;font-size:28px;font-family:inherit;margin-bottom:12px;outline:none;text-align:center"><button onclick="handleVerifyOTP()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Valider le code →</button><div id="otpStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8;text-align:center"></div></div></div>`;
     document.body.appendChild(div);
   }
   var modal = document.getElementById('authModal');
@@ -361,9 +361,60 @@ async function handleMagicLink() {
     const emailEl = document.getElementById('magicEmail');
     const sentDisplay = document.getElementById('sentEmailDisplay');
     if (sentDisplay && emailEl) sentDisplay.textContent = emailEl.value;
+    window._otpEmail = document.getElementById('magicEmail')?.value?.trim() || '';
     showStep(2);
   } catch (err) {
     if (status) status.innerHTML = `<span class="err">Erreur : ${esc(err.message)}</span>`;
+  }
+}
+
+
+async function verifyOTP(email, token) {
+  const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/verify`, {
+    method: 'POST',
+    headers: { apikey: AUTH_SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, token, type: 'email' })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.msg || err.message || 'Code invalide');
+  }
+  const data = await res.json();
+  if (data.access_token) {
+    localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
+    }));
+  }
+  return data;
+}
+
+async function handleVerifyOTP() {
+  const email = window._otpEmail || '';
+  const code = document.getElementById('otpCode')?.value?.trim();
+  const status = document.getElementById('otpStatus');
+  if (!code || code.length < 6) {
+    if (status) status.innerHTML = '<span style="color:#ff6b6b">Entre le code à 6 chiffres.</span>';
+    return;
+  }
+  if (status) status.innerHTML = 'Vérification...';
+  try {
+    await verifyOTP(email, code);
+    closeAuthModal();
+    currentUser = await getUser();
+    if (currentUser) {
+      currentProfile = await loadProfile(currentUser.id);
+      if (currentProfile) {
+        await recalculateUserPoints(currentUser.id);
+        currentProfile = await loadProfile(currentUser.id);
+      }
+    }
+    await loadLeaderboard();
+    renderChallenge();
+    if (typeof renderFanZone === 'function') renderFanZone();
+  } catch (err) {
+    if (status) status.innerHTML = `<span style="color:#ff6b6b">${esc(err.message)}</span>`;
   }
 }
 
