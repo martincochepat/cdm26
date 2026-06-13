@@ -163,12 +163,13 @@ async function recalculateUserPoints(userId) {
 
     for (const pred of preds) {
       const match = data.find(m => String(m.id) === String(pred.match_id));
-      if (!match || match.status !== 'finished') continue;
+      if (!match || (match.status !== 'finished' && matchStatusKey(match) !== 'finished')) continue;
+      if (match.score_a === null || match.score_b === null) continue;
 
-      const opts = pollOptionsFor(match); // [home, 'Nul', away]
-      const realResult = match.score_a > match.score_b ? opts[0]
-        : match.score_a < match.score_b ? opts[2]
-        : opts[1];
+      // realResult en home/draw/away pour matcher pred.choice
+      const realResult = match.score_a > match.score_b ? 'home'
+        : match.score_a < match.score_b ? 'away'
+        : 'draw';
 
       if (pred.choice === realResult) {
         points += 3;
@@ -182,6 +183,23 @@ async function recalculateUserPoints(userId) {
     const quizCorrect = (quizAnswers || []).filter(r => r.points_earned > 0).length;
 
     points += quizPoints;
+
+    // Points bonus : pronostic vainqueur du tournoi (+15 pts)
+    try {
+      const finalMatch = data.find(m => String(m.phase||'').toLowerCase() === 'finale');
+      if (finalMatch && matchStatusKey(finalMatch) === 'finished' && finalMatch.score_a !== null && finalMatch.score_b !== null) {
+        const profileRows = await authFetch(`user_profiles?id=eq.${userId}&select=tournament_winner_pick`);
+        const pick = profileRows && profileRows[0] ? profileRows[0].tournament_winner_pick : null;
+        if (pick) {
+          const finalWinner = finalMatch.score_a > finalMatch.score_b ? finalMatch.home
+            : finalMatch.score_a < finalMatch.score_b ? finalMatch.away
+            : null;
+          if (finalWinner && pick === finalWinner) {
+            points += 15;
+          }
+        }
+      }
+    } catch(_) {}
 
     // Met à jour le profil
     await authFetch(`user_profiles?id=eq.${userId}`, {
@@ -212,8 +230,18 @@ function renderChallenge() {
 
   box.innerHTML = `
     ${renderAuthBlock(myRank)}
+    ${renderBonusBlock()}
     ${renderLeaderboard(myRank)}
+    <div id="predictionHistoryContainer"></div>
   `;
+
+  // Charge l'historique de façon async (nécessite authFetch)
+  if (currentUser) {
+    renderPredictionHistory().then(html => {
+      const container = document.getElementById('predictionHistoryContainer');
+      if (container) container.innerHTML = html;
+    });
+  }
 }
 
 function renderAuthBlock(myRank) {
@@ -503,6 +531,128 @@ async function toggleNotifications() {
   } catch(err) {
     console.warn('Notif error:', err);
   }
+}
+
+// ─── Pronostic Bonus : vainqueur du tournoi (+15 pts) ──────────────────────
+
+const WC26_TEAMS = ["Afrique du Sud", "Algérie", "Allemagne", "Angleterre", "Arabie saoudite", "Argentine", "Australie", "Autriche", "Belgique", "Bosnie-Herzégovine", "Brésil", "Canada", "Cap-Vert", "Colombie", "Corée du Sud", "Croatie", "Curaçao", "Côte d'Ivoire", "Equateur", "Espagne", "France", "Ghana", "Haïti", "Irak", "Iran", "Japon", "Jordanie", "Maroc", "Mexique", "Norvège", "Nouvelle-Zélande", "Ouzbékistan", "Panama", "Paraguay", "Pays-Bas", "Portugal", "Qatar", "RD Congo", "Rép. tchèque", "Suisse", "Suède", "Sénégal", "Tunisie", "Turquie", "Uruguay", "Écosse", "Égypte", "États-Unis"];
+
+function isGroupStageOver() {
+  // Vrai si tous les matchs de phase de groupes sont terminés
+  const groupMatches = data.filter(m => String(m.phase||'').toLowerCase().includes('groupe'));
+  if (!groupMatches.length) return false;
+  return groupMatches.every(m => matchStatusKey(m) === 'finished');
+}
+
+async function selectTournamentWinner(team) {
+  if (!currentUser || !currentProfile) return;
+  if (currentProfile.tournament_winner_locked) return;
+  try {
+    await authFetch(`user_profiles?id=eq.${currentUser.id}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ tournament_winner_pick: team }),
+    });
+    currentProfile.tournament_winner_pick = team;
+    renderChallenge();
+  } catch(err) {
+    console.warn('Erreur pronostic bonus', err);
+  }
+}
+
+function renderBonusBlock() {
+  if (!currentUser || !currentProfile) return '';
+  const locked = currentProfile.tournament_winner_locked || isGroupStageOver();
+  const pick = currentProfile.tournament_winner_pick || '';
+
+  if (locked) {
+    return `
+      <div style="background:linear-gradient(135deg,#2a1a4a,#1a0d2e);border:1px solid #c084fc44;border-radius:22px;padding:24px;margin-top:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:28px">🌟</span>
+          <div style="font-size:18px;font-weight:950;background:linear-gradient(90deg,#c084fc,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Question Bonus — Vainqueur du tournoi</div>
+        </div>
+        <p style="color:#cbb8e8;font-size:14px;margin:0">
+          ${pick ? `Ton choix : <b style="color:#fff">${esc(pick)}</b>` : 'Tu n\'as pas fait de pronostic.'}
+          <br>Verrouillé — résultat à la fin du tournoi (+15 pts si correct).
+        </p>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="background:linear-gradient(135deg,#2a1a4a,#1a0d2e);border:1px solid #c084fc44;border-radius:22px;padding:24px;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:28px">🌟</span>
+          <div style="font-size:18px;font-weight:950;background:linear-gradient(90deg,#c084fc,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Question Bonus</div>
+        </div>
+        <span style="background:#c084fc22;border:1px solid #c084fc55;border-radius:99px;padding:5px 14px;font-size:13px;font-weight:950;color:#c084fc">+15 pts</span>
+      </div>
+      <p style="color:#cbb8e8;font-size:14px;margin:0 0 14px">Qui va remporter la Coupe du Monde 2026 ? Modifiable jusqu'à la fin des phases de groupes.</p>
+      <select onchange="selectTournamentWinner(this.value)" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #c084fc44;border-radius:14px;padding:14px 16px;color:#eaf5ff;font-size:15px;font-family:inherit;outline:none;cursor:pointer">
+        <option value="">— Choisis ton favori —</option>
+        ${WC26_TEAMS.map(t => `<option value="${esc(t)}" ${pick===t?'selected':''}>${flags[t]||'🏳️'} ${esc(t)}</option>`).join('')}
+      </select>
+      ${pick ? `<div style="margin-top:10px;color:#c084fc;font-size:13px;font-weight:700">✅ Pronostic actuel : ${esc(pick)}</div>` : ''}
+    </div>
+  `;
+}
+
+// ─── Historique des pronostics ─────────────────────────────────────────────
+
+async function renderPredictionHistory() {
+  if (!currentUser || !currentProfile) return '';
+  let myPreds = [];
+  try {
+    myPreds = await authFetch(`match_predictions?user_id=eq.${currentUser.id}&select=match_id,choice`);
+  } catch(_) { myPreds = []; }
+  if (!myPreds || !myPreds.length) return '';
+
+  const rows = myPreds.map(pred => {
+    const m = data.find(x => String(x.id) === String(pred.match_id));
+    if (!m) return null;
+    const opts = [m.home, 'Match nul', m.away];
+    const choiceLabel = pred.choice === 'home' ? m.home : pred.choice === 'away' ? m.away : pred.choice === 'draw' ? 'Match nul' : pred.choice;
+    const finished = matchStatusKey(m) === 'finished';
+    let resultIcon = '⏳';
+    let resultLabel = 'En attente';
+    let pts = 0;
+    if (finished) {
+      const realResult = m.score_a > m.score_b ? m.home : m.score_a < m.score_b ? m.away : 'Match nul';
+      if (choiceLabel === realResult) {
+        resultIcon = '✅';
+        resultLabel = '+3 pts';
+        pts = 3;
+      } else {
+        resultIcon = '❌';
+        resultLabel = '0 pt';
+      }
+    }
+    return { m, choiceLabel, resultIcon, resultLabel, finished, pts, start: matchStart(m) };
+  }).filter(Boolean).sort((a,b) => b.start - a.start);
+
+  if (!rows.length) return '';
+
+  const itemsHtml = rows.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#ffffff08;border:1px solid #ffffff14;border-radius:14px;margin-bottom:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div style="font-weight:800;font-size:14px">${flags[r.m.home]||'🏳️'} ${esc(r.m.home)} vs ${flags[r.m.away]||'🏳️'} ${esc(r.m.away)}</div>
+        <div style="font-size:12px;color:#8fa6bd;margin-top:2px">Ton choix : <b style="color:#dcecff">${esc(r.choiceLabel)}</b></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:20px">${r.resultIcon}</div>
+        <div style="font-size:12px;font-weight:800;color:${r.pts>0?'#ffd166':'#8fa6bd'}">${r.resultLabel}</div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div style="margin-top:16px">
+      <h3 style="margin:0 0 12px">📜 Mes pronostics</h3>
+      ${itemsHtml}
+    </div>
+  `;
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────
