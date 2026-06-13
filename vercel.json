@@ -3,6 +3,10 @@
     {
       "path": "/api/sync-worldcup",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/send-notifications",
+      "schedule": "* * * * *"
     }
   ]
 }
