@@ -199,7 +199,23 @@ async function recalculateUserPoints(userId) {
   }
 }
 
-// ─── Rendu ────────────────────────────function renderAuthBlock(myRank) {
+// ─── Rendu ─────────────────────────────────────────────────────────────────
+
+function renderChallenge() {
+  const box = document.getElementById('challengeBox');
+  if (!box) return;
+
+  const myRank = currentProfile
+    ? leaderboardRows.findIndex(r => r.pseudo === currentProfile.pseudo) + 1
+    : 0;
+
+  box.innerHTML = `
+    ${renderAuthBlock(myRank)}
+    ${renderLeaderboard(myRank)}
+  `;
+}
+
+function renderAuthBlock(myRank) {
   if (!currentUser) {
     return `
       <div style="background:linear-gradient(135deg,#0d2a4a,#1a0d2e);border:1px solid #ffffff18;border-radius:22px;padding:28px 24px;margin-bottom:4px">
@@ -221,17 +237,17 @@ async function recalculateUserPoints(userId) {
   }
 
   if (!currentProfile) {
+    const emojiList = ['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯','🌟','💪'];
+    const emojiButtons = emojiList.map(function(e) {
+      return '<button onclick="selectEmoji(' + "'" + e + "'" + ')" id="emoji-' + e + '" style="background:#ffffff0d;border:2px solid transparent;border-radius:12px;padding:10px;font-size:22px;cursor:pointer;font-family:inherit;transition:all .15s">' + e + '</button>';
+    }).join('');
     return `
       <div style="background:linear-gradient(135deg,#0d2a4a,#1a0d2e);border:1px solid #ffffff18;border-radius:22px;padding:28px 24px">
         <div style="font-size:clamp(20px,4vw,26px);font-weight:950;margin:0 0 10px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent">👋 Dernière étape !</div>
         <p style="color:#b9c9d8;line-height:1.65;margin:0 0 16px;font-size:15px">Connecté avec <b>${esc(currentUser.email)}</b><br>Choisis ton avatar et ton pseudo pour apparaître dans le classement.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-          ${['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯','🌟','💪'].map(e =>
-            `<button onclick="selectEmoji('${e}')" id="emoji-${e}" style="background:#ffffff0d;border:2px solid transparent;border-radius:12px;padding:10px;font-size:22px;cursor:pointer;font-family:inherit;transition:all .15s">${e}</button>`
-          ).join('')}
-        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${emojiButtons}</div>
         <input id="pseudoInput" type="text" placeholder="Choisis ton pseudo (ex: MartinC)" maxlength="20" autocomplete="off" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none">
-        <button onclick="handleCreateProfile()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">C'est parti ! →</button>
+        <button onclick="handleCreateProfile()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Lancer mon profil →</button>
         <div id="pseudoStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8"></div>
         <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;margin-top:12px;font-family:inherit">Se déconnecter</button>
       </div>
@@ -257,44 +273,17 @@ async function recalculateUserPoints(userId) {
   `;
 }
 
-<span class="challenge-badge">${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronostics</span>
-            <span class="challenge-badge">${currentProfile.quiz_correct} quiz ✓</span>
-          </div>
-        </div>
-      </div>
-      <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
-    </div>
-  `;
-}
 
 function openAuthModal() {
   if (!document.getElementById('authModal')) {
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.id = 'authModal';
-    div.onclick = (e) => { if(e.target.id==='authModal') closeAuthModal(); };
+    div.onclick = function(e) { if(e.target.id==='authModal') closeAuthModal(); };
     div.setAttribute('style','position:fixed;inset:0;background:#000000bb;backdrop-filter:blur(12px);z-index:99999;display:none;align-items:center;justify-content:center;padding:20px');
-    div.innerHTML = `
-      <div style="background:linear-gradient(145deg,#0b223c,#1b1025);border:1px solid #ffffff22;border-radius:28px;padding:36px 32px;max-width:460px;width:100%;position:relative;box-shadow:0 40px 100px #000000aa">
-        <button onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:#ffffff15;border:1px solid #ffffff22;color:#fff;-webkit-text-fill-color:#fff;border-radius:99px;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit">✕</button>
-        <div id="authStep1">
-          <div style="font-size:52px;text-align:center;margin-bottom:14px">🏆</div>
-          <div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Rejoins le classement</div>
-          <p style="color:#b9c9d8;line-height:1.65;margin:0 0 20px;font-size:15px;text-align:center">Entre ton email — on t'envoie un lien magique pour te connecter. Pas de mot de passe.</p>
-          <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none">
-          <button onclick="handleMagicLink()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Envoyer le lien →</button>
-          <div id="magicStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8;text-align:center"></div>
-        </div>
-        <div id="authStep2" style="display:none">
-          <div style="font-size:52px;text-align:center;margin-bottom:14px">📬</div>
-          <div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Check tes mails !</div>
-          <p style="color:#b9c9d8;line-height:1.65;margin:0 0 16px;font-size:15px;text-align:center">Un lien vient d'être envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter automatiquement.</p>
-          <p style="color:#8fa6bd;font-size:13px;text-align:center;margin:0">Tu n'as pas reçu le mail ? Vérifie tes spams ou <button onclick="showStep(1)" style="background:none;border:none;color:#ffd166;-webkit-text-fill-color:#ffd166;cursor:pointer;font-size:13px;font-weight:700;text-decoration:underline;padding:0;font-family:inherit">réessaie</button>.</p>
-        </div>
-      </div>
-    `;
+    div.innerHTML = '<div style="background:linear-gradient(145deg,#0b223c,#1b1025);border:1px solid #ffffff22;border-radius:28px;padding:36px 32px;max-width:460px;width:100%;position:relative;box-shadow:0 40px 100px #000000aa"><button onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:#ffffff15;border:1px solid #ffffff22;color:#fff;-webkit-text-fill-color:#fff;border-radius:99px;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit">✕</button><div id="authStep1"><div style="font-size:52px;text-align:center;margin-bottom:14px">🏆</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Rejoins le classement</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 20px;font-size:15px;text-align:center">Entre ton email — on t'envoie un lien magique. Pas de mot de passe.</p><input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none"><button onclick="handleMagicLink()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Envoyer le lien →</button><div id="magicStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8;text-align:center"></div></div><div id="authStep2" style="display:none"><div style="font-size:52px;text-align:center;margin-bottom:14px">📬</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Check tes mails !</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 16px;font-size:15px;text-align:center">Un lien vient d'être envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter.</p></div></div>';
     document.body.appendChild(div);
   }
-  const modal = document.getElementById('authModal');
+  var modal = document.getElementById('authModal');
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
