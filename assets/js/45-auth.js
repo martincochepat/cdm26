@@ -440,6 +440,8 @@ async function handleCreateProfile() {
     await loadLeaderboard();
     renderChallenge();
     if (typeof renderFanZone === 'function') renderFanZone();
+    // Activation auto des notifications à la création du compte
+    enableNotifications();
   } catch (err) {
     const msg = err.message.includes('unique') ? 'Ce pseudo est déjà pris, choisis-en un autre.' : err.message;
     if (status) status.innerHTML = `<span class="err">${esc(msg)}</span>`;
@@ -460,36 +462,45 @@ async function initNotifications() {
   });
 }
 
+function isNotifSubscribed() {
+  try {
+    return !!(window.OneSignal && window.OneSignal.User && window.OneSignal.User.PushSubscription && window.OneSignal.User.PushSubscription.optedIn);
+  } catch(_) { return false; }
+}
+
 function refreshNotifBtn() {
   const container = document.getElementById('notifBtnContainer');
   if (!container) return;
-  const OS = window.OneSignal;
-  if (!OS) {
-    container.innerHTML = '<button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button>';
-    return;
-  }
-  const subscribed = OS.User && OS.User.PushSubscription && OS.User.PushSubscription.optedIn;
-  if (subscribed) {
+  if (isNotifSubscribed()) {
     container.innerHTML = '<button onclick="toggleNotifications()" style="background:transparent;border:1px solid #00a85955;color:#00a859;-webkit-text-fill-color:#00a859;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Notifs activées</button>';
   } else {
     container.innerHTML = '<button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button>';
   }
 }
 
+async function enableNotifications() {
+  if (!window.OneSignal) return;
+  try {
+    await window.OneSignal.Notifications.requestPermission();
+    setTimeout(refreshNotifBtn, 500);
+  } catch(_) {}
+}
+
 async function toggleNotifications() {
-  if (!window.OneSignalDeferred) {
+  if (!window.OneSignal) {
     alert('Notifications non disponibles sur ce navigateur.');
     return;
   }
-  window.OneSignalDeferred.push(async function(OneSignal) {
-    const subscribed = OneSignal.User && OneSignal.User.PushSubscription && OneSignal.User.PushSubscription.optedIn;
-    if (subscribed) {
-      await OneSignal.User.PushSubscription.optOut();
+  try {
+    if (isNotifSubscribed()) {
+      await window.OneSignal.User.PushSubscription.optOut();
     } else {
-      await OneSignal.Notifications.requestPermission();
+      await window.OneSignal.Notifications.requestPermission();
     }
     setTimeout(refreshNotifBtn, 500);
-  });
+  } catch(err) {
+    console.warn('Notif error:', err);
+  }
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────
