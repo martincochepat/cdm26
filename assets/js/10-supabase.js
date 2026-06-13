@@ -14,7 +14,6 @@ async function loadDynamicData(){
         supabaseStatus = 'online';
         supabaseLastSync = new Date();
         renderAll();
-        // Rafraîchit le bloc Challenge (points, historique) si connecté
         if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
           recalculateUserPoints(currentUser.id).then(()=>{
             if(typeof loadLeaderboard === 'function') loadLeaderboard().then(()=>{
@@ -43,7 +42,7 @@ async function loadDynamicData(){
 function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLive(m)?'En cours':'Terminé'; let d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),min=Math.floor(diff%3600000/60000); return d>0?`dans ${d}j ${h}h`:h>0?`dans ${h}h ${min}min`:`dans ${min}min`}
     function matchStatusKey(m){const s=String(m.status||'').toLowerCase(); if(['live','inplay','in_play','1h','2h','ht'].includes(s)) return 'live'; if(['finished','ft','ended','terminé','termine'].includes(s)) return 'finished'; if(s==='upcoming') return 'upcoming'; if(isLive(m)) return 'live'; if(isPast(m)) return 'finished'; return 'upcoming'}
     function hasScore(m){return m.score_a!==null && m.score_a!==undefined && m.score_a!=='' && m.score_b!==null && m.score_b!==undefined && m.score_b!==''}
-    function statusBadge(m){let k=matchStatusKey(m); if(k==='live') return `<span class="tag"><span class="live-dot"></span> EN DIRECT${m.minute?` · ${esc(m.minute)}'`:''}</span>`; if(k==='finished') return '<span class="tag">Terminé</span>'; return '<span class="tag">À venir</span>'}
+    function statusBadge(m){let k=matchStatusKey(m); const s=String(m.status||'').toLowerCase(); if(s==='ht') return `<span class="tag"><span class="live-dot"></span> Mi-temps</span>`; if(k==='live') return `<span class="tag"><span class="live-dot"></span> EN DIRECT${m.minute?` · ${esc(m.minute)}'`:''}</span>`; if(k==='finished') return '<span class="tag">Terminé</span>'; return '<span class="tag">À venir</span>'}
     function scoreCenter(m){let k=matchStatusKey(m); if(hasScore(m)){let cls=k==='live'?'live-score':(k==='finished'?'finished-score':''); let label=k==='live'?(m.minute?`LIVE ${esc(m.minute)}'`:'LIVE'):(k==='finished'?'Terminé':'Score'); return `<div class="score-pill ${cls}"><div class="score-line">${esc(m.score_a)} - ${esc(m.score_b)}</div><div class="score-state">${label}</div></div>`} return '<div class="vs">VS</div>'}
     function scoreDetailBlock(m){if(!hasScore(m)) return ''; let k=matchStatusKey(m), label=k==='live'?(m.minute?`EN DIRECT · ${esc(m.minute)}'`:'EN DIRECT'):(k==='finished'?'TERMINÉ':'SCORE'); return `<div class="score-detail"><div class="score-detail-team">${flags[m.home]||'🏳️'} ${esc(m.home)}</div><div><div class="score-detail-center">${esc(m.score_a)} - ${esc(m.score_b)}</div><div class="score-detail-status">${label}</div></div><div class="score-detail-team away">${flags[m.away]||'🏳️'} ${esc(m.away)}</div></div>`}
 
