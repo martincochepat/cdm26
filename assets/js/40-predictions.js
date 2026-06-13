@@ -57,12 +57,26 @@
       }
 
       // Utilise authFetch si connecté pour envoyer le bon token
+      // UPSERT : si une ligne existe déjà pour (match_id, user_key), on met à jour au lieu d'insérer
       if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
-        await authFetch('match_predictions', {
-          method: 'POST',
-          headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify(payload),
-        });
+        try {
+          await authFetch('match_predictions', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify(payload),
+          });
+        } catch(err) {
+          // Conflit (déjà voté en anonyme) → met à jour la ligne existante
+          if(String(err.message).includes('23505') || String(err.message).includes('duplicate')){
+            await authFetch(`match_predictions?match_id=eq.${id}&user_key=eq.${predictionUserKey}`, {
+              method: 'PATCH',
+              headers: { Prefer: 'return=minimal' },
+              body: JSON.stringify({ choice: String(choice), user_id: currentUser.id }),
+            });
+          } else {
+            throw err;
+          }
+        }
       } else {
         await supabasePost('match_predictions', payload);
       }
@@ -125,10 +139,11 @@
             const count = counts[choice] || 0;
             const pct = total ? Math.round(count * 100 / total) : 0;
             const selected = already === choice ? 'selected' : '';
-            return `<button class="prediction-option ${selected}" ${already ? 'disabled' : ''} onclick="votePrediction(${jsArg(matchId)},'${choice}')">
-              <b>${esc(predictionLabel(m, choice))}</b>
-              <span>${pct}% · ${count}</span>
-              <div class="prediction-bar" style="grid-column:1/-1"><i style="width:${pct}%"></i></div>
+            const isSelected = already === choice;
+            return `<button class="prediction-option ${selected}" ${already ? 'disabled' : ''} onclick="votePrediction(${jsArg(matchId)},'${choice}')" style="${isSelected ? 'background:linear-gradient(135deg,#ffd16633,#ff9f4333);border-color:#ffd166;box-shadow:0 0 0 2px #ffd16644' : ''}">
+              <b style="${isSelected ? 'color:#ffd166' : ''}">${isSelected ? '✅ ' : ''}${esc(predictionLabel(m, choice))}</b>
+              <span>${pct}% · ${count}${isSelected ? ' · Mon vote' : ''}</span>
+              <div class="prediction-bar" style="grid-column:1/-1"><i style="width:${pct}%;${isSelected ? 'background:linear-gradient(90deg,#ffd166,#ff9f43)' : ''}"></i></div>
             </button>`;
           }).join('')}
         </div>
