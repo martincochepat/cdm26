@@ -358,6 +358,26 @@ body:not(.home-active) .hero{
   font-weight:1000;
 }
 
-/* AUTH MODAL DISPLAY FIX */
-.auth-modal { display: none !important; }
-.auth-modal.auth-modal-open { display: flex !important; }
+
+/* ─── V80 CHALLENGE + LEADERBOARD ──────────────────────────────────────── */
+
+/* Leaderboard */
+.challenge-leaderboard{background:#061426e8;border:1px solid #ffffff14;border-radius:22px;padding:20px;margin-top:12px}
+.challenge-empty{text-align:center;padding:28px;color:#8fa6bd;border:1px dashed #ffffff18;border-radius:18px;margin-top:12px}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff0a}
+.lb-row:last-child{border-bottom:none}
+.lb-row.lb-me{background:#ffd16610;border-radius:14px;padding:12px;margin:4px -12px}
+.lb-rank{font-size:22px;width:34px;text-align:center;flex-shrink:0}
+.lb-avatar{font-size:24px;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-info b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-bar{height:5px;background:#ffffff10;border-radius:99px;margin-top:6px}
+.lb-bar-fill{height:100%;background:linear-gradient(90deg,#ffd166,#ff6b6b);border-radius:99px;transition:width .5s}
+.lb-pts{text-align:right;flex-shrink:0}
+.lb-pts b{display:block;font-size:20px;font-weight:950;color:#ffd166}
+.lb-pts small{font-size:11px;color:#8fa6bd}
+.lb-cta{text-align:center;margin-top:16px;padding:14px;background:#ffffff08;border-radius:14px;color:#8fa6bd;font-size:14px}
+
+/* AUTH MODAL — override total */
+.auth-modal{display:none!important;position:fixed;inset:0;background:#000000bb;backdrop-filter:blur(12px);z-index:99999;align-items:center;justify-content:center;padding:20px}
+.auth-modal.auth-modal-open{display:flex!important}
