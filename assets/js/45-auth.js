@@ -13,11 +13,11 @@ let leaderboardRows = [];
 async function authFetch(path, options = {}) {
   const session = await getSession();
   const token = session?.access_token || AUTH_SUPABASE_KEY;
-  const headers = Object.assign({
+  const headers = Object.assign(options.headers || {}, {
     apikey: AUTH_SUPABASE_KEY,
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
-  }, options.headers || {});
+  });
   const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/${path}`, Object.assign({ headers, cache: 'no-store' }, options));
   if (!res.ok) throw new Error(await res.text());
   if (res.status === 204) return null;
