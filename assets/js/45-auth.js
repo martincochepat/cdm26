@@ -273,11 +273,6 @@ function renderAuthBlock(myRank) {
       </div>
     </div>
   `;
-  // Injecter le bouton notifs après que le DOM soit prêt
-  setTimeout(async () => {
-    const container = document.getElementById('notifBtnContainer');
-    if (container) container.innerHTML = await renderNotificationBtn();
-  }, 800);
 }
 
 
@@ -460,41 +455,35 @@ function initNotifications() {
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true,
     });
+    // Une fois init, on peut afficher le bouton
+    refreshNotifBtn();
   });
+}
+
+async function refreshNotifBtn() {
+  const container = document.getElementById('notifBtnContainer');
+  if (!container || !window.OneSignal) return;
+  const permission = OneSignal.Notifications.permission;
+  const subscribed = OneSignal.User.PushSubscription.optedIn;
+  if (permission && subscribed) {
+    container.innerHTML = '<button onclick="toggleNotifications()" style="background:transparent;border:1px solid #00a85955;color:#00a859;-webkit-text-fill-color:#00a859;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Notifs activées</button>';
+  } else {
+    container.innerHTML = '<button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button>';
+  }
 }
 
 async function toggleNotifications() {
-  if (!window.OneSignalDeferred) {
+  if (!window.OneSignal) {
     alert('Les notifications ne sont pas disponibles sur ce navigateur.');
     return;
   }
-  window.OneSignalDeferred.push(async function(OneSignal) {
-    const subscribed = await OneSignal.User.PushSubscription.optedIn;
-    if (subscribed) {
-      await OneSignal.User.PushSubscription.optOut();
-    } else {
-      await OneSignal.Notifications.requestPermission();
-    }
-    setTimeout(() => {
-      const container = document.getElementById('notifBtnContainer');
-      if (container) renderNotificationBtn().then(html => { container.innerHTML = html; });
-    }, 500);
-  });
-}
-
-async function renderNotificationBtn() {
-  if (!window.OneSignalDeferred) return '';
-  return new Promise(resolve => {
-    window.OneSignalDeferred.push(async function(OneSignal) {
-      const permission = await OneSignal.Notifications.permission;
-      const subscribed = await OneSignal.User.PushSubscription.optedIn;
-      if (permission && subscribed) {
-        resolve('<button onclick="toggleNotifications()" style="background:transparent;border:1px solid #00a85955;color:#00a859;-webkit-text-fill-color:#00a859;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Notifs activées</button>');
-      } else {
-        resolve('<button onclick="toggleNotifications()" style="background:linear-gradient(90deg,#ffd16622,#ff9f4322);border:1px solid #ffd16644;color:#ffd166;-webkit-text-fill-color:#ffd166;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">🔔 Activer les notifs</button>');
-      }
-    });
-  });
+  const subscribed = OneSignal.User.PushSubscription.optedIn;
+  if (subscribed) {
+    await OneSignal.User.PushSubscription.optOut();
+  } else {
+    await OneSignal.Notifications.requestPermission();
+  }
+  setTimeout(refreshNotifBtn, 500);
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────
