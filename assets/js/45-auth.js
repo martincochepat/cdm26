@@ -220,6 +220,93 @@ async function recalculateUserPoints(userId) {
 
 // ─── Rendu ─────────────────────────────────────────────────────────────────
 
+
+// ─── Mise à jour fluide des données Challenge (sans flash) ─────────────────
+// Appelé périodiquement : ne modifie que le texte/valeurs qui changent,
+// sans toucher au DOM des blocs déjà affichés (pas de scroll-jump, pas de flash).
+
+function updateChallengeData() {
+  if (!currentUser || !currentProfile) return;
+  const box = document.getElementById('challengeBox');
+  if (!box) return;
+
+  const myRank = leaderboardRows.findIndex(r => r.pseudo === currentProfile.pseudo) + 1;
+
+  // 1. Pills du profil (points, rang, pronos, quiz)
+  const rankPill = document.getElementById('myRankPill');
+  if (rankPill) {
+    if (myRank) {
+      rankPill.style.display = '';
+      rankPill.textContent = `🏅 #${myRank}`;
+    } else {
+      rankPill.style.display = 'none';
+    }
+  }
+  const pointsPill = document.getElementById('myPointsPill');
+  if (pointsPill) pointsPill.textContent = `${currentProfile.points} pts`;
+  const predsPill = document.getElementById('myPredsPill');
+  if (predsPill) predsPill.textContent = `${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronos`;
+  const quizPill = document.getElementById('myQuizPill');
+  if (quizPill) quizPill.textContent = `${currentProfile.quiz_correct} quiz ✓`;
+
+  // 2. Classement : met à jour les points/largeur des barres existantes,
+  //    et ne fait un re-render complet que si la liste de joueurs a changé
+  const lbContainer = document.getElementById('challengeLeaderboard');
+  if (lbContainer) {
+    const existingRows = [...lbContainer.querySelectorAll('.lb-row')];
+    const existingPseudos = existingRows.map(r => r.dataset.pseudo);
+    const newPseudos = leaderboardRows.map(r => r.pseudo);
+    const samePseudos = existingPseudos.length === newPseudos.length &&
+      existingPseudos.every((p, i) => p === newPseudos[i]);
+
+    if (samePseudos) {
+      // Même ordre/joueurs : on patch juste les points et les barres
+      const maxPts = leaderboardRows[0]?.points || 1;
+      leaderboardRows.forEach((r, i) => {
+        const row = existingRows[i];
+        if (!row) return;
+        const ptsEl = row.querySelector('.lb-pts b');
+        if (ptsEl && ptsEl.textContent !== String(r.points)) ptsEl.textContent = r.points;
+        const barEl = row.querySelector('.lb-bar-fill');
+        if (barEl) {
+          const pct = Math.max(4, Math.round((r.points / maxPts) * 100));
+          barEl.style.width = pct + '%';
+        }
+      });
+    } else {
+      // Ordre/joueurs différent : re-render seulement le classement (pas tout le bloc)
+      const newLb = renderLeaderboard(myRank);
+      if (lbContainer.parentElement) {
+        const temp = document.createElement('div');
+        temp.innerHTML = newLb;
+        lbContainer.replaceWith(temp.firstElementChild);
+      }
+    }
+  }
+
+  // 3. Bonus : si le statut verrouillé a changé, re-render uniquement ce bloc
+  const bonusLocked = currentProfile.tournament_winner_locked || isGroupStageOver();
+  const bonusContainer = box.querySelector('[data-bonus-locked]');
+  if (bonusContainer) {
+    const currentLocked = bonusContainer.dataset.bonusLocked === 'true';
+    if (currentLocked !== bonusLocked) {
+      const temp = document.createElement('div');
+      temp.innerHTML = renderBonusBlock();
+      bonusContainer.replaceWith(temp.firstElementChild);
+    }
+  }
+
+  // 4. Historique des pronostics : re-render seulement si le contenu a changé
+  if (currentUser) {
+    renderPredictionHistory().then(html => {
+      const container = document.getElementById('predictionHistoryContainer');
+      if (container && container.innerHTML.trim() !== html.trim()) {
+        container.innerHTML = html;
+      }
+    });
+  }
+}
+
 function renderChallenge() {
   const box = document.getElementById('challengeBox');
   if (!box) return;
@@ -300,10 +387,10 @@ function renderAuthBlock(myRank) {
         <div>
           <div style="font-size:clamp(18px,3vw,24px);font-weight:950;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 8px">${esc(currentProfile.pseudo)}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            ${myRank ? `<span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">🏅 #${myRank}</span>` : ''}
-            <span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.points} pts</span>
-            <span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronos</span>
-            <span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.quiz_correct} quiz ✓</span>
+            ${myRank ? `<span id="myRankPill" style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">🏅 #${myRank}</span>` : '<span id="myRankPill" style="display:none"></span>'}
+            <span id="myPointsPill" style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.points} pts</span>
+            <span id="myPredsPill" style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronos</span>
+            <span id="myQuizPill" style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.quiz_correct} quiz ✓</span>
           </div>
         </div>
       </div>
@@ -352,7 +439,7 @@ function renderLeaderboard(myRank) {
     const pct = Math.max(4, Math.round((r.points / maxPts) * 100));
 
     return `
-      <div class="lb-row ${isMe ? 'lb-me' : ''}">
+      <div class="lb-row ${isMe ? 'lb-me' : ''}" data-pseudo="${esc(r.pseudo)}">
         <span class="lb-rank">${medals[i] || rank}</span>
         <span class="lb-avatar">${esc(r.avatar_emoji)}</span>
         <div class="lb-info">
@@ -365,7 +452,7 @@ function renderLeaderboard(myRank) {
   }).join('');
 
   return `
-    <div class="challenge-leaderboard">
+    <div class="challenge-leaderboard" id="challengeLeaderboard">
       <h3 style="margin:0 0 14px">🏆 Classement</h3>
       ${rows}
       ${!currentUser ? `<div class="lb-cta">Rejoins le classement pour apparaître ici ↑</div>` : ''}
@@ -577,7 +664,7 @@ function renderBonusBlock() {
 
   if (locked) {
     return `
-      <div style="background:linear-gradient(135deg,#2a1a4a,#1a0d2e);border:1px solid #c084fc44;border-radius:22px;padding:24px;margin-top:16px">
+      <div data-bonus-locked="true" style="background:linear-gradient(135deg,#2a1a4a,#1a0d2e);border:1px solid #c084fc44;border-radius:22px;padding:24px;margin-top:16px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <span style="font-size:28px">🌟</span>
           <div style="font-size:18px;font-weight:950;background:linear-gradient(90deg,#c084fc,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Question Bonus — Vainqueur du tournoi</div>
@@ -591,7 +678,7 @@ function renderBonusBlock() {
   }
 
   return `
-    <div style="background:linear-gradient(135deg,#2a1a4a,#1a0d2e);border:1px solid #c084fc44;border-radius:22px;padding:24px;margin-top:16px">
+    <div data-bonus-locked="false" style="background:linear-gradient(135deg,#2a1a4a,#1a0d2e);border:1px solid #c084fc44;border-radius:22px;padding:24px;margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:28px">🌟</span>
