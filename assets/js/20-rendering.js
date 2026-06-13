@@ -184,8 +184,21 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     }
     function myPrediction(matchId){
       const id=String(matchId);
-      const row=(predictionRows||[]).find(r=>String(r.match_id)===id && String(r.user_key)===String(predictionUserKey));
-      return row?.choice || '';
+      let row;
+      if(typeof currentUser !== 'undefined' && currentUser){
+        row=(predictionRows||[]).find(r=>String(r.match_id)===id && r.user_id && r.user_id===currentUser.id);
+      }
+      if(!row){
+        row=(predictionRows||[]).find(r=>String(r.match_id)===id && String(r.user_key)===String(predictionUserKey));
+      }
+      if(!row) return '';
+      // Convertit home/draw/away en label affiché (ex: 'Suisse', 'Nul')
+      const m=data.find(x=>String(x.id)===id);
+      if(!m) return row.choice || '';
+      if(row.choice==='home') return m.home;
+      if(row.choice==='draw') return 'Nul';
+      if(row.choice==='away') return m.away;
+      return row.choice || '';
     }
 
     // ─── Fan Zone : quiz et pronos avec gating compte ─────────────────────
@@ -292,9 +305,23 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     async function votePoll(id,opt){
       id=String(id);
       if(myPrediction(id)){renderFanZone();return}
+      const m=data.find(x=>String(x.id)===id);
+      if(!m) return;
+      // Convertit le label affiché (Suisse/Nul/Qatar) en home/draw/away
+      let choice;
+      if(opt===m.home) choice='home';
+      else if(opt===m.away) choice='away';
+      else choice='draw';
       try{
-        await savePrediction(id,opt);
-        await loadPredictions();
+        if(typeof submitUnifiedPrediction === 'function'){
+          await submitUnifiedPrediction(id, choice);
+        } else {
+          await savePrediction(id,opt);
+          await loadPredictions();
+        }
+        if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
+          await recalculateUserPoints(currentUser.id);
+        }
       }catch(err){
         console.warn('Vote Supabase impossible.', err);
         alert('Vote déjà enregistré ou indisponible pour le moment.');
