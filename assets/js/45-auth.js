@@ -61,7 +61,7 @@ async function sendMagicLink(email) {
     },
     body: JSON.stringify({
       email,
-      options: { shouldCreateUser: true }
+      options: { emailRedirectTo: window.location.origin }
     })
   });
   if (!res.ok) {
@@ -69,32 +69,6 @@ async function sendMagicLink(email) {
     throw new Error(err.msg || err.message || 'Erreur envoi email');
   }
   return true;
-}
-
-async function verifyOTP(email, token) {
-  const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/verify`, {
-    method: 'POST',
-    headers: {
-      apikey: AUTH_SUPABASE_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, token, type: 'email' })
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.msg || err.message || 'Code invalide ou expiré');
-  }
-  const data = await res.json();
-  // Sauvegarder la session
-  if (data.access_token) {
-    const session = {
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
-    };
-    localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(session));
-  }
-  return data;
 }
 
 async function signOut() {
@@ -124,11 +98,21 @@ async function loadProfile(userId) {
 }
 
 async function createProfile(userId, pseudo, avatarEmoji = '⚽') {
-  const rows = await authFetch('user_profiles', {
+  const session = await getSession();
+  const token = session?.access_token || AUTH_SUPABASE_KEY;
+  const res = await fetch(`${AUTH_SUPABASE_URL}/rest/v1/user_profiles`, {
     method: 'POST',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ id: userId, pseudo, avatar_emoji: avatarEmoji })
+    headers: {
+      apikey: AUTH_SUPABASE_KEY,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify({ id: userId, pseudo, avatar_emoji: avatarEmoji }),
+    cache: 'no-store',
   });
+  if (!res.ok) throw new Error(await res.text());
+  const rows = await res.json();
   return rows && rows[0] ? rows[0] : null;
 }
 
@@ -234,90 +218,74 @@ function renderChallenge() {
 function renderAuthBlock(myRank) {
   if (!currentUser) {
     return `
-      <div class="challenge-hero">
-        <div class="challenge-top-row">
-          <div>
-            <div class="challenge-headline">🔥 Qui pronostique le mieux ?</div>
-            <p class="challenge-sub">Vote sur chaque match, réponds au quiz du jour.<br>Les points tombent dès que les résultats sont officiels.</p>
+      <div style="background:linear-gradient(135deg,#0d2a4a,#1a0d2e);border:1px solid #ffffff18;border-radius:22px;padding:28px 24px;margin-bottom:4px">
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:clamp(20px,4vw,28px);font-weight:950;margin:0 0 10px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">🔥 Qui pronostique le mieux ?</div>
+            <p style="color:#b9c9d8;line-height:1.65;margin:0;font-size:15px">Vote sur chaque match, réponds au quiz du jour.<br>Les points tombent dès que les résultats sont officiels.</p>
           </div>
-          <div class="challenge-pills">
-            <div class="challenge-pill">✅ Vainqueur<b>+3 pts</b></div>
-            <div class="challenge-pill">🎯 Score exact<b>+5 pts</b></div>
-            <div class="challenge-pill">🧠 Quiz<b>+2 pts</b></div>
+          <div style="display:flex;gap:10px;flex-shrink:0">
+            <div style="display:flex;flex-direction:column;align-items:center;background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px 18px;font-size:13px;gap:5px;color:#eaf5ff;text-align:center">✅ Vainqueur<b style="color:#ffd166;font-size:19px;font-weight:950;display:block">+3 pts</b></div>
+            <div style="display:flex;flex-direction:column;align-items:center;background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px 18px;font-size:13px;gap:5px;color:#eaf5ff;text-align:center">🧠 Quiz<b style="color:#ffd166;font-size:19px;font-weight:950;display:block">+2 pts</b></div>
           </div>
         </div>
-        <button class="challenge-join-btn" onclick="openAuthModal()">
+        <button onclick="openAuthModal()" style="display:block;width:100%;padding:20px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:18px;font-weight:950;font-size:17px;cursor:pointer;box-shadow:0 14px 40px #ffd16633;font-family:inherit;text-align:center">
           🏆 Rejoindre le classement — inscription gratuite en 10 sec
         </button>
-      </div>
-      <!-- Modale inscription -->
-      <div id="authModal" class="auth-modal" style="display:none" onclick="if(event.target.id==='authModal')closeAuthModal()">
-        <div class="auth-modal-card">
-          <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
-          <div id="authStep1" class="auth-step">
-            <div class="auth-modal-icon">🏆</div>
-            <h2 class="auth-modal-title">Rejoins le classement</h2>
-            <p class="auth-modal-sub">Entre ton email — on t'envoie un lien magique pour te connecter. Pas de mot de passe.</p>
-            <input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" class="auth-input">
-            <button class="auth-btn-primary" onclick="handleMagicLink()">Envoyer le lien →</button>
-            <div id="magicStatus" class="magic-status"></div>
-          </div>
-          <div id="authStep2" class="auth-step" style="display:none">
-            <div class="auth-modal-icon">📬</div>
-            <h2 class="auth-modal-title">Entre ton code</h2>
-            <p class="auth-modal-sub">Code envoyé à <b id="sentEmailDisplay"></b><br>Entre le code à 6 chiffres reçu par email.</p>
-            <input id="otpCode" type="number" placeholder="123456" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:28px;font-family:inherit;margin-bottom:12px;outline:none;text-align:center;letter-spacing:6px">
-            <button class="auth-btn-primary" onclick="handleVerifyOTP()">Valider le code →</button>
-            <div id="otpStatus" class="magic-status"></div>
-            <p class="auth-modal-hint">Pas reçu ? <button class="auth-link-btn" onclick="showStep(1)">Réessaie</button>.</p>
-          </div>
-        </div>
       </div>
     `;
   }
 
   if (!currentProfile) {
+    const emojiList = ['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯','🌟','💪'];
+    const emojiButtons = emojiList.map(function(e) {
+      return '<button onclick="selectEmoji(' + "'" + e + "'" + ')" id="emoji-' + e + '" style="background:#ffffff0d;border:2px solid transparent;border-radius:12px;padding:10px;font-size:22px;cursor:pointer;font-family:inherit;transition:all .15s">' + e + '</button>';
+    }).join('');
     return `
-      <div class="challenge-hero">
-        <div class="challenge-headline">👋 Dernière étape !</div>
-        <p class="challenge-sub">Connecté avec <b>${esc(currentUser.email)}</b><br>Choisis ton avatar et ton pseudo pour apparaître dans le classement.</p>
-        <div class="auth-pseudo-form">
-          <div class="emoji-picker">
-            ${['⚽','🏆','🔥','⚡','🦁','🦅','🐺','🎯','🌟','💪'].map(e =>
-              `<button class="emoji-btn" onclick="selectEmoji('${e}')" id="emoji-${e}">${e}</button>`
-            ).join('')}
-          </div>
-          <input id="pseudoInput" type="text" class="auth-input" placeholder="Choisis ton pseudo (ex: MartinC)" maxlength="20" autocomplete="off">
-          <button class="auth-btn-primary" onclick="handleCreateProfile()">C'est parti ! →</button>
-        </div>
-        <div id="pseudoStatus" class="magic-status"></div>
-        <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
+      <div style="background:linear-gradient(135deg,#0d2a4a,#1a0d2e);border:1px solid #ffffff18;border-radius:22px;padding:28px 24px">
+        <div style="font-size:clamp(20px,4vw,26px);font-weight:950;margin:0 0 10px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent">👋 Dernière étape !</div>
+        <p style="color:#b9c9d8;line-height:1.65;margin:0 0 16px;font-size:15px">Connecté avec <b>${esc(currentUser.email)}</b><br>Choisis ton avatar et ton pseudo pour apparaître dans le classement.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${emojiButtons}</div>
+        <input id="pseudoInput" type="text" placeholder="Choisis ton pseudo (ex: MartinC)" maxlength="20" autocomplete="off" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none">
+        <button onclick="handleCreateProfile()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Lancer mon profil →</button>
+        <div id="pseudoStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8"></div>
+        <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;margin-top:12px;font-family:inherit">Se déconnecter</button>
       </div>
     `;
   }
 
   return `
-    <div class="challenge-hero connected">
-      <div class="challenge-user-row">
-        <span class="challenge-avatar">${esc(currentProfile.avatar_emoji)}</span>
+    <div style="background:linear-gradient(135deg,#0d2a4a,#1a0d2e);border:1px solid #ffffff18;border-radius:22px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+      <div style="display:flex;align-items:center;gap:14px;flex:1;flex-wrap:wrap">
+        <span style="font-size:40px;line-height:1">${esc(currentProfile.avatar_emoji)}</span>
         <div>
-          <div class="challenge-headline" style="margin:0">${esc(currentProfile.pseudo)}</div>
-          <div class="challenge-stats-row">
-            ${myRank ? `<span class="challenge-badge">🏅 #${myRank}</span>` : ''}
-            <span class="challenge-badge">${currentProfile.points} pts</span>
-            <span class="challenge-badge">${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronostics</span>
-            <span class="challenge-badge">${currentProfile.quiz_correct} quiz ✓</span>
+          <div style="font-size:clamp(18px,3vw,24px);font-weight:950;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 8px">${esc(currentProfile.pseudo)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${myRank ? `<span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">🏅 #${myRank}</span>` : ''}
+            <span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.points} pts</span>
+            <span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.predictions_correct}/${currentProfile.predictions_total} pronos</span>
+            <span style="background:#ffffff12;border:1px solid #ffffff18;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700">${currentProfile.quiz_correct} quiz ✓</span>
           </div>
         </div>
       </div>
-      <button class="challenge-logout" onclick="signOut()">Se déconnecter</button>
+      <button onclick="signOut()" style="background:transparent;border:1px solid #ffffff20;color:#8fa6bd;-webkit-text-fill-color:#8fa6bd;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:700;font-family:inherit">Se déconnecter</button>
     </div>
   `;
 }
 
+
 function openAuthModal() {
-  const modal = document.getElementById('authModal');
-  if (modal) { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  if (!document.getElementById('authModal')) {
+    var div = document.createElement('div');
+    div.id = 'authModal';
+    div.onclick = function(e) { if(e.target.id==='authModal') closeAuthModal(); };
+    div.setAttribute('style','position:fixed;inset:0;background:#000000bb;backdrop-filter:blur(12px);z-index:99999;display:none;align-items:center;justify-content:center;padding:20px');
+    div.innerHTML = `<div style="background:linear-gradient(145deg,#0b223c,#1b1025);border:1px solid #ffffff22;border-radius:28px;padding:36px 32px;max-width:460px;width:100%;position:relative;box-shadow:0 40px 100px #000000aa"><button onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:#ffffff15;border:1px solid #ffffff22;color:#fff;-webkit-text-fill-color:#fff;border-radius:99px;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit">✕</button><div id="authStep1"><div style="font-size:52px;text-align:center;margin-bottom:14px">🏆</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Rejoins le classement</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 20px;font-size:15px;text-align:center">Entre ton email, on t'envoie un lien magique. Pas de mot de passe.</p><input id="magicEmail" type="email" placeholder="ton@email.fr" autocomplete="email" style="display:block;width:100%;box-sizing:border-box;background:#020b16;border:1px solid #ffffff25;border-radius:14px;padding:15px 16px;color:#eaf5ff;font-size:16px;font-family:inherit;margin-bottom:12px;outline:none"><button onclick="handleMagicLink()" style="display:block;width:100%;padding:16px;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;font-family:inherit">Envoyer le lien →</button><div id="magicStatus" style="margin-top:10px;font-size:14px;color:#b9c9d8;text-align:center"></div></div><div id="authStep2" style="display:none"><div style="font-size:52px;text-align:center;margin-bottom:14px">📬</div><div style="font-size:26px;font-weight:950;margin:0 0 12px;background:linear-gradient(90deg,#ffd166,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">Check tes mails !</div><p style="color:#b9c9d8;line-height:1.65;margin:0 0 16px;font-size:15px;text-align:center">Un lien a été envoyé à <b id="sentEmailDisplay"></b><br>Clique dessus pour te connecter.</p></div></div>`;
+    document.body.appendChild(div);
+  }
+  var modal = document.getElementById('authModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
 function closeAuthModal() {
   const modal = document.getElementById('authModal');
@@ -390,40 +358,12 @@ async function handleMagicLink() {
   if (status) status.innerHTML = 'Envoi en cours...';
   try {
     await sendMagicLink(email);
+    const emailEl = document.getElementById('magicEmail');
     const sentDisplay = document.getElementById('sentEmailDisplay');
-    if (sentDisplay) sentDisplay.textContent = email;
+    if (sentDisplay && emailEl) sentDisplay.textContent = emailEl.value;
     showStep(2);
   } catch (err) {
     if (status) status.innerHTML = `<span class="err">Erreur : ${esc(err.message)}</span>`;
-  }
-}
-
-async function handleVerifyOTP() {
-  const email = document.getElementById('sentEmailDisplay')?.textContent?.trim();
-  const code = document.getElementById('otpCode')?.value?.trim();
-  const status = document.getElementById('otpStatus');
-  if (!code || code.length < 6) {
-    if (status) status.innerHTML = '<span class="err">Entre le code à 6 chiffres reçu par email.</span>';
-    return;
-  }
-  if (status) status.innerHTML = 'Vérification...';
-  try {
-    await verifyOTP(email, code);
-    closeAuthModal();
-    // Recharger l'utilisateur
-    currentUser = await getUser();
-    if (currentUser) {
-      currentProfile = await loadProfile(currentUser.id);
-      if (currentProfile) {
-        await recalculateUserPoints(currentUser.id);
-        currentProfile = await loadProfile(currentUser.id);
-      }
-    }
-    await loadLeaderboard();
-    renderChallenge();
-    if (typeof renderFanZone === 'function') renderFanZone();
-  } catch (err) {
-    if (status) status.innerHTML = `<span class="err">${esc(err.message)}</span>`;
   }
 }
 
