@@ -17,7 +17,12 @@ async function loadDynamicData(){
         if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
           recalculateUserPoints(currentUser.id).then(()=>{
             if(typeof loadLeaderboard === 'function') loadLeaderboard().then(()=>{
-              if(typeof renderChallenge === 'function') renderChallenge();
+              if(typeof currentProfile !== 'undefined' && currentUser){
+                loadProfile(currentUser.id).then(p=>{
+                  if(p) currentProfile = p;
+                  if(typeof updateChallengeData === 'function') updateChallengeData();
+                });
+              }
             });
           });
         }
