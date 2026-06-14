@@ -227,7 +227,9 @@ function buildPatch(apiMatch, localMatch) {
 
 async function syncEvents(apiMatch, localMatch, dryRun) {
   if (!apiMatch?.api_fixture_id) return { synced: false };
-  if (apiMatch.status !== "live" && apiMatch.date !== parisToday()) return { synced: false };
+  // Ne synchronise les événements QUE pour les matchs réellement en direct
+  // (évite 1 appel API-Football par match "du jour" même hors période de jeu)
+  if (apiMatch.status !== "live") return { synced: false };
   try {
     const data = await apiFootball(`/fixtures/events?fixture=${encodeURIComponent(apiMatch.api_fixture_id)}`);
     const events = Array.isArray(data.response) ? data.response : [];
