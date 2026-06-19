@@ -807,7 +807,7 @@ async function renderPredictionHistory() {
   ` : '';
 
   return `
-    <div style="margin-top:16px">
+    <div style="margin-top:16px;margin-bottom:16px">
       <h3 style="margin:0 0 12px">📜 Mes pronostics <span style="font-size:13px;font-weight:700;color:#8fa6bd">${total} au total</span></h3>
       ${preview.map(rowHtml).join('')}
       ${restHtml}
