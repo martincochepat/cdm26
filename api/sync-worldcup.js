@@ -222,12 +222,21 @@ function buildPatch(apiMatch, localMatch) {
     if (winner === apiMatch.team_a) winner = localMatch.team_a;
     else if (winner === apiMatch.team_b) winner = localMatch.team_b;
   }
-  return { status: apiMatch.status, score_a, score_b, minute: apiMatch.minute, winner, api_fixture_id: apiMatch.api_fixture_id, updated_at: new Date().toISOString() };
+  // Inclut team_a/team_b pour mettre à jour les équipes qualifiées en phase finale
+  const team_a = localMatch._reversed ? apiMatch.team_b : apiMatch.team_a;
+  const team_b = localMatch._reversed ? apiMatch.team_a : apiMatch.team_b;
+  const patch = { status: apiMatch.status, score_a, score_b, minute: apiMatch.minute, winner, api_fixture_id: apiMatch.api_fixture_id, updated_at: new Date().toISOString() };
+  // Met à jour les noms d'équipes seulement si l'API en a des vrais (pas "TBD" ou vide)
+  if (team_a && team_a !== 'TBD' && team_a !== 'tbd') patch.team_a = team_a;
+  if (team_b && team_b !== 'TBD' && team_b !== 'tbd') patch.team_b = team_b;
+  return patch;
 }
 
 async function syncEvents(apiMatch, localMatch, dryRun) {
   if (!apiMatch?.api_fixture_id) return { synced: false };
-  if (apiMatch.status !== "live" && apiMatch.date !== parisToday()) return { synced: false };
+  // Ne synchronise les événements QUE pour les matchs réellement en direct
+  // (évite 1 appel API-Football par match "du jour" même hors période de jeu)
+  if (apiMatch.status !== "live") return { synced: false };
   try {
     const data = await apiFootball(`/fixtures/events?fixture=${encodeURIComponent(apiMatch.api_fixture_id)}`);
     const events = Array.isArray(data.response) ? data.response : [];
