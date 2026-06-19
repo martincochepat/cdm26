@@ -31,8 +31,57 @@ async function getSession() {
     const raw = localStorage.getItem('sb-lclnnxirkuuwexxcmmho-auth-token');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Vérifie expiration
-    if (parsed?.expires_at && Date.now() / 1000 > parsed.expires_at) return null;
+    if (!parsed?.access_token) return null;
+
+    const now = Date.now() / 1000;
+    const expiresAt = parsed?.expires_at || 0;
+
+    // Token expiré → déconnexion
+    if (expiresAt && now > expiresAt) {
+      // Tente un refresh si on a un refresh_token
+      if (parsed?.refresh_token) {
+        try {
+          const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: { apikey: AUTH_SUPABASE_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: parsed.refresh_token })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.access_token) {
+              const newSession = {
+                access_token: data.access_token,
+                refresh_token: data.refresh_token || parsed.refresh_token,
+                expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
+              };
+              localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(newSession));
+              return newSession;
+            }
+          }
+        } catch (_) {}
+      }
+      // Refresh impossible → supprime la session
+      localStorage.removeItem('sb-lclnnxirkuuwexxcmmho-auth-token');
+      return null;
+    }
+
+    // Token expire dans moins de 10 min → refresh préventif en arrière-plan
+    if (expiresAt && now > expiresAt - 600 && parsed?.refresh_token) {
+      fetch(`${AUTH_SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { apikey: AUTH_SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: parsed.refresh_token })
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (data?.access_token) {
+          localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token || parsed.refresh_token,
+            expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
+          }));
+        }
+      }).catch(() => {});
+    }
+
     return parsed;
   } catch (_) { return null; }
 }
@@ -731,7 +780,11 @@ async function renderPredictionHistory() {
 
   if (!rows.length) return '';
 
-  const itemsHtml = rows.map(r => `
+  const total = rows.length;
+  const preview = rows.slice(0, 5);
+  const rest = rows.slice(5);
+
+  const rowHtml = r => `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#ffffff08;border:1px solid #ffffff14;border-radius:14px;margin-bottom:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:140px">
         <div style="font-weight:800;font-size:14px">${flags[r.m.home]||'🏳️'} ${esc(r.m.home)} vs ${flags[r.m.away]||'🏳️'} ${esc(r.m.away)}</div>
@@ -742,14 +795,33 @@ async function renderPredictionHistory() {
         <div style="font-size:12px;font-weight:800;color:${r.pts>0?'#ffd166':'#8fa6bd'}">${r.resultLabel}</div>
       </div>
     </div>
-  `).join('');
+  `;
+
+  const restHtml = rest.length ? `
+    <div id="predHistoryExtra" style="display:none">
+      ${rest.map(rowHtml).join('')}
+    </div>
+    <button onclick="togglePredHistory()" id="predHistoryBtn" style="display:block;width:100%;padding:12px;background:#ffffff0d;border:1px solid #ffffff18;color:#adc0d2;-webkit-text-fill-color:#adc0d2;border-radius:14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;margin-top:4px">
+      Voir tous mes pronostics (${total}) ↓
+    </button>
+  ` : '';
 
   return `
     <div style="margin-top:16px">
-      <h3 style="margin:0 0 12px">📜 Mes pronostics</h3>
-      ${itemsHtml}
+      <h3 style="margin:0 0 12px">📜 Mes pronostics <span style="font-size:13px;font-weight:700;color:#8fa6bd">${total} au total</span></h3>
+      ${preview.map(rowHtml).join('')}
+      ${restHtml}
     </div>
   `;
+}
+
+function togglePredHistory() {
+  const extra = document.getElementById('predHistoryExtra');
+  const btn = document.getElementById('predHistoryBtn');
+  if (!extra || !btn) return;
+  const isHidden = extra.style.display === 'none';
+  extra.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? 'Réduire ↑' : `Voir tous mes pronostics (${btn.textContent.match(/\d+/)?.[0] || ''}) ↓`;
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────
