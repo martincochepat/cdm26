@@ -31,8 +31,57 @@ async function getSession() {
     const raw = localStorage.getItem('sb-lclnnxirkuuwexxcmmho-auth-token');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Vérifie expiration
-    if (parsed?.expires_at && Date.now() / 1000 > parsed.expires_at) return null;
+    if (!parsed?.access_token) return null;
+
+    const now = Date.now() / 1000;
+    const expiresAt = parsed?.expires_at || 0;
+
+    // Token expiré → déconnexion
+    if (expiresAt && now > expiresAt) {
+      // Tente un refresh si on a un refresh_token
+      if (parsed?.refresh_token) {
+        try {
+          const res = await fetch(`${AUTH_SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: { apikey: AUTH_SUPABASE_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: parsed.refresh_token })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.access_token) {
+              const newSession = {
+                access_token: data.access_token,
+                refresh_token: data.refresh_token || parsed.refresh_token,
+                expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
+              };
+              localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify(newSession));
+              return newSession;
+            }
+          }
+        } catch (_) {}
+      }
+      // Refresh impossible → supprime la session
+      localStorage.removeItem('sb-lclnnxirkuuwexxcmmho-auth-token');
+      return null;
+    }
+
+    // Token expire dans moins de 10 min → refresh préventif en arrière-plan
+    if (expiresAt && now > expiresAt - 600 && parsed?.refresh_token) {
+      fetch(`${AUTH_SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { apikey: AUTH_SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: parsed.refresh_token })
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (data?.access_token) {
+          localStorage.setItem('sb-lclnnxirkuuwexxcmmho-auth-token', JSON.stringify({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token || parsed.refresh_token,
+            expires_at: Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600),
+          }));
+        }
+      }).catch(() => {});
+    }
+
     return parsed;
   } catch (_) { return null; }
 }
