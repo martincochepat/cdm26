@@ -150,8 +150,60 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }).join('')
     }
     function renderBracket(){
-      if(!window.bracketBox)return; const rounds=['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
-      bracketBox.innerHTML=rounds.map(r=>{let matches=data.filter(m=>m.phase===r|| (r==='Finale'&&m.phase==='Finale')).sort((a,b)=>matchStart(a)-matchStart(b)); if(!matches.length && r!=='Finale') matches=[]; return `<div class="round-col"><h3>${r}</h3>${matches.length?matches.map(m=>`<div class="bracket-match" onclick="openDetail(${jsArg(m.id)})"><b>${m.round} · ${dateLabel(m.date)} · ${m.time}</b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br>${flags[m.away]||'🏳️'} ${esc(m.away)}<br><span class="mini">${esc(m.city)}</span></div>`).join(''):'<div class="bracket-match"><b>À venir</b>Équipes à confirmer selon les résultats des groupes.</div>'}</div>`}).join('')
+      if(!window.bracketBox) return;
+      const rounds = ['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
+      const calHtml = rounds.map(r => {
+        const matches = data.filter(m => m.phase === r || (r === 'Finale' && m.phase === 'Finale')).sort((a,b) => matchStart(a)-matchStart(b));
+        if (!matches.length) return '';
+        return `
+          <div style="margin-bottom:28px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="background:#ffd16622;border:1px solid #ffd16644;border-radius:99px;padding:5px 16px;font-size:13px;font-weight:950;color:#ffd166">${r}</span>
+            </div>
+            <div style="display:grid;gap:10px">
+              ${matches.map(m => {
+                const k = matchStatusKey(m);
+                const isLive = k === 'live';
+                const isDone = k === 'finished';
+                const hasScore = m.score_a !== null && m.score_b !== null;
+                const freeTV = m.tv && m.tv.includes('M6');
+                const winnerHome = isDone && hasScore && m.score_a > m.score_b;
+                const winnerAway = isDone && hasScore && m.score_b > m.score_a;
+                return `
+                  <div onclick="openDetail(${jsArg(m.id)})" style="background:${isLive?'linear-gradient(135deg,#ffd16612,#ff9f4308)':isDone?'#ffffff08':'#ffffff0d'};border:1px solid ${isLive?'#ffd16655':isDone?'#ffffff22':'#ffffff18'};border-radius:20px;padding:16px 18px;cursor:pointer">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+                      ${isLive ? '<span style="background:#ffd166;color:#061426;font-size:11px;font-weight:950;padding:3px 10px;border-radius:99px">● EN DIRECT</span>' : ''}
+                      ${isDone ? '<span style="background:#ffffff14;color:#adc0d2;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px">✓ Terminé</span>' : ''}
+                      <span style="color:#8fa6bd;font-size:12px">📅 ${dateLabel(m.date)}</span>
+                      <span style="color:#8fa6bd;font-size:12px">⏰ ${m.time}</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:12px">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:26px">${flags[m.home]||'🏳️'}</span>
+                        <span style="font-size:14px;font-weight:${winnerHome?'950':'700'};color:${winnerHome?'#ffd166':isDone&&!winnerHome&&hasScore?'#8fa6bd':'#dcecff'}">${esc(m.home)}</span>
+                      </div>
+                      <div style="text-align:center;min-width:60px">
+                        ${hasScore ? `<div style="font-size:22px;font-weight:950;color:${isLive?'#ffd166':'#dcecff'};background:#ffffff12;border-radius:12px;padding:6px 14px">${m.score_a} - ${m.score_b}</div>` : '<div style="font-size:15px;color:#8fa6bd;font-weight:700">VS</div>'}
+                      </div>
+                      <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+                        <span style="font-size:14px;font-weight:${winnerAway?'950':'700'};color:${winnerAway?'#ffd166':isDone&&!winnerAway&&hasScore?'#8fa6bd':'#dcecff'};text-align:right">${esc(m.away)}</span>
+                        <span style="font-size:26px">${flags[m.away]||'🏳️'}</span>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #ffffff10">
+                      <span style="font-size:12px;color:#8fa6bd">🏟️ ${esc(m.stadium)}</span>
+                      <span style="font-size:12px;color:#8fa6bd">📍 ${esc(m.city)}</span>
+                      <span style="font-size:12px;color:#8fa6bd">📺 ${esc(m.tv)}</span>
+                      ${freeTV ? '<span style="font-size:11px;background:#00a85918;color:#00a859;border:1px solid #00a85940;border-radius:99px;padding:2px 8px;font-weight:800">Gratuit M6/M6+</span>' : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+      bracketBox.innerHTML = calHtml || '<div style="color:#8fa6bd;text-align:center;padding:40px">Les matchs de phase finale s\'afficheront ici.</div>';
     }
     const quizFallback=[{id:'local-1',question:'Combien de pays accueillent la Coupe du Monde 2026 ?',correct_answer:'3',options:['2','3','4','5']},{id:'local-2',question:'Quel stade accueille la finale intégrée dans ce guide ?',correct_answer:'MetLife Stadium',options:['SoFi Stadium','MetLife Stadium','AT&T Stadium','Estadio Azteca']},{id:'local-3',question:'Quel pays hôte joue le match d\u2019ouverture ?',correct_answer:'Mexique',options:['Canada','Mexique','États-Unis','Brésil']}];
     function localDateKey(d=new Date()){
