@@ -551,3 +551,7 @@ body:not(.home-active) .hero{
 .det-score-goal{animation:goalPulse .4s ease forwards!important;background:#ef334030!important;border:2px solid #ef334080!important}
 .det-goal-text{font-size:22px;font-weight:950;color:#ef3340;animation:goalText 2.5s ease forwards;display:block;text-align:center;letter-spacing:.05em;text-shadow:0 0 20px #ef334080}
 .hm-score-goal{animation:goalPulse .4s ease!important;background:#ef334030!important}
+
+/* Fix score inline */
+.det-score{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;flex-direction:row!important}
+.det-teams{min-height:100px}
