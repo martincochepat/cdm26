@@ -18,44 +18,143 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const upcoming=data.filter(m=>matchStatusKey(m)==='upcoming').sort((a,b)=>matchStart(a)-matchStart(b));
       const liveMatches=data.filter(m=>matchStatusKey(m)==='live').sort((a,b)=>matchStart(a)-matchStart(b));
       const finished=data.filter(m=>matchStatusKey(m)==='finished').sort((a,b)=>matchStart(b)-matchStart(a));
-      const mine=upcoming.filter(m=>followedTeams.has(m.home)||followedTeams.has(m.away));
       const today=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
-      const tvToday=today.filter(m=>
-        (m.tv.includes('M6')||m.tv.includes('beIN')) &&
-        (matchStatusKey(m)==='live' || matchStatusKey(m)==='upcoming') &&
-        !isPast(m)
-      );
+      const tvToday=today.filter(m=>(m.tv.includes('M6')||m.tv.includes('beIN'))&&(matchStatusKey(m)==='live'||matchStatusKey(m)==='upcoming')&&!isPast(m));
       const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
-      const tvTitle=tvToday.length?'📺 Ce soir à la TV':'📺 Prochaines diffusions TV';
-      const mainMatch=liveMatches[0] || upcoming[0] || finished[0];
-      const mainStatus=mainMatch ? matchStatusKey(mainMatch) : 'upcoming';
-      const mainTitle=mainStatus==='live'?'🔴 Match en cours':(mainStatus==='finished'?'✅ Dernier résultat':'⏳ Prochain match');
+      const tvTitle=tvToday.length?'Ce soir à la TV':'Prochaines diffusions TV';
+      const mainMatch=liveMatches[0]||upcoming[0]||finished[0];
+      const mainStatus=mainMatch?matchStatusKey(mainMatch):'upcoming';
       const followed=[...followedTeams];
+
+      // ── FEATURED BOX ──────────────────────────────────────────
       if(mainMatch){
-        featuredBox.innerHTML=`<h2 class="card-title">${mainTitle}</h2><div onclick="openDetail(${jsArg(mainMatch.id)})" style="cursor:pointer"><div class="match-feature-teams"><div class="match-feature-team"><span class="flag">${flags[mainMatch.home]||'🏳️'}</span>${esc(mainMatch.home)}</div><div class="match-feature-vs">${scoreCenter(mainMatch)||'<span style="font-size:15px;color:#8fa6bd;font-weight:700;padding:0 8px">VS</span>'}</div><div class="match-feature-team"><span class="flag">${flags[mainMatch.away]||'🏳️'}</span>${esc(mainMatch.away)}</div></div><div class="match-meta-line"><span>${statusBadge(mainMatch)}</span><span>📅 ${smartDateLabel(mainMatch)} · ${mainMatch.time}</span><span>📍 ${esc(mainMatch.stadium)}, ${esc(mainMatch.city)}</span><span>📺 ${esc(mainMatch.tv)}${mainMatch.tv.includes('M6')?` <span style="background:#00a85920;color:#00a859;border:1px solid #00a85940;border-radius:99px;padding:2px 7px;font-size:11px;font-weight:800">M6 gratuit</span>`:''}</span></div></div><button class="home-btn home-btn-primary" onclick="openDetail(${jsArg(mainMatch.id)})">Voir le détail →</button>`;
-      }else featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
-      freeTodayBox.innerHTML=`<h2 class="card-title">${tvTitle}</h2>${tvList.length?tvList.map(m=>`<div class="tv-mini-row" onclick="openDetail(${jsArg(m.id)})"><b>${m.time}</b><span>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)} · ${smartDateLabel(m)}</small></span><span class="tv-channel">${m.tv.includes('M6')?'M6':'beIN'}</span></div>`).join(''):'<div class="empty-soft">Aucune diffusion TV à afficher.</div>'}<button class="home-btn home-btn-secondary" onclick="switchTab('tv')">Voir le guide TV →</button>`;
-      const followedRows=followed.length?followed.slice(0,4).map(t=>{const next=upcoming.find(m=>m.home===t||m.away===t);return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?`${smartDateLabel(next)} · ${next.time}`:''}</small></div>`}).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
-      monMondialBox.innerHTML=`<h2 class="card-title">⭐ Mes équipes</h2>${followedRows}<div class="mini-details">${followedTeams.size} équipe(s) suivie(s) · ${favs.size} favori(s)</div><button class="home-btn" onclick="switchTab('teams')">Voir mes équipes →</button>`;
-      const cities=[...new Set(data.map(m=>m.city))], city=cities[(new Date().getDate())%cities.length], v=venueMeta[city]||{}, img=photoList(city)[0]||'';
-      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
-      homeUpcomingBox.innerHTML=`<h2 class="card-title">📅 Prochains matchs</h2>${upcoming.slice(0,5).map(m=>`<div class="upcoming-row" onclick="openDetail(${jsArg(m.id)})"><span>${smartDateLabel(m)}<br><small style="color:#8fa6bd">${m.time}</small></span><b>${flags[m.home]||'🏳️'} ${esc(m.home)}<br><small>vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</small></b><span style="text-align:right">${m.tv.includes('M6')?'<span style="background:#00a85920;color:#00a859;border:1px solid #00a85940;border-radius:99px;padding:3px 8px;font-size:11px;font-weight:800;display:block;margin-bottom:3px">M6</span>':''}<span style="font-size:11px;color:#8fa6bd">${m.tv.includes('beIN')?'beIN':''}</span></span></div>`).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}<button class="home-btn home-btn-secondary" onclick="switchTab('matches')">Voir tous les matchs →</button>`;
-      renderHeroInfoCard();
-    }
-    function renderHeroInfoCard(){
-      const el=document.getElementById('heroInfoCard');
-      if(!el) return;
-      const live=data.filter(m=>String(m.status||'').toLowerCase()==='live'||isLive(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0];
-      const upcoming=data.filter(m=>!isPast(m)&&String(m.status||'').toLowerCase()!=='finished').sort((a,b)=>matchStart(a)-matchStart(b))[0];
-      const finished=data.filter(m=>String(m.status||'').toLowerCase()==='finished'||isPast(m)).sort((a,b)=>matchStart(b)-matchStart(a))[0];
-      const m=live||upcoming||finished;
-      if(!m){
-        el.innerHTML=`<div class="hero-info-eyebrow">🏆 Mondial 2026</div><div class="hero-info-title">104 matchs à suivre</div><div class="hero-info-sub">Calendrier, TV française, stades et favoris au même endroit.</div><div class="hero-info-meta"><div><b>16</b>villes hôtes</div><div><b>3</b>pays</div></div>`;
-        return;
+        const isLive=mainStatus==='live';
+        const isDone=mainStatus==='finished';
+        const scored=mainMatch.score_a!==null&&mainMatch.score_a!==undefined&&mainMatch.score_b!==null&&mainMatch.score_b!==undefined;
+        const wH=isDone&&scored&&Number(mainMatch.score_a)>Number(mainMatch.score_b);
+        const wA=isDone&&scored&&Number(mainMatch.score_b)>Number(mainMatch.score_a);
+        const freeTV=mainMatch.tv&&mainMatch.tv.includes('M6');
+
+        // Événements du match (buts)
+        const events=matchEventsByMatchId[String(mainMatch.id)]||[];
+        const goals=events.filter(e=>{
+          const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+          return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));
+        });
+        const homeGoals=goals.filter(e=>e.team_name===mainMatch.home||(flags[e.team_name]&&e.team_name===mainMatch.home));
+        const awayGoals=goals.filter(e=>e.team_name===mainMatch.away||(flags[e.team_name]&&e.team_name===mainMatch.away));
+
+        // Badge statut
+        const statusBadgeHtml=isLive
+          ?`<span class="hm-live-badge">● EN DIRECT${mainMatch.minute?` · ${esc(mainMatch.minute)}'`:''}</span>`
+          :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
+          :`<span class="hm-next-badge">⏳ À venir</span>`;
+
+        // Barre de progression
+        const pct=isLive&&mainMatch.minute?Math.min(100,Math.round((Number(mainMatch.minute)/90)*100)):isDone?100:0;
+        const progressHtml=isLive||isDone?`<div class="hm-progress"><div class="hm-progress-bar${isLive?' hm-progress-live':''}" style="width:${pct}%"></div></div>`:'';
+
+        // Scorers
+        const scorerLine=(side,goals)=>goals.length
+          ?`<div class="hm-scorers">${goals.map(e=>`<span>⚽ ${e.elapsed?e.elapsed+"'":''}  ${esc(e.player_name||'But')}</span>`).join('')}</div>`:'';
+
+        // Stats (depuis match_events si disponibles)
+        const statsHtml=''; // sera enrichi quand stats Supabase disponibles
+
+        // Titre contextuel
+        const titleIcon=isLive?'🔴':isDone?'✅':'⏳';
+        const titleText=isLive?'Match en cours':isDone?'Dernier résultat':'Prochain match';
+
+        featuredBox.innerHTML=`
+          <div class="hm-match-header">
+            <span class="hm-phase-tag">${esc(mainMatch.phase)} · ${esc(mainMatch.round)}</span>
+            <div class="hm-match-actions">
+              <button class="fav ${favs.has(String(mainMatch.id))?'on':''}" onclick="toggleFav(${jsArg(mainMatch.id)})">${favs.has(String(mainMatch.id))?'★':'☆'}</button>
+              ${statusBadgeHtml}
+            </div>
+          </div>
+          <div class="hm-teams" onclick="openDetail(${jsArg(mainMatch.id)})">
+            <div class="hm-team ${wH?'hm-winner':''}">
+              <span class="hm-flag">${flags[mainMatch.home]||'🏳️'}</span>
+              <span class="hm-team-name">${esc(mainMatch.home)}</span>
+              ${scorerLine('home',homeGoals)}
+            </div>
+            <div class="hm-score-block">
+              ${scored
+                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>`
+                :`<div class="hm-vs">VS</div><div class="hm-kickoff">${esc(mainMatch.time)}</div>`
+              }
+            </div>
+            <div class="hm-team hm-team-right ${wA?'hm-winner':''}">
+              <span class="hm-team-name">${esc(mainMatch.away)}</span>
+              <span class="hm-flag">${flags[mainMatch.away]||'🏳️'}</span>
+              ${scorerLine('away',awayGoals)}
+            </div>
+          </div>
+          ${progressHtml}
+          <div class="hm-meta-grid">
+            <div class="hm-meta-item"><span class="hm-meta-label">📅 Date</span><span class="hm-meta-val">${smartDateLabel(mainMatch)}</span></div>
+            <div class="hm-meta-item"><span class="hm-meta-label">⏰ Heure</span><span class="hm-meta-val">${esc(mainMatch.time)}</span></div>
+            <div class="hm-meta-item"><span class="hm-meta-label">🏟️ Stade</span><span class="hm-meta-val">${esc(mainMatch.stadium)}</span></div>
+            <div class="hm-meta-item"><span class="hm-meta-label">📍 Ville</span><span class="hm-meta-val">${esc(mainMatch.city)}</span></div>
+            <div class="hm-meta-item"><span class="hm-meta-label">📺 Diffusion</span><span class="hm-meta-val">${esc(mainMatch.tv)}${freeTV?' <span class="hm-free">Gratuit</span>':''}</span></div>
+          </div>
+          <button class="home-btn home-btn-primary" onclick="openDetail(${jsArg(mainMatch.id)})">Voir le détail complet →</button>
+        `;
+      } else {
+        featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
       }
-      const status=live?'🔴 Match en cours':(upcoming?'⏳ Prochain match':'✅ Dernier résultat');
-      const minute=live&&m.minute?` · ${esc(m.minute)}'`:'';
-      el.innerHTML=`<div class="hero-info-eyebrow">${status}${minute}</div><div class="hero-info-title">${flags[m.home]||'🏳️'} ${esc(m.home)}<br><span class="grad">${hasScore(m)||live?`${esc(m.score_a ?? 0)} - ${esc(m.score_b ?? 0)}`:'VS'}</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="hero-info-sub">${smartDateLabel(m)} · ${esc(m.time)} · ${esc(m.city)}</div><div class="hero-info-meta"><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Diffusion</b>${esc(m.tv)}</div></div><div class="hero-info-actions"><button onclick="openDetail(${jsArg(m.id)})">Voir le match</button><button class="secondary" onclick="switchTab('matches')">Calendrier</button></div>`;
+
+      // ── CE SOIR À LA TV ────────────────────────────────────────
+      freeTodayBox.innerHTML=`
+        <h2 class="card-title">📺 ${tvTitle}</h2>
+        ${tvList.length?tvList.map(m=>`
+          <div class="hm-tv-row" onclick="openDetail(${jsArg(m.id)})">
+            <div class="hm-tv-time">${m.time}</div>
+            <div class="hm-tv-match">
+              <div class="hm-tv-teams">${flags[m.home]||'🏳️'} <b>${esc(m.home)}</b> <span style="color:#8fa6bd;margin:0 4px">vs</span> ${flags[m.away]||'🏳️'} <b>${esc(m.away)}</b></div>
+              <div class="hm-tv-meta">${smartDateLabel(m)} · ${esc(m.phase)}</div>
+            </div>
+            <div class="hm-tv-badge">${m.tv.includes('M6')?'<span class="hm-m6">M6</span>':''}<span class="hm-bein">beIN</span></div>
+          </div>
+        `).join(''):'<div class="empty-soft">Aucune diffusion TV à afficher.</div>'}
+        <button class="home-btn home-btn-secondary" onclick="switchTab('tv')">Voir le guide TV →</button>
+      `;
+
+      // ── MON MONDIAL ────────────────────────────────────────────
+      const followedRows=followed.length?followed.slice(0,4).map(t=>{
+        const next=upcoming.find(m=>m.home===t||m.away===t);
+        return `<div class="follow-row"><span>${flags[t]||'🏳️'}</span><b>${esc(t)}</b><small>${next?`${smartDateLabel(next)} · ${next.time}`:''}</small></div>`;
+      }).join(''):'<div class="empty-soft">Choisissez vos équipes favorites.</div>';
+      monMondialBox.innerHTML=`<h2 class="card-title">⭐ Mes équipes</h2>${followedRows}<div class="mini-details">${followedTeams.size} équipe(s) suivie(s) · ${favs.size} favori(s)</div><button class="home-btn" onclick="switchTab('teams')">Voir mes équipes →</button>`;
+
+      // ── STADE DU JOUR ──────────────────────────────────────────
+      const cities=[...new Set(data.map(m=>m.city))],city=cities[(new Date().getDate())%cities.length],v=venueMeta[city]||{},img=photoList(city)[0]||'';
+      stadiumDiscoveryBox.innerHTML=`<h2 class="card-title">🏟️ Stade du jour</h2><div class="stadium-day-photo" style="background-image:url('${img}')"></div><h3 style="margin:0 0 6px">${esc(stadiums[city]||city)}</h3><div class="match-meta-line"><span>📍 ${esc(city)}, ${esc(v.country||'')}</span><span>👥 ${esc(v.capacity||'Capacité à confirmer')}</span></div><button class="home-btn" onclick="openStadiumDetail('${esc(city)}')">Découvrir le stade →</button><button class="home-btn" style="margin-top:8px;background:#ffffff12;color:#fff;border-color:#ffffff24" onclick="openRandomStadium()">Découvrir un autre stade</button>`;
+
+      // ── PROCHAINS MATCHS ───────────────────────────────────────
+      homeUpcomingBox.innerHTML=`
+        <h2 class="card-title">📅 Prochains matchs</h2>
+        ${upcoming.slice(0,5).map(m=>`
+          <div class="hm-upcoming-row" onclick="openDetail(${jsArg(m.id)})">
+            <div class="hm-upc-date">
+              <b>${smartDateLabel(m)}</b>
+              <span>${m.time}</span>
+            </div>
+            <div class="hm-upc-match">
+              <div class="hm-upc-teams">${flags[m.home]||'🏳️'} <b>${esc(m.home)}</b> <span style="color:#8fa6bd;font-size:11px;margin:0 3px">vs</span> ${flags[m.away]||'🏳️'} <b>${esc(m.away)}</b></div>
+              <div class="hm-upc-meta">${esc(m.phase)} · ${esc(m.city)}</div>
+            </div>
+            <div class="hm-upc-tv">
+              ${m.tv.includes('M6')?'<span class="hm-m6">M6</span>':''}
+              ${m.tv.includes('beIN')?'<span class="hm-bein">beIN</span>':''}
+            </div>
+          </div>
+        `).join('')||'<div class="empty-soft">Aucun match à venir.</div>'}
+        <button class="home-btn home-btn-secondary" onclick="switchTab('matches')">Voir tous les matchs →</button>
+      `;
+
+      renderHeroInfoCard();
     }
 
     function renderHighlights(){
