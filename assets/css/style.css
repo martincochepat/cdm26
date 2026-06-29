@@ -544,3 +544,10 @@ body:not(.home-active) .hero{
 .det-actions button:first-child{background:linear-gradient(135deg,#ffd16622,#ffd16608);border-color:#ffd16640;color:#ffd166}
 
 @media(max-width:480px){.det-flag{font-size:30px}.det-name{font-size:14px}.det-score{font-size:28px;padding:10px 14px;min-width:80px}.det-info-grid{grid-template-columns:1fr}}
+
+/* ── Animation BUT ───────────────────────────────────────────── */
+@keyframes goalPulse{0%{transform:scale(1);background:#ef334020}25%{transform:scale(1.15);background:#ef334060}50%{transform:scale(1.1);background:#ef334040}100%{transform:scale(1);background:#ef334020}}
+@keyframes goalText{0%{opacity:0;transform:scale(.8)}20%{opacity:1;transform:scale(1.1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9)}}
+.det-score-goal{animation:goalPulse .4s ease forwards!important;background:#ef334030!important;border:2px solid #ef334080!important}
+.det-goal-text{font-size:22px;font-weight:950;color:#ef3340;animation:goalText 2.5s ease forwards;display:block;text-align:center;letter-spacing:.05em;text-shadow:0 0 20px #ef334080}
+.hm-score-goal{animation:goalPulse .4s ease!important;background:#ef334030!important}
