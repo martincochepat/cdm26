@@ -1,4 +1,31 @@
-function isPlaceholderTeam(name){
+const EN_TO_FR = {
+      'Mexico':'Mexique','South Africa':'Afrique du Sud','South Korea':'Corée du Sud',
+      'Czechia':'Rép. tchèque','Czech Republic':'Rép. tchèque',
+      'Canada':'Canada','Bosnia & Herzegovina':'Bosnie-Herzégovine',
+      'Bosnia and Herzegovina':'Bosnie-Herzégovine',
+      'USA':'États-Unis','United States':'États-Unis','Paraguay':'Paraguay',
+      'Qatar':'Qatar','Switzerland':'Suisse','Brazil':'Brésil','Morocco':'Maroc',
+      'Haiti':'Haïti','Scotland':'Écosse','Australia':'Australie','Turkey':'Turquie',
+      'Turkiye':'Turquie','Germany':'Allemagne','Curacao':'Curaçao','Curaçao':'Curaçao',
+      "Ivory Coast":"Côte d'Ivoire","Côte d'Ivoire":"Côte d'Ivoire",
+      'Ecuador':'Equateur','Netherlands':'Pays-Bas','Japan':'Japon',
+      'Sweden':'Suède','Tunisia':'Tunisie','Spain':'Espagne','Cape Verde':'Cap-Vert',
+      'Belgium':'Belgique','Egypt':'Égypte','Saudi Arabia':'Arabie saoudite',
+      'Uruguay':'Uruguay','Iran':'Iran','New Zealand':'Nouvelle-Zélande',
+      'France':'France','Senegal':'Sénégal','Iraq':'Irak','Norway':'Norvège',
+      'Argentina':'Argentine','Algeria':'Algérie','Austria':'Autriche','Jordan':'Jordanie',
+      'Portugal':'Portugal','DR Congo':'RD Congo','Congo DR':'RD Congo',
+      'Uzbekistan':'Ouzbékistan','Colombia':'Colombie','England':'Angleterre',
+      'Croatia':'Croatie','Ghana':'Ghana','Panama':'Panama','Kosovo':'Kosovo',
+      'Serbia':'Serbie','Poland':'Pologne','Denmark':'Danemark','Wales':'Pays de Galles',
+      'Nigeria':'Nigeria','Cameroon':'Cameroun','Mali':'Mali','Zambia':'Zambie',
+      'Jamaica':'Jamaïque','Honduras':'Honduras','El Salvador':'El Salvador',
+      'Chile':'Chili','Peru':'Pérou','Venezuela':'Venezuela','Bolivia':'Bolivie',
+      'Indonesia':'Indonésie','Iraq':'Irak','Syria':'Syrie','Bahrain':'Bahreïn',
+      'UAE':'Émirats arabes unis','United Arab Emirates':'Émirats arabes unis',
+    };
+    function frName(name){ return EN_TO_FR[name] || name; }
+    function isPlaceholderTeam(name){
       if(!name) return true;
       const n = String(name).toLowerCase();
       return n.includes('groupe') || n.includes('group') ||
@@ -17,7 +44,12 @@ function isPlaceholderTeam(name){
         matchEventsByMatchId = normalizeMatchEvents(eventRows);
         const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeSupabaseMatch);
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
-        dynamicMatches.forEach(m=>merged.set(String(m.id), m));
+        dynamicMatches.forEach(m=>{
+          m.home = frName(m.home);
+          m.away = frName(m.away);
+          if(m.winner && m.winner !== 'draw') m.winner = frName(m.winner);
+          merged.set(String(m.id), m);
+        });
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
         resolveKnockoutTeams();
         supabaseStatus = 'online';
