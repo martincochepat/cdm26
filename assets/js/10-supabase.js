@@ -1,4 +1,12 @@
-async function loadDynamicData(){
+function isPlaceholderTeam(name){
+      if(!name) return true;
+      const n = String(name).toLowerCase();
+      return n.includes('groupe') || n.includes('group') ||
+        n.includes('vainqueur') || n.includes('winner') || n.includes('perdant') || n.includes('loser') ||
+        n.includes('1er') || n.includes('2e') || n.includes('3e') || n.includes('2ème') || n.includes('3ème') ||
+        /^[a-z]\d+$/.test(n.trim());
+    }
+    async function loadDynamicData(){
       try{
         const [matchRows, stadiumRows, eventRows] = await Promise.all([
           supabaseFetch('matches?select=*&order=date.asc,time_fr.asc'),
