@@ -65,14 +65,16 @@ const EN_TO_FR = {
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
         dynamicMatches.forEach(m=>{
           const local = merged.get(String(m.id));
+          // Ignorer les matchs Supabase dont l'ID n'existe pas dans localData
+          // (évite les doublons créés par d'anciennes données corrompues)
+          if(!local) return;
           // Traduit les noms anglais API-Football en français
           const rawHome = frName(m.home);
           const rawAway = frName(m.away);
           if(m.winner && m.winner !== 'draw') m.winner = frName(m.winner);
           // Pour les matchs knockout : toujours garder les noms de localData (00-core-data.js)
-          // car Supabase peut avoir des données incorrectes issues du sync
-          const isKnockout = local && !String(local.phase||'').startsWith('Groupe');
-          if(isKnockout && local){
+          const isKnockout = !String(local.phase||'').startsWith('Groupe');
+          if(isKnockout){
             m.home = local.home;
             m.away = local.away;
           } else {
@@ -318,39 +320,56 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
     // Résout automatiquement les slots "Vainqueur M73", "Perdant M101" etc.
     // depuis les résultats déjà connus dans data
     function resolveKnockoutSlots(){
-      // Index des matchs par round (ex: "M73" -> match object)
-      const byRound = {};
-      data.forEach(m => { if(m.round) byRound[m.round] = m; });
+      // Construit un index round->id depuis localData (toujours fiable)
+      const roundToId = {};
+      localData.forEach(function(m){ if(m.round && m.round.match(/^M\d+$/)) roundToId[m.round] = String(m.id); });
+
+      // Construit un index id->match depuis data (données live Supabase)
+      function getById(id){ return data.find(function(x){ return String(x.id)===String(id); }); }
 
       function resolveSlot(slot){
-        if(!slot) return slot;
+        if(!slot) return null;
         const s = String(slot);
-        // "Vainqueur M73" -> winner du match M73
+        // "Vainqueur M73"
         const mv = s.match(/^Vainqueur\s+(M\d+)$/i);
         if(mv){
-          const ref = byRound[mv[1]];
+          const id = roundToId[mv[1]];
+          const ref = id ? getById(id) : null;
           if(ref && ref.winner && ref.winner !== 'draw' && ref.winner !== '') return ref.winner;
-          return s; // pas encore connu
+          return null; // pas encore connu -> garder slot
         }
-        // "Perdant M101" -> le perdant du match M101
+        // "Perdant M101"
         const ml = s.match(/^Perdant\s+(M\d+)$/i);
         if(ml){
-          const ref = byRound[ml[1]];
-          if(ref && ref.winner && ref.winner !== 'draw' && ref.status === 'finished'){
-            // Le perdant = celui qui n'est pas le winner
-            if(ref.winner === ref.home) return ref.away;
-            if(ref.winner === ref.away) return ref.home;
+          const id = roundToId[ml[1]];
+          const ref = id ? getById(id) : null;
+          if(ref && ref.status === 'finished' && ref.winner && ref.winner !== 'draw'){
+            return ref.winner === ref.home ? ref.away : ref.home;
           }
-          return s;
+          return null;
         }
-        return slot;
+        return null;
       }
 
-      data.forEach(m => {
+      // Réinitialise d'abord tous les slots knockout depuis localData
+      // (évite que des résolutions incorrectes persistent)
+      data.forEach(function(m){
         if(String(m.phase||'').startsWith('Groupe')) return;
-        const newHome = resolveSlot(m.home);
-        const newAway = resolveSlot(m.away);
-        if(newHome !== m.home) m.home = newHome;
-        if(newAway !== m.away) m.away = newAway;
+        const local = localData.find(function(l){ return String(l.id)===String(m.id); });
+        if(!local) return;
+        // Réinitialise home/away si c'était un slot dans localData
+        if(local.home && (local.home.startsWith('Vainqueur') || local.home.startsWith('Perdant'))) m.home = local.home;
+        if(local.away && (local.away.startsWith('Vainqueur') || local.away.startsWith('Perdant'))) m.away = local.away;
       });
+
+      // Résout en plusieurs passes (les 8es dépendent des 16es, les quarts des 8es, etc.)
+      for(var pass=0; pass<4; pass++){
+        data.forEach(function(m){
+          if(String(m.phase||'').startsWith('Groupe')) return;
+          const rh = resolveSlot(m.home);
+          const ra = resolveSlot(m.away);
+          if(rh) m.home = rh;
+          if(ra) m.away = ra;
+        });
+      }
     }
