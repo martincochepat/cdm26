@@ -152,78 +152,84 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     let bracketActiveRound = '16es de finale';
     function renderBracket(){
       if(!window.bracketBox) return;
-      const rounds = ['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
-      const roundEmoji = {'16es de finale':'🔟','8es de finale':'8️⃣','Quarts de finale':'4️⃣','Demi-finales':'🔝','Finale':'🏆'};
+      const rounds = [
+        {key:'16es de finale', label:'16es', emoji:'🔟'},
+        {key:'8es de finale',  label:'8es',  emoji:'8️⃣'},
+        {key:'Quarts de finale', label:'Quarts', emoji:'⚔️'},
+        {key:'Demi-finales',  label:'Demis', emoji:'🔝'},
+        {key:'Finale',        label:'Finale', emoji:'🏆'}
+      ];
 
-      function isSlot(name){ return !name || /^(Vainqueur|Perdant)/.test(String(name)); }
+      function isSlot(name){
+        if(!name) return true;
+        const s = String(name);
+        return s.startsWith('Vainqueur') || s.startsWith('Perdant') || s.includes('demi-finale');
+      }
 
-      function teamBlock(name, isWinner, isDone, scored, side){
+      function teamRow(name, isWinner, isDone, scored){
         const slot = isSlot(name);
-        const flag = slot ? '⏳' : (flags[name]||'🏳️');
-        const color = isWinner ? '#ffd166' : (isDone&&scored&&!isWinner ? '#8fa6bd' : '#dcecff');
-        const nameHtml = slot
-          ? '<span style="color:#8fa6bd;font-size:11px;font-style:italic">À déterminer</span>'
-          : '<span style="font-size:13px;font-weight:'+(isWinner?'950':'700')+';color:'+color+'">'+esc(name)+'</span>';
-        const flagHtml = '<span style="font-size:22px">'+flag+'</span>';
-        return side==='home'
-          ? '<div style="display:flex;align-items:center;gap:8px">'+flagHtml+nameHtml+'</div>'
-          : '<div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">'+nameHtml+flagHtml+'</div>';
+        if(slot) return '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px;opacity:.35">⏳</span><span style="color:#8fa6bd;font-size:12px;font-style:italic">À déterminer</span></div>';
+        const flag = flags[name] || '🏳️';
+        const color = isWinner ? '#ffd166' : (isDone && scored && !isWinner ? '#8fa6bd' : '#fff');
+        const fw = isWinner ? '950' : '700';
+        return '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">'+flag+'</span><span style="font-size:14px;font-weight:'+fw+';color:'+color+'">'+esc(name)+'</span>'+(isWinner?'<span style="font-size:12px">✅</span>':'')+'</div>';
       }
 
       function matchCard(m){
-        const k=matchStatusKey(m), isLive=k==='live', isDone=k==='finished';
-        const scored=m.score_a!==null&&m.score_b!==null;
-        const freeTV=m.tv&&m.tv.includes('M6');
-        const wH=isDone&&scored&&Number(m.score_a)>Number(m.score_b);
-        const wA=isDone&&scored&&Number(m.score_b)>Number(m.score_a);
-        const bg = isLive ? 'linear-gradient(135deg,#ffd16615,#ff9f4310)' : isDone ? '#ffffff08' : '#ffffff0d';
-        const border = isLive ? '#ffd16655' : isDone ? '#ffffff22' : '#ffffff15';
-        const liveBadge = isLive ? '<span style="background:#ef3340;color:#fff;font-size:10px;font-weight:950;padding:3px 8px;border-radius:99px;margin-right:4px">● LIVE</span>' : '';
-        const doneBadge = isDone ? '<span style="background:#ffffff14;color:#adc0d2;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-right:4px">✓ Terminé</span>' : '';
-        const scoreHtml = scored
-          ? '<div style="font-size:22px;font-weight:950;color:'+(isLive?'#ffd166':'#fff')+';background:#ffffff14;border-radius:12px;padding:6px 14px;min-width:60px;text-align:center">'+m.score_a+' - '+m.score_b+'</div>'
-          : '<div style="font-size:12px;color:#8fa6bd;font-weight:700;padding:6px 10px">VS</div>';
-        return '<div onclick="openDetail('+jsArg(m.id)+')" style="background:'+bg+';border:1px solid '+border+';border-radius:18px;padding:16px;cursor:pointer">'
-          +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
-          +liveBadge+doneBadge
-          +'<span style="color:#8fa6bd;font-size:11px">📅 '+dateLabel(m.date)+' · '+m.time+'</span>'
+        const k = matchStatusKey(m);
+        const isLive = k === 'live';
+        const isDone = k === 'finished';
+        const scored = m.score_a !== null && m.score_b !== null;
+        const freeTV = m.tv && m.tv.includes('M6');
+        const wH = isDone && scored && Number(m.score_a) > Number(m.score_b);
+        const wA = isDone && scored && Number(m.score_b) > Number(m.score_a);
+        const border = isLive ? '#ffd16655' : isDone ? '#ffffff25' : '#ffffff15';
+        const bg = isLive ? 'linear-gradient(135deg,#ffd16614,#ff9f4310)' : isDone ? 'linear-gradient(180deg,#ffffff0a,#ffffff05)' : '#ffffff0a';
+        const statusBadge = isLive
+          ? '<span style="background:#ef3340;color:#fff;font-size:10px;font-weight:950;padding:3px 9px;border-radius:99px">● LIVE</span>'
+          : isDone ? '<span style="background:#00a85925;color:#00a859;font-size:10px;font-weight:900;padding:3px 9px;border-radius:99px;border:1px solid #00a85940">✓ Terminé</span>' : '';
+        const scoreBlock = scored
+          ? '<div style="font-size:24px;font-weight:950;color:'+(isLive?'#ffd166':'#fff')+';background:#ffffff14;border-radius:14px;padding:8px 16px;min-width:70px;text-align:center;letter-spacing:-.02em">'+m.score_a+' - '+m.score_b+'</div>'
+          : '<div style="font-size:13px;color:#8fa6bd;font-weight:700;padding:8px 12px">VS</div>';
+        return '<div onclick="openDetail('+jsArg(m.id)+')" style="background:'+bg+';border:1px solid '+border+';border-radius:20px;padding:16px 18px;cursor:pointer">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
+          +statusBadge
+          +'<span style="color:#8fa6bd;font-size:11px;font-weight:700">'+dateLabel(m.date)+' · '+m.time+'</span>'
+          +(freeTV?'<span style="background:#00a85918;color:#00a859;border:1px solid #00a85940;border-radius:99px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:auto">Gratuit M6/M6+</span>':'')
           +'</div>'
-          +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px">'
-          +teamBlock(m.home,wH,isDone,scored,'home')
-          +scoreHtml
-          +teamBlock(m.away,wA,isDone,scored,'away')
+          +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:12px">'
+          +teamRow(m.home, wH, isDone, scored)
+          +scoreBlock
+          +'<div style="display:flex;justify-content:flex-end">'+teamRow(m.away, wA, isDone, scored)+'</div>'
           +'</div>'
-          +'<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#8fa6bd;padding-top:10px;border-top:1px solid #ffffff10">'
-          +'<span>🏟️ '+esc(m.stadium)+'</span><span>📍 '+esc(m.city)+'</span>'
-          +(freeTV?'<span style="color:#00a859;font-weight:800">✅ Gratuit M6/M6+</span>':'<span>📺 '+esc(m.tv)+'</span>')
-          +'</div></div>';
+          +'<div style="font-size:11px;color:#8fa6bd">🏟️ '+esc(m.stadium)+' · 📍 '+esc(m.city)+'</div>'
+          +'</div>';
       }
 
-      // Onglets
-      const tabsHtml = rounds.map(r=>{
-        const all = data.filter(m=>m.phase===r);
-        const done = all.filter(m=>matchStatusKey(m)==='finished').length;
-        const isActive = r===bracketActiveRound;
-        const badge = (all.length && done) ? ' <span style="background:#00a85940;color:#00a859;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:950">'+done+'/'+all.length+'</span>' : '';
-        return '<button onclick="setBracketRound(\''+r+'\')" style="'
-          +'flex:0 0 auto;display:flex;align-items:center;gap:6px;'
-          +'padding:10px 18px;border-radius:16px;'
-          +'border:2px solid '+(isActive?'#ffd166':'#ffffff18')+';'
-          +'background:'+(isActive?'linear-gradient(135deg,#ffd16625,#ffd16610)':'#ffffff08')+';'
-          +'color:'+(isActive?'#ffd166':'#8fa6bd')+';'
-          +'font-weight:950;font-size:13px;cursor:pointer;white-space:nowrap;transition:.2s">'
-          +(roundEmoji[r]||'🏅')+' '+r+badge+'</button>';
-      }).join('');
+      // 5 onglets toujours visibles
+      const tabsHtml = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">'
+        + rounds.map(function(r){
+          const isActive = r.key === bracketActiveRound;
+          const all = data.filter(function(m){ return m.phase === r.key; });
+          const done = all.filter(function(m){ return matchStatusKey(m) === 'finished'; }).length;
+          const badge = (all.length && done) ? '<br><span style="font-size:10px;color:#00a859;font-weight:900">'+done+'/'+all.length+' ✓</span>' : '';
+          return '<button onclick="setBracketRound(\''+r.key+'\')" style="'
+            +'padding:12px 6px;border-radius:16px;border:2px solid '+(isActive?'#ffd166':'#ffffff18')+';'
+            +'background:'+(isActive?'linear-gradient(135deg,#ffd16628,#ffd16610)':'#ffffff08')+';'
+            +'color:'+(isActive?'#ffd166':'#8fa6bd')+';'
+            +'font-weight:950;font-size:12px;cursor:pointer;text-align:center;line-height:1.3;transition:.2s;width:100%">'
+            +r.emoji+'<br>'+r.label+badge+'</button>';
+        }).join('')
+        + '</div>';
 
-      // Matchs actifs
-      const activeMatches = data.filter(m=>m.phase===bracketActiveRound).sort((a,b)=>matchStart(a)-matchStart(b));
+      const activeMatches = data.filter(function(m){ return m.phase === bracketActiveRound; })
+        .sort(function(a,b){ return matchStart(a)-matchStart(b); });
+
       const bodyHtml = activeMatches.length
-        ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">'+activeMatches.map(matchCard).join('')+'</div>'
-        : '<div style="color:#8fa6bd;text-align:center;padding:40px;border:1px dashed #ffffff18;border-radius:18px;font-size:14px">Les matchs de ce tour apparaitront ici au fil de la competition.</div>';
+        ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'+activeMatches.map(matchCard).join('')+'</div>'
+        : '<div style="color:#8fa6bd;text-align:center;padding:40px;border:1px dashed #ffffff18;border-radius:18px">Les matchs apparaitront ici au fil de la competition.</div>';
 
-      bracketBox.innerHTML =
-        '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:14px;margin-bottom:20px;scrollbar-width:none;-webkit-overflow-scrolling:touch">'+tabsHtml+'</div>'
-        + bodyHtml;
+      bracketBox.innerHTML = tabsHtml + bodyHtml;
     }
     function setBracketRound(r){ bracketActiveRound=r; renderBracket(); }
 

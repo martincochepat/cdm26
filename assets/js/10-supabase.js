@@ -318,26 +318,25 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
     // Résout automatiquement les slots "Vainqueur M73", "Perdant M101" etc.
     // depuis les résultats déjà connus dans data
     function resolveKnockoutSlots(){
-      // Index des matchs par round (ex: "M73" -> match object)
+      // Index par round depuis localData (M73, M74...) qui a toujours les bons rounds
       const byRound = {};
-      data.forEach(m => { if(m.round) byRound[m.round] = m; });
+      localData.forEach(m => { if(m.round && m.round.startsWith('M')) byRound[m.round] = m.id; });
 
       function resolveSlot(slot){
         if(!slot) return slot;
         const s = String(slot);
-        // "Vainqueur M73" -> winner du match M73
         const mv = s.match(/^Vainqueur\s+(M\d+)$/i);
         if(mv){
-          const ref = byRound[mv[1]];
+          const id = byRound[mv[1]];
+          const ref = id ? data.find(x => String(x.id) === String(id)) : null;
           if(ref && ref.winner && ref.winner !== 'draw' && ref.winner !== '') return ref.winner;
-          return s; // pas encore connu
+          return s;
         }
-        // "Perdant M101" -> le perdant du match M101
         const ml = s.match(/^Perdant\s+(M\d+)$/i);
         if(ml){
-          const ref = byRound[ml[1]];
+          const id = byRound[ml[1]];
+          const ref = id ? data.find(x => String(x.id) === String(id)) : null;
           if(ref && ref.winner && ref.winner !== 'draw' && ref.status === 'finished'){
-            // Le perdant = celui qui n'est pas le winner
             if(ref.winner === ref.home) return ref.away;
             if(ref.winner === ref.away) return ref.home;
           }
