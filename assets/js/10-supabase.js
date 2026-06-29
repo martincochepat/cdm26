@@ -25,6 +25,25 @@ const EN_TO_FR = {
       'UAE':'Émirats arabes unis','United Arab Emirates':'Émirats arabes unis',
     };
     function frName(name){ return EN_TO_FR[name] || name; }
+    function isUnknownTeam(name){
+      if(!name) return true;
+      const n = String(name).toLowerCase();
+      // Placeholder si contient des mots clés de slot
+      if(n.includes('groupe') || n.includes('group') || n.includes('winner') ||
+         n.includes('loser') || n.includes('vainqueur') || n.includes('perdant') ||
+         n.includes('1er ') || n.match(/^\d/) ) return true;
+      // Nom anglais non traduit (commence par majuscule, pas dans flags connus)
+      const knownFr = ['mexique','france','brésil','argentine','allemagne','espagne',
+        'portugal','angleterre','pays-bas','belgique','italie','suisse','croatie',
+        'danemark','norvège','suède','autriche','pologne','serbie','turquie',
+        'rép. tchèque','bosnie-herzégovine','maroc','sénégal','tunisie','égypte',
+        "côte d'ivoire",'ghana','nigeria','algérie','cap-vert','japon','corée du sud',
+        'iran','arabie saoudite','qatar','australie','nouvelle-zélande','irak','jordanie',
+        'ouzbékistan','uruguay','colombie','paraguay','equateur','haïti','jamaïque',
+        'panama','curaçao','canada','états-unis','mexique','afrique du sud','écosse',
+        'rd congo','cap-vert','cape verde islands'];
+      return false; // on ne bloque pas les noms inconnus, juste les placeholders
+    }
     function isPlaceholderTeam(name){
       if(!name) return true;
       const n = String(name).toLowerCase();
@@ -45,13 +64,25 @@ const EN_TO_FR = {
         const dynamicMatches = (matchRows||[]).filter(r=>r && (r.date || r.team_a || r.team_b)).map(normalizeSupabaseMatch);
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
         dynamicMatches.forEach(m=>{
-          m.home = frName(m.home);
-          m.away = frName(m.away);
+          const local = merged.get(String(m.id));
+          // Traduit les noms anglais API-Football en français
+          const rawHome = frName(m.home);
+          const rawAway = frName(m.away);
           if(m.winner && m.winner !== 'draw') m.winner = frName(m.winner);
+          // Pour les matchs knockout : toujours garder les noms de localData (00-core-data.js)
+          // car Supabase peut avoir des données incorrectes issues du sync
+          const isKnockout = local && !String(local.phase||'').startsWith('Groupe');
+          if(isKnockout && local){
+            m.home = local.home;
+            m.away = local.away;
+          } else {
+            m.home = rawHome;
+            m.away = rawAway;
+          }
           merged.set(String(m.id), m);
         });
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
-        resolveKnockoutTeams();
+        // resolveKnockoutTeams(); // désactivé - noms en dur dans 00-core-data.js
         supabaseStatus = 'online';
         supabaseLastSync = new Date();
         renderAll();
