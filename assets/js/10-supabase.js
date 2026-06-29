@@ -65,14 +65,16 @@ const EN_TO_FR = {
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
         dynamicMatches.forEach(m=>{
           const local = merged.get(String(m.id));
+          // Ignorer les matchs Supabase dont l'ID n'existe pas dans localData
+          // (évite les doublons créés par d'anciennes données corrompues)
+          if(!local) return;
           // Traduit les noms anglais API-Football en français
           const rawHome = frName(m.home);
           const rawAway = frName(m.away);
           if(m.winner && m.winner !== 'draw') m.winner = frName(m.winner);
           // Pour les matchs knockout : toujours garder les noms de localData (00-core-data.js)
-          // car Supabase peut avoir des données incorrectes issues du sync
-          const isKnockout = local && !String(local.phase||'').startsWith('Groupe');
-          if(isKnockout && local){
+          const isKnockout = !String(local.phase||'').startsWith('Groupe');
+          if(isKnockout){
             m.home = local.home;
             m.away = local.away;
           } else {
