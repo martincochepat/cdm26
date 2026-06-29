@@ -24,18 +24,31 @@ let data = [
     })();
 
     function jsArg(v){return '\'' + String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\''}
+    function isPlaceholderTeam(name){
+      if(!name) return true;
+      const n = String(name).toLowerCase();
+      return n.includes('groupe') || n.includes('group') ||
+        n.includes('vainqueur') || n.includes('winner') || n.includes('perdant') || n.includes('loser') ||
+        n.includes('1er') || n.includes('2e') || n.includes('3e') || n.includes('2ème') || n.includes('3ème') ||
+        /^[a-z]\d+$/.test(n.trim());
+    }
     function normalizeSupabaseMatch(row, index){
       const id = String(row.id ?? `supabase-${index}`);
       const tv = row.channel || row.tv || row.broadcast || 'À confirmer';
       const isFree = row.free_tv === true || String(tv).toLowerCase().includes('m6');
+      const localMatch = localData.find(m => String(m.id) === id);
+      const rawHome = row.team_a || row.home || row.home_team || row.team_home || '';
+      const rawAway = row.team_b || row.away || row.away_team || row.team_away || '';
+      const home = isPlaceholderTeam(rawHome) ? (localMatch?.home || rawHome || 'À confirmer') : rawHome;
+      const away = isPlaceholderTeam(rawAway) ? (localMatch?.away || rawAway || 'À confirmer') : rawAway;
       return {
         id,
         date: row.date || row.match_date || '',
         time: row.time_fr || row.time || row.kickoff_time || '',
         phase: row.group_name || row.group || row.phase || 'À confirmer',
         round: row.round || row.matchday || row.phase || '',
-        home: row.team_a || row.home || row.home_team || row.team_home || 'À confirmer',
-        away: row.team_b || row.away || row.away_team || row.team_away || 'À confirmer',
+        home,
+        away,
         city: row.city || '',
         stadium: row.stadium || stadiums[row.city] || 'Stade à confirmer',
         tv: isFree && !String(tv).includes('M6') ? `${tv}, M6` : tv,
