@@ -153,49 +153,77 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     function renderBracket(){
       if(!window.bracketBox) return;
       const rounds = ['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
+      const roundEmoji = {'16es de finale':'🔟','8es de finale':'8️⃣','Quarts de finale':'4️⃣','Demi-finales':'🔝','Finale':'🏆'};
+
       function isSlot(name){ return !name || /^(Vainqueur|Perdant)/.test(String(name)); }
+
       function teamBlock(name, isWinner, isDone, scored, side){
         const slot = isSlot(name);
-        const flag = slot ? '<span style="font-size:20px;opacity:.4">⏳</span>' : `<span style="font-size:22px">${flags[name]||'🏳️'}</span>`;
-        const label = slot
+        const flag = slot ? '⏳' : (flags[name]||'🏳️');
+        const color = isWinner ? '#ffd166' : (isDone&&scored&&!isWinner ? '#8fa6bd' : '#dcecff');
+        const nameHtml = slot
           ? '<span style="color:#8fa6bd;font-size:11px;font-style:italic">À déterminer</span>'
-          : `<span style="font-size:13px;font-weight:${isWinner?'950':'700'};color:${isWinner?'#ffd166':isDone&&scored&&!isWinner?'#8fa6bd':'#dcecff'}">${esc(name)}</span>`;
+          : '<span style="font-size:13px;font-weight:'+(isWinner?'950':'700')+';color:'+color+'">'+esc(name)+'</span>';
+        const flagHtml = '<span style="font-size:22px">'+flag+'</span>';
         return side==='home'
-          ? `<div style="display:flex;align-items:center;gap:8px">${flag}${label}</div>`
-          : `<div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">${label}${flag}</div>`;
+          ? '<div style="display:flex;align-items:center;gap:8px">'+flagHtml+nameHtml+'</div>'
+          : '<div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">'+nameHtml+flagHtml+'</div>';
       }
+
       function matchCard(m){
         const k=matchStatusKey(m), isLive=k==='live', isDone=k==='finished';
         const scored=m.score_a!==null&&m.score_b!==null;
         const freeTV=m.tv&&m.tv.includes('M6');
-        const wH=isDone&&scored&&m.score_a>m.score_b, wA=isDone&&scored&&m.score_b>m.score_a;
-        return `<div onclick="openDetail(${jsArg(m.id)})" style="background:${isLive?'linear-gradient(135deg,#ffd16612,#ff9f4308)':isDone?'#ffffff08':'#ffffff0d'};border:1px solid ${isLive?'#ffd16655':isDone?'#ffffff22':'#ffffff18'};border-radius:18px;padding:14px 16px;cursor:pointer;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-            ${isLive?'<span style="background:#ffd166;color:#061426;font-size:11px;font-weight:950;padding:3px 10px;border-radius:99px">● EN DIRECT</span>':''}
-            ${isDone?'<span style="background:#ffffff14;color:#adc0d2;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px">✓ Terminé</span>':''}
-            <span style="color:#8fa6bd;font-size:12px">📅 ${dateLabel(m.date)} · ${m.time}</span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:10px">
-            ${teamBlock(m.home,wH,isDone,scored,'home')}
-            <div style="text-align:center;min-width:50px">${scored?`<div style="font-size:20px;font-weight:950;color:${isLive?'#ffd166':'#dcecff'};background:#ffffff12;border-radius:10px;padding:5px 10px">${m.score_a}-${m.score_b}</div>`:'<div style="font-size:12px;color:#8fa6bd;font-weight:700">VS</div>'}</div>
-            ${teamBlock(m.away,wA,isDone,scored,'away')}
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #ffffff10;font-size:11px;color:#8fa6bd">
-            <span>🏟️ ${esc(m.stadium)}</span><span>📍 ${esc(m.city)}</span><span>📺 ${esc(m.tv)}</span>
-            ${freeTV?'<span style="background:#00a85918;color:#00a859;border:1px solid #00a85940;border-radius:99px;padding:2px 7px;font-weight:800">Gratuit M6/M6+</span>':''}
-          </div>
-        </div>`;
+        const wH=isDone&&scored&&Number(m.score_a)>Number(m.score_b);
+        const wA=isDone&&scored&&Number(m.score_b)>Number(m.score_a);
+        const bg = isLive ? 'linear-gradient(135deg,#ffd16615,#ff9f4310)' : isDone ? '#ffffff08' : '#ffffff0d';
+        const border = isLive ? '#ffd16655' : isDone ? '#ffffff22' : '#ffffff15';
+        const liveBadge = isLive ? '<span style="background:#ef3340;color:#fff;font-size:10px;font-weight:950;padding:3px 8px;border-radius:99px;margin-right:4px">● LIVE</span>' : '';
+        const doneBadge = isDone ? '<span style="background:#ffffff14;color:#adc0d2;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-right:4px">✓ Terminé</span>' : '';
+        const scoreHtml = scored
+          ? '<div style="font-size:22px;font-weight:950;color:'+(isLive?'#ffd166':'#fff')+';background:#ffffff14;border-radius:12px;padding:6px 14px;min-width:60px;text-align:center">'+m.score_a+' - '+m.score_b+'</div>'
+          : '<div style="font-size:12px;color:#8fa6bd;font-weight:700;padding:6px 10px">VS</div>';
+        return '<div onclick="openDetail('+jsArg(m.id)+')" style="background:'+bg+';border:1px solid '+border+';border-radius:18px;padding:16px;cursor:pointer">'
+          +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px">'
+          +liveBadge+doneBadge
+          +'<span style="color:#8fa6bd;font-size:11px">📅 '+dateLabel(m.date)+' · '+m.time+'</span>'
+          +'</div>'
+          +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px">'
+          +teamBlock(m.home,wH,isDone,scored,'home')
+          +scoreHtml
+          +teamBlock(m.away,wA,isDone,scored,'away')
+          +'</div>'
+          +'<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#8fa6bd;padding-top:10px;border-top:1px solid #ffffff10">'
+          +'<span>🏟️ '+esc(m.stadium)+'</span><span>📍 '+esc(m.city)+'</span>'
+          +(freeTV?'<span style="color:#00a859;font-weight:800">✅ Gratuit M6/M6+</span>':'<span>📺 '+esc(m.tv)+'</span>')
+          +'</div></div>';
       }
-      const tabs = rounds.map(r=>{
-        const all=data.filter(m=>m.phase===r), done=all.filter(m=>matchStatusKey(m)==='finished').length;
-        const isActive=r===bracketActiveRound;
-        const badge = (all.length&&done) ? '<span style="background:#00a85940;color:#00a859;border-radius:99px;padding:1px 6px;font-size:10px">'+done+'/'+all.length+'</span>' : '';
-        const btn = '<button onclick="setBracketRound(\'' + r + '\')" style="flex:0 0 auto;padding:8px 14px;border-radius:14px;border:1px solid '+(isActive?'#ffd16688':'#ffffff18')+';background:'+(isActive?'#ffd16622':'#ffffff08')+';color:'+(isActive?'#ffd166':'#adc0d2')+';font-weight:950;font-size:12px;cursor:pointer;white-space:nowrap;transition:.15s">'+r+' '+badge+'</button>';
-        return btn;
+
+      // Onglets
+      const tabsHtml = rounds.map(r=>{
+        const all = data.filter(m=>m.phase===r);
+        const done = all.filter(m=>matchStatusKey(m)==='finished').length;
+        const isActive = r===bracketActiveRound;
+        const badge = (all.length && done) ? ' <span style="background:#00a85940;color:#00a859;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:950">'+done+'/'+all.length+'</span>' : '';
+        return '<button onclick="setBracketRound(\''+r+'\')" style="'
+          +'flex:0 0 auto;display:flex;align-items:center;gap:6px;'
+          +'padding:10px 18px;border-radius:16px;'
+          +'border:2px solid '+(isActive?'#ffd166':'#ffffff18')+';'
+          +'background:'+(isActive?'linear-gradient(135deg,#ffd16625,#ffd16610)':'#ffffff08')+';'
+          +'color:'+(isActive?'#ffd166':'#8fa6bd')+';'
+          +'font-weight:950;font-size:13px;cursor:pointer;white-space:nowrap;transition:.2s">'
+          +(roundEmoji[r]||'🏅')+' '+r+badge+'</button>';
       }).join('');
-      const active=data.filter(m=>m.phase===bracketActiveRound).sort((a,b)=>matchStart(a)-matchStart(b));
-      const body=active.length?active.map(matchCard).join(''):'<div style="color:#8fa6bd;text-align:center;padding:32px;border:1px dashed #ffffff18;border-radius:18px">Les matchs s\'afficheront ici au fil de la compétition.</div>';
-      bracketBox.innerHTML=`<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch">${tabs}</div><div>${body}</div>`;
+
+      // Matchs actifs
+      const activeMatches = data.filter(m=>m.phase===bracketActiveRound).sort((a,b)=>matchStart(a)-matchStart(b));
+      const bodyHtml = activeMatches.length
+        ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">'+activeMatches.map(matchCard).join('')+'</div>'
+        : '<div style="color:#8fa6bd;text-align:center;padding:40px;border:1px dashed #ffffff18;border-radius:18px;font-size:14px">Les matchs de ce tour apparaitront ici au fil de la competition.</div>';
+
+      bracketBox.innerHTML =
+        '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:14px;margin-bottom:20px;scrollbar-width:none;-webkit-overflow-scrolling:touch">'+tabsHtml+'</div>'
+        + bodyHtml;
     }
     function setBracketRound(r){ bracketActiveRound=r; renderBracket(); }
 
