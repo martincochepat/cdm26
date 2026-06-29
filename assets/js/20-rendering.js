@@ -180,7 +180,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const k = matchStatusKey(m);
         const isLive = k === 'live';
         const isDone = k === 'finished';
-        const scored = m.score_a !== null && m.score_b !== null;
+        const scored = m.score_a !== null && m.score_a !== undefined && m.score_a !== '' && m.score_b !== null && m.score_b !== undefined && m.score_b !== '';
         const freeTV = m.tv && m.tv.includes('M6');
         const wH = isDone && scored && Number(m.score_a) > Number(m.score_b);
         const wA = isDone && scored && Number(m.score_b) > Number(m.score_a);
