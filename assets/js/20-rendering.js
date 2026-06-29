@@ -154,9 +154,27 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <button class="home-btn home-btn-secondary" onclick="switchTab('matches')">Voir tous les matchs →</button>
       `;
 
+      checkGoalAnimation();
       renderHeroInfoCard();
     }
 
+    function renderHeroInfoCard(){
+      const el=document.getElementById('heroInfoCard');
+      if(!el) return;
+      const live=data.filter(m=>matchStatusKey(m)==='live').sort((a,b)=>matchStart(a)-matchStart(b))[0];
+      const upcoming=data.filter(m=>matchStatusKey(m)==='upcoming').sort((a,b)=>matchStart(a)-matchStart(b))[0];
+      const finished=data.filter(m=>matchStatusKey(m)==='finished').sort((a,b)=>matchStart(b)-matchStart(a))[0];
+      const m=live||upcoming||finished;
+      if(!m){
+        el.innerHTML=`<div class="hero-info-eyebrow">🏆 Mondial 2026</div><div class="hero-info-title">104 matchs à suivre</div><div class="hero-info-sub">Calendrier, TV française, stades et favoris au même endroit.</div><div class="hero-info-meta"><div><b>16</b>villes hôtes</div><div><b>3</b>pays</div></div>`;
+        return;
+      }
+      const isLive=!!live, isDone=!live&&!upcoming&&!!finished;
+      const status=isLive?'🔴 Match en cours':(isDone?'✅ Dernier résultat':'⏳ Prochain match');
+      const minute=isLive&&m.minute?` · ${esc(m.minute)}'`:'';
+      const scored=m.score_a!==null&&m.score_a!==undefined&&m.score_b!==null&&m.score_b!==undefined;
+      el.innerHTML=`<div class="hero-info-eyebrow">${status}${minute}</div><div class="hero-info-title">${flags[m.home]||'🏳️'} ${esc(m.home)}<br><span class="grad">${scored||isLive?`${esc(m.score_a??0)} - ${esc(m.score_b??0)}`:'VS'}</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div><div class="hero-info-sub">${smartDateLabel(m)} · ${esc(m.time)} · ${esc(m.city)}</div><div class="hero-info-meta"><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Diffusion</b>${esc(m.tv)}</div></div><div class="hero-info-actions"><button onclick="openDetail(${jsArg(m.id)})">Voir le match</button><button class="secondary" onclick="switchTab('matches')">Calendrier</button></div>`;
+    }
     function renderHighlights(){
       const now=new Date();
       const todays=data.filter(m=>sameDay(matchStart(m),now)).sort((a,b)=>matchStart(a)-matchStart(b));
@@ -249,6 +267,35 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }).join('')
     }
     let bracketActiveRound = '16es de finale';
+    const _prevScores = {}; // stocke les scores précédents pour détecter les buts
+    function checkGoalAnimation(){
+      data.filter(m=>matchStatusKey(m)==='live').forEach(m=>{
+        const key=String(m.id);
+        const prev=_prevScores[key];
+        const curr={a:m.score_a,b:m.score_b};
+        if(prev && (curr.a!==prev.a || curr.b!==prev.b)){
+          // But marqué ! Animer le score dans la fiche si ouverte
+          if(currentOpenMatchId===key){
+            const el=document.querySelector('.det-score');
+            if(el){
+              el.classList.add('det-score-goal');
+              el.innerHTML='<span class="det-goal-text">BUT !</span>';
+              setTimeout(()=>{
+                el.innerHTML=curr.a+' <span class="det-sep">-</span> '+curr.b;
+                el.classList.remove('det-score-goal');
+              },2500);
+            }
+          }
+          // Animer aussi le score home featured
+          const featEl=document.querySelector('.hm-score');
+          if(featEl){
+            featEl.classList.add('hm-score-goal');
+            setTimeout(()=>featEl.classList.remove('hm-score-goal'),2500);
+          }
+        }
+        _prevScores[key]=curr;
+      });
+    }
     function renderBracket(){
       if(!window.bracketBox) return;
       const rounds = [
