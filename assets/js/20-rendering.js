@@ -153,26 +153,27 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     function renderBracket(){
       if(!window.bracketBox) return;
       const rounds = [
-        {key:'16es de finale', label:'16es', emoji:'🔟'},
-        {key:'8es de finale',  label:'8es',  emoji:'8️⃣'},
-        {key:'Quarts de finale', label:'Quarts', emoji:'⚔️'},
-        {key:'Demi-finales',  label:'Demis', emoji:'🔝'},
-        {key:'Finale',        label:'Finale', emoji:'🏆'}
+        {key:'16es de finale',   label:'16es de finale',   short:'16es',   emoji:'🔟'},
+        {key:'8es de finale',    label:'8es de finale',    short:'8es',    emoji:'⚔️'},
+        {key:'Quarts de finale', label:'Quarts de finale', short:'Quarts', emoji:'🎯'},
+        {key:'Demi-finales',     label:'Demi-finales',     short:'Demis',  emoji:'🔥'},
+        {key:'Finale',           label:'Finale',           short:'Finale', emoji:'🏆'}
       ];
 
+      // Détecte un slot non résolu
       function isSlot(name){
         if(!name) return true;
         const s = String(name);
-        return s.startsWith('Vainqueur') || s.startsWith('Perdant') || s.includes('demi-finale');
+        return s.startsWith('Vainqueur') || s.startsWith('Perdant') || s.toLowerCase().includes('demi-finale');
       }
 
-      function teamRow(name, isWinner, isDone, scored){
-        const slot = isSlot(name);
-        if(slot) return '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px;opacity:.35">⏳</span><span style="color:#8fa6bd;font-size:12px;font-style:italic">À déterminer</span></div>';
+      function teamCell(name, isWinner, isDone, scored){
+        if(isSlot(name)){
+          return '<div class="bk-team bk-tbd"><span class="bk-flag">⏳</span><span class="bk-name bk-name-tbd">À déterminer</span></div>';
+        }
         const flag = flags[name] || '🏳️';
-        const color = isWinner ? '#ffd166' : (isDone && scored && !isWinner ? '#8fa6bd' : '#fff');
-        const fw = isWinner ? '950' : '700';
-        return '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">'+flag+'</span><span style="font-size:14px;font-weight:'+fw+';color:'+color+'">'+esc(name)+'</span>'+(isWinner?'<span style="font-size:12px">✅</span>':'')+'</div>';
+        const cls = isWinner ? 'bk-name bk-winner' : (isDone && scored ? 'bk-name bk-loser' : 'bk-name');
+        return '<div class="bk-team"><span class="bk-flag">'+flag+'</span><span class="'+cls+'">'+esc(name)+'</span></div>';
       }
 
       function matchCard(m){
@@ -183,51 +184,46 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const freeTV = m.tv && m.tv.includes('M6');
         const wH = isDone && scored && Number(m.score_a) > Number(m.score_b);
         const wA = isDone && scored && Number(m.score_b) > Number(m.score_a);
-        const border = isLive ? '#ffd16655' : isDone ? '#ffffff25' : '#ffffff15';
-        const bg = isLive ? 'linear-gradient(135deg,#ffd16614,#ff9f4310)' : isDone ? 'linear-gradient(180deg,#ffffff0a,#ffffff05)' : '#ffffff0a';
-        const statusBadge = isLive
-          ? '<span style="background:#ef3340;color:#fff;font-size:10px;font-weight:950;padding:3px 9px;border-radius:99px">● LIVE</span>'
-          : isDone ? '<span style="background:#00a85925;color:#00a859;font-size:10px;font-weight:900;padding:3px 9px;border-radius:99px;border:1px solid #00a85940">✓ Terminé</span>' : '';
-        const scoreBlock = scored
-          ? '<div style="font-size:24px;font-weight:950;color:'+(isLive?'#ffd166':'#fff')+';background:#ffffff14;border-radius:14px;padding:8px 16px;min-width:70px;text-align:center;letter-spacing:-.02em">'+m.score_a+' - '+m.score_b+'</div>'
-          : '<div style="font-size:13px;color:#8fa6bd;font-weight:700;padding:8px 12px">VS</div>';
-        return '<div onclick="openDetail('+jsArg(m.id)+')" style="background:'+bg+';border:1px solid '+border+';border-radius:20px;padding:16px 18px;cursor:pointer">'
-          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
-          +statusBadge
-          +'<span style="color:#8fa6bd;font-size:11px;font-weight:700">'+dateLabel(m.date)+' · '+m.time+'</span>'
-          +(freeTV?'<span style="background:#00a85918;color:#00a859;border:1px solid #00a85940;border-radius:99px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:auto">Gratuit M6/M6+</span>':'')
+        const cardClass = 'bk-card' + (isLive?' bk-live':'') + (isDone?' bk-done':'');
+        const topBadge = isLive
+          ? '<span class="bk-badge bk-badge-live">● EN DIRECT</span>'
+          : isDone ? '<span class="bk-badge bk-badge-done">✓ Terminé</span>' : '';
+        const freeBadge = freeTV ? '<span class="bk-badge bk-badge-free">M6/M6+</span>' : '';
+        const scoreHtml = scored
+          ? '<div class="bk-score'+(isLive?' bk-score-live':'')+'">'+m.score_a+' - '+m.score_b+'</div>'
+          : '<div class="bk-vs">VS</div>';
+        return '<div class="'+cardClass+'" onclick="openDetail('+jsArg(m.id)+')">'
+          +'<div class="bk-top">'+topBadge+'<span class="bk-date">'+dateLabel(m.date)+' · '+m.time+'</span>'+freeBadge+'</div>'
+          +'<div class="bk-matchup">'
+          +'<div class="bk-left">'+teamCell(m.home, wH, isDone, scored)+'</div>'
+          +scoreHtml
+          +'<div class="bk-right">'+teamCell(m.away, wA, isDone, scored)+'</div>'
           +'</div>'
-          +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:12px">'
-          +teamRow(m.home, wH, isDone, scored)
-          +scoreBlock
-          +'<div style="display:flex;justify-content:flex-end">'+teamRow(m.away, wA, isDone, scored)+'</div>'
-          +'</div>'
-          +'<div style="font-size:11px;color:#8fa6bd">🏟️ '+esc(m.stadium)+' · 📍 '+esc(m.city)+'</div>'
+          +'<div class="bk-meta">🏟️ '+esc(m.stadium)+' · 📍 '+esc(m.city)+'</div>'
           +'</div>';
       }
 
-      // 5 onglets toujours visibles
-      const tabsHtml = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px">'
+      // Onglets
+      const tabsHtml = '<div class="bk-tabs">'
         + rounds.map(function(r){
           const isActive = r.key === bracketActiveRound;
           const all = data.filter(function(m){ return m.phase === r.key; });
           const done = all.filter(function(m){ return matchStatusKey(m) === 'finished'; }).length;
-          const badge = (all.length && done) ? '<br><span style="font-size:10px;color:#00a859;font-weight:900">'+done+'/'+all.length+' ✓</span>' : '';
-          return '<button onclick="setBracketRound(\''+r.key+'\')" style="'
-            +'padding:12px 6px;border-radius:16px;border:2px solid '+(isActive?'#ffd166':'#ffffff18')+';'
-            +'background:'+(isActive?'linear-gradient(135deg,#ffd16628,#ffd16610)':'#ffffff08')+';'
-            +'color:'+(isActive?'#ffd166':'#8fa6bd')+';'
-            +'font-weight:950;font-size:12px;cursor:pointer;text-align:center;line-height:1.3;transition:.2s;width:100%">'
-            +r.emoji+'<br>'+r.label+badge+'</button>';
+          const badge = (all.length && done) ? '<span class="bk-tab-badge">'+done+'/'+all.length+'</span>' : '';
+          return '<button class="bk-tab'+(isActive?' bk-tab-active':'')+'" onclick="setBracketRound(\''+r.key+'\')">'
+            +'<span class="bk-tab-emoji">'+r.emoji+'</span>'
+            +'<span class="bk-tab-label">'+r.short+'</span>'
+            +badge
+            +'</button>';
         }).join('')
-        + '</div>';
+        +'</div>';
 
       const activeMatches = data.filter(function(m){ return m.phase === bracketActiveRound; })
         .sort(function(a,b){ return matchStart(a)-matchStart(b); });
 
       const bodyHtml = activeMatches.length
-        ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'+activeMatches.map(matchCard).join('')+'</div>'
-        : '<div style="color:#8fa6bd;text-align:center;padding:40px;border:1px dashed #ffffff18;border-radius:18px">Les matchs apparaitront ici au fil de la competition.</div>';
+        ? '<div class="bk-grid">'+activeMatches.map(matchCard).join('')+'</div>'
+        : '<div class="bk-empty">Les matchs de ce tour apparaîtront ici au fil de la compétition.</div>';
 
       bracketBox.innerHTML = tabsHtml + bodyHtml;
     }
