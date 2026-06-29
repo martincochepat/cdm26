@@ -11,6 +11,7 @@ async function loadDynamicData(){
         const merged = new Map(localData.map(m=>[String(m.id), {...m}]));
         dynamicMatches.forEach(m=>merged.set(String(m.id), m));
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
+        resolveKnockoutTeams();
         supabaseStatus = 'online';
         supabaseLastSync = new Date();
         renderAll();
@@ -154,3 +155,90 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
     }
     function updateChips(){document.querySelectorAll('.chip').forEach(c=>{let v=c.dataset.v;let active=(v==='Aujourd’hui + à venir'&&q.value==='upcoming')||(v==='Favoris'&&q.value==='favoris')||(v==='Mes équipes'&&q.value==='myteams')||((v==='M6'||v==='Matchs gratuits')&&channel.value==='M6')||(v==='beIN Sports'&&channel.value==='beIN Sports')||((v==='Finale'||v==='16es de finale')&&phase.value===v)||(v==='France'&&q.value.toLowerCase()==='france');c.classList.toggle('active',active)})}
     function filtered(){let query=q.value.toLowerCase().trim(),ph=phase.value,gr=group.value,ch=channel.value;return data.filter(m=>{let blob=Object.values(m).join(' ').toLowerCase();let mine=followedTeams.has(m.home)||followedTeams.has(m.away);let okQ=!query||(query==='upcoming'?!isPast(m):query==='favoris'?favs.has(String(m.id)):query==='myteams'?mine:blob.includes(query));return okQ&&(!ph||m.phase===ph)&&(!gr||m.phase===gr)&&(!ch||m.tv.includes(ch))}).sort((a,b)=>matchStart(a)-matchStart(b))}
+
+    // Résout les placeholders de phase finale ("1er Groupe A", "2e Groupe B", etc.)
+    // depuis les classements calculés sur les matchs de poules terminés
+    function resolveKnockoutTeams(){
+      // Calcule classements groupe par groupe
+      const standings = {}; // { 'Groupe A': ['Mexique','Corée du Sud','Rép. tchèque','Afrique du Sud'], ... }
+      const groups = {};
+      data.filter(m => String(m.phase||'').startsWith('Groupe')).forEach(m => {
+        const g = m.phase;
+        groups[g] = groups[g] || {};
+        [m.home, m.away].forEach(t => {
+          if(!t || isPlaceholderTeam(t)) return;
+          groups[g][t] = groups[g][t] || {team:t,pts:0,gf:0,ga:0,gd:0,played:0};
+        });
+        const finished = ['finished','ft','terminé'].includes(String(m.status||'').toLowerCase()) && m.score_a !== null && m.score_b !== null;
+        if(!finished) return;
+        const a = groups[g][m.home], b = groups[g][m.away];
+        if(!a || !b) return;
+        const sa = Number(m.score_a), sb = Number(m.score_b);
+        a.played++; b.played++;
+        a.gf+=sa; a.ga+=sb; b.gf+=sb; b.ga+=sa;
+        if(sa>sb){a.pts+=3;}else if(sa<sb){b.pts+=3;}else{a.pts+=1;b.pts+=1;}
+        a.gd=a.gf-a.ga; b.gd=b.gf-b.ga;
+      });
+      Object.entries(groups).forEach(([g, teams]) => {
+        standings[g] = Object.values(teams)
+          .sort((a,b) => b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.team.localeCompare(b.team,'fr'));
+      });
+
+      // Collecte tous les 3e de groupes pour les slots "3e Groupe X/Y/Z"
+      const thirds = Object.values(standings)
+        .map(arr => arr[2]).filter(Boolean)
+        .sort((a,b) => b.pts-a.pts || b.gd-a.gd || b.gf-a.gf)
+        .map(t => t.team);
+
+      // Résout un placeholder en équipe réelle
+      function resolve(placeholder) {
+        if(!placeholder || !isPlaceholderTeam(placeholder)) return placeholder;
+        const p = placeholder.toLowerCase().trim();
+
+        // "1er Groupe A" → 1er du Groupe A
+        const m1 = p.match(/1er\s+groupe\s+([a-z])/i);
+        if(m1) {
+          const key = Object.keys(standings).find(k => k.toLowerCase().endsWith(m1[1].toLowerCase()));
+          return (key && standings[key][0]?.team) || placeholder;
+        }
+
+        // "2e Groupe A" → 2e du Groupe A
+        const m2 = p.match(/2e\s+groupe\s+([a-z])/i);
+        if(m2) {
+          const key = Object.keys(standings).find(k => k.toLowerCase().endsWith(m2[1].toLowerCase()));
+          return (key && standings[key][1]?.team) || placeholder;
+        }
+
+        // "3e Groupe A/B/C/D/F" → meilleur 3e parmi ces groupes
+        const m3 = p.match(/3e\s+groupe\s+([a-z/]+)/i);
+        if(m3) {
+          const letters = m3[1].toUpperCase().split('/').map(l => l.trim());
+          const best = thirds.find(team => {
+            const teamGroup = Object.entries(standings).find(([g, arr]) => arr[2]?.team === team)?.[0];
+            if(!teamGroup) return false;
+            const letter = teamGroup.replace(/groupe\s*/i,'').trim().toUpperCase();
+            return letters.includes(letter);
+          });
+          return best || placeholder;
+        }
+
+        // "Vainqueur demi-finale 1"
+        const mv = p.match(/vainqueur\s+demi[- ]finale\s+(\d)/i);
+        if(mv) {
+          const semi = data.find(m => String(m.phase||'').toLowerCase().includes('demi') && String(m.round||'').includes(mv[1]));
+          return (semi && semi.winner && !isPlaceholderTeam(semi.winner)) ? semi.winner : placeholder;
+        }
+
+        return placeholder;
+      }
+
+      // Applique la résolution sur tous les matchs knockout
+      data.forEach(m => {
+        if(!String(m.phase||'').startsWith('Groupe')) {
+          const newHome = resolve(m.home);
+          const newAway = resolve(m.away);
+          if(newHome !== m.home) m.home = newHome;
+          if(newAway !== m.away) m.away = newAway;
+        }
+      });
+    }
