@@ -417,3 +417,12 @@ body:not(.home-active) .hero{
 .bk-meta{font-size:11px;color:#8fa6bd;padding-top:10px;border-top:1px solid #ffffff10}
 .bk-empty{color:#8fa6bd;text-align:center;padding:40px;border:1px dashed #ffffff18;border-radius:18px;font-size:14px}
 @media(max-width:640px){.bk-tabs{gap:5px}.bk-tab{padding:10px 4px;border-radius:14px}.bk-tab-emoji{font-size:18px}.bk-tab-label{font-size:10px}.bk-grid{grid-template-columns:1fr}.bk-score{font-size:18px;padding:5px 10px;min-width:50px}.bk-name{font-size:12px}.bk-flag{font-size:18px}}
+
+/* ── Phase finale V83 — onglets horizontaux ── */
+.bk-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.bk-tab{flex:1 1 auto;padding:12px 16px;border-radius:14px;border:1.5px solid #ffffff18;background:#ffffff08;color:#8fa6bd;font-weight:800;font-size:13px;cursor:pointer;transition:.2s;white-space:nowrap;text-align:center;min-width:120px}
+.bk-tab:hover{border-color:#ffffff35;background:#ffffff12;color:#dcecff}
+.bk-tab-active{border-color:#ffd166!important;background:linear-gradient(145deg,#ffd16622,#ffd16608)!important;color:#ffd166!important}
+.bk-tab-badge{background:#00a85940;color:#00a859;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:900;border:1px solid #00a85960;margin-left:6px}
+.bk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+@media(max-width:640px){.bk-tab{min-width:0;font-size:11px;padding:10px 10px}.bk-grid{grid-template-columns:1fr}}

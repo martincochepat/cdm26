@@ -153,14 +153,13 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     function renderBracket(){
       if(!window.bracketBox) return;
       const rounds = [
-        {key:'16es de finale',   label:'16es de finale',   short:'16es',   emoji:'🔟'},
-        {key:'8es de finale',    label:'8es de finale',    short:'8es',    emoji:'⚔️'},
-        {key:'Quarts de finale', label:'Quarts de finale', short:'Quarts', emoji:'🎯'},
-        {key:'Demi-finales',     label:'Demi-finales',     short:'Demis',  emoji:'🔥'},
-        {key:'Finale',           label:'Finale',           short:'Finale', emoji:'🏆'}
+        {key:'16es de finale',   label:'16es de finale'},
+        {key:'8es de finale',    label:'8es de finale'},
+        {key:'Quarts de finale', label:'Quarts de finale'},
+        {key:'Demi-finales',     label:'Demi-finales'},
+        {key:'Finale',           label:'Finale'}
       ];
 
-      // Détecte un slot non résolu
       function isSlot(name){
         if(!name) return true;
         const s = String(name);
@@ -180,12 +179,12 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const k = matchStatusKey(m);
         const isLive = k === 'live';
         const isDone = k === 'finished';
-        const scored = m.score_a !== null && m.score_b !== null;
+        const scored = m.score_a !== null && m.score_a !== undefined && m.score_b !== null && m.score_b !== undefined;
         const freeTV = m.tv && m.tv.includes('M6');
         const wH = isDone && scored && Number(m.score_a) > Number(m.score_b);
         const wA = isDone && scored && Number(m.score_b) > Number(m.score_a);
         const cardClass = 'bk-card' + (isLive?' bk-live':'') + (isDone?' bk-done':'');
-        const topBadge = isLive
+        const statusBadge = isLive
           ? '<span class="bk-badge bk-badge-live">● EN DIRECT</span>'
           : isDone ? '<span class="bk-badge bk-badge-done">✓ Terminé</span>' : '';
         const freeBadge = freeTV ? '<span class="bk-badge bk-badge-free">M6/M6+</span>' : '';
@@ -193,7 +192,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           ? '<div class="bk-score'+(isLive?' bk-score-live':'')+'">'+m.score_a+' - '+m.score_b+'</div>'
           : '<div class="bk-vs">VS</div>';
         return '<div class="'+cardClass+'" onclick="openDetail('+jsArg(m.id)+')">'
-          +'<div class="bk-top">'+topBadge+'<span class="bk-date">'+dateLabel(m.date)+' · '+m.time+'</span>'+freeBadge+'</div>'
+          +'<div class="bk-top">'+statusBadge+'<span class="bk-date">'+dateLabel(m.date)+' · '+m.time+'</span>'+freeBadge+'</div>'
           +'<div class="bk-matchup">'
           +'<div class="bk-left">'+teamCell(m.home, wH, isDone, scored)+'</div>'
           +scoreHtml
@@ -203,18 +202,15 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           +'</div>';
       }
 
-      // Onglets
+      // Onglets horizontaux
       const tabsHtml = '<div class="bk-tabs">'
         + rounds.map(function(r){
           const isActive = r.key === bracketActiveRound;
           const all = data.filter(function(m){ return m.phase === r.key; });
           const done = all.filter(function(m){ return matchStatusKey(m) === 'finished'; }).length;
-          const badge = (all.length && done) ? '<span class="bk-tab-badge">'+done+'/'+all.length+'</span>' : '';
+          const badge = (all.length && done) ? ' <span class="bk-tab-badge">'+done+'/'+all.length+'</span>' : '';
           return '<button class="bk-tab'+(isActive?' bk-tab-active':'')+'" onclick="setBracketRound(\''+r.key+'\')">'
-            +'<span class="bk-tab-emoji">'+r.emoji+'</span>'
-            +'<span class="bk-tab-label">'+r.short+'</span>'
-            +badge
-            +'</button>';
+            +r.label+badge+'</button>';
         }).join('')
         +'</div>';
 
