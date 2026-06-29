@@ -587,7 +587,179 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       modalBody.scrollTop = scrollPos;
     }
 
-    function openDetail(id){currentOpenMatchId=String(id);modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match';let m=data.find(x=>String(x.id)===String(id)); if(!m)return; let v=venueMeta[m.city]||{},pos=mapPos(v.lat||39,v.lon||-96); modalBody.innerHTML=`<div class="tag">${esc(m.round)} · ${esc(m.phase)}</div><div class="detail-title">${flags[m.home]||'🏳️'} ${esc(m.home)} <span class="grad">VS</span> ${flags[m.away]||'🏳️'} ${esc(m.away)}</div>${scoreDetailBlock(m)}${matchGoalsBlock(m)}<div id="predictionBox"></div><div class="venue-grid"><div class="venue-photo" data-label="${esc(m.stadium)} — ${esc(m.city)}"><img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)"></div><div class="map-card"><div class="host-map-title"><b>Localisation du stade</b><span>Carte simplifiée</span></div><p class="small">Point placé sur la ville hôte : ${esc(m.city)} · ${esc(v.country||'Pays hôte')}</p>${renderHostMap(m.city)}</div></div><div class="metric-grid"><div class="metric"><b>Statut</b>${statusBadge(m)}</div><div class="metric"><b>Date</b>${dateLabel(m.date)}</div><div class="metric time-metric"><b>Heure française</b><span class="big-hour">${esc(m.time)}</span></div><div class="metric"><b>Stade</b>${esc(m.stadium)}</div><div class="metric"><b>Ville hôte</b>${esc(m.city)}</div><div class="metric"><b>Pays</b>${esc(v.country||'')}</div><div class="metric"><b>Capacité officielle FIFA</b>${esc(v.capacity||'À confirmer')}</div><div class="metric"><b>Diffusion France</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div><div class="actions"><button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'Retirer des favoris':'Ajouter aux favoris'}</button><button onclick="shareMatch(${jsArg(m.id)})">Partager ce match</button></div>`;if(!modal.classList.contains('open')) openModal(); renderPredictionBox(m.id)}
+    async function openDetail(id){
+      currentOpenMatchId=String(id);
+      modal.querySelector('.modal-card').classList.remove('stadium-modal');
+      modal.querySelector('.modal-head b').textContent='Détail du match';
+      const m=data.find(x=>String(x.id)===String(id));
+      if(!m) return;
+      const v=venueMeta[m.city]||{};
+      const k=matchStatusKey(m);
+      const isLive=k==='live', isDone=k==='finished';
+      const scored=m.score_a!==null&&m.score_a!==undefined&&m.score_b!==null&&m.score_b!==undefined;
+      const wH=isDone&&scored&&Number(m.score_a)>Number(m.score_b);
+      const wA=isDone&&scored&&Number(m.score_b)>Number(m.score_a);
+      const freeTV=m.tv&&m.tv.includes('M6');
+
+      // Événements existants (buts, cartons, remplacements)
+      const events=matchEventsByMatchId[String(m.id)]||[];
+      const goals=events.filter(e=>{const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));});
+      const cards=events.filter(e=>String(e.event_type||'').toLowerCase()==='card');
+      const subs=events.filter(e=>String(e.event_type||'').toLowerCase()==='subst');
+
+      // Timeline complète (buts + cartons + remplacements triés par minute)
+      const allEvents=[...events].sort((a,b)=>Number(a.elapsed||0)-Number(b.elapsed||0));
+
+      function eventIcon(e){
+        const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+        if(t==='goal'&&d.includes('own')) return '⚽🔴';
+        if(t==='goal') return '⚽';
+        if(t==='card'&&d.includes('yellow')) return '🟨';
+        if(t==='card'&&d.includes('red')) return '🟥';
+        if(t==='subst') return '🔄';
+        return '•';
+      }
+
+      function eventDesc(e){
+        const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+        if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span style="color:#8fa6bd;font-size:11px">(passe: '+esc(e.assist_name)+')</span>':''}`;
+        if(t==='card') return `${esc(e.player_name||'')} <span style="color:#8fa6bd;font-size:11px">${esc(e.detail||'')}</span>`;
+        if(t==='subst') return `↑ ${esc(e.player_name||'')} <span style="color:#8fa6bd;font-size:11px">↓ ${esc(e.assist_name||'')}</span>`;
+        return esc(e.player_name||'');
+      }
+
+      // Score header
+      const scoreHtml=scored
+        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a} <span class="det-sep">-</span> ${m.score_b}</div>`
+        :`<div class="det-vs">VS</div>`;
+
+      // Statut badge
+      const stBadge=isLive
+        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}  </span>`
+        :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
+        :`<span class="hm-next-badge">⏳ ${smartDateLabel(m)} · ${esc(m.time)}</span>`;
+
+      // Timeline HTML
+      const timelineHtml=allEvents.length?`
+        <div class="det-section">
+          <h3 class="det-section-title">⏱️ Événements du match</h3>
+          <div class="det-timeline">
+            ${allEvents.map(e=>{
+              const isHome=e.team_name===m.home;
+              return `<div class="det-event ${isHome?'det-event-home':'det-event-away'}">
+                <div class="det-event-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
+                <div class="det-event-icon">${eventIcon(e)}</div>
+                <div class="det-event-desc">${eventDesc(e)}<div class="det-event-team">${esc(e.team_name||'')}</div></div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`:isDone||isLive?'<div class="det-section"><p style="color:#8fa6bd;font-size:13px;text-align:center">Événements non disponibles.</p></div>':'';
+
+      // Rendu initial (sans stats live — chargées après)
+      modalBody.innerHTML=`
+        <div class="det-header">
+          <span class="det-phase">${esc(m.phase)} · ${esc(m.round)}</span>
+          ${stBadge}
+        </div>
+        <div class="det-teams">
+          <div class="det-team ${wH?'det-winner':''}">
+            <span class="det-flag">${flags[m.home]||'🏳️'}</span>
+            <span class="det-name">${esc(m.home)}</span>
+          </div>
+          ${scoreHtml}
+          <div class="det-team det-team-right ${wA?'det-winner':''}">
+            <span class="det-name">${esc(m.away)}</span>
+            <span class="det-flag">${flags[m.away]||'🏳️'}</span>
+          </div>
+        </div>
+        <div id="detStatsBox"><div class="det-stats-loading">Chargement des statistiques...</div></div>
+        ${timelineHtml}
+        <div id="predictionBox"></div>
+        <div class="det-section">
+          <h3 class="det-section-title">🏟️ Informations</h3>
+          <div class="det-info-grid">
+            <div class="det-info-item"><span class="det-info-label">📅 Date</span><span class="det-info-val">${dateLabel(m.date)}</span></div>
+            <div class="det-info-item"><span class="det-info-label">⏰ Heure</span><span class="det-info-val">${esc(m.time)}</span></div>
+            <div class="det-info-item"><span class="det-info-label">🏟️ Stade</span><span class="det-info-val">${esc(m.stadium)}</span></div>
+            <div class="det-info-item"><span class="det-info-label">📍 Ville</span><span class="det-info-val">${esc(m.city)}</span></div>
+            <div class="det-info-item"><span class="det-info-label">👥 Capacité</span><span class="det-info-val">${esc(v.capacity||'À confirmer')}</span></div>
+            <div class="det-info-item"><span class="det-info-label">📺 Diffusion</span><span class="det-info-val">${esc(m.tv)}${freeTV?' <span class="hm-free">Gratuit</span>':''}</span></div>
+          </div>
+        </div>
+        <div class="det-photo">
+          <img src="${photoList(m.city)[0]||''}" alt="${esc(m.stadium)}" loading="lazy" onerror="stadiumImageFallback(this,'${esc(m.city)}',0)" style="width:100%;border-radius:16px;max-height:180px;object-fit:cover">
+        </div>
+        <div class="det-actions">
+          <button onclick="toggleFav(${jsArg(m.id)});openDetail(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Retirer des favoris':'☆ Ajouter aux favoris'}</button>
+          <button onclick="shareMatch(${jsArg(m.id)})">📤 Partager</button>
+          <button onclick="window.open('${`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(m.home+' vs '+m.away)}&dates=${(()=>{const d=new Date(m.date+'T'+m.time+':00+02:00');const e=new Date(d.getTime()+7200000);const f=x=>x.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';return f(d)+'/'+f(e)})()}&details=${encodeURIComponent(m.phase+' · '+m.stadium+', '+m.city)}&location=${encodeURIComponent(m.stadium+', '+m.city)}`}','_blank')">📅 Agenda</button>
+        </div>
+      `;
+
+      if(!modal.classList.contains('open')) openModal();
+      renderPredictionBox(m.id);
+
+      // Charger les stats depuis API-Football si fixture_id disponible
+      if(m.api_fixture_id && (isLive||isDone)){
+        try{
+          const statsEl=document.getElementById('detStatsBox');
+          const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+          if(res.ok){
+            const json=await res.json();
+            const stats=json.stats||[];
+            if(stats.length>=2){
+              const h=stats[0], a=stats[1];
+              function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?found.value??0:0;}
+              function statBar(label,hVal,aVal){
+                const tot=Number(hVal)+Number(aVal)||1;
+                const hPct=Math.round((Number(hVal)/tot)*100);
+                return `<div class="det-stat-row">
+                  <span class="det-stat-val">${hVal}</span>
+                  <div class="det-stat-bar-wrap">
+                    <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
+                    <span class="det-stat-label">${label}</span>
+                    <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
+                  </div>
+                  <span class="det-stat-val">${aVal}</span>
+                </div>`;
+              }
+              const poss=getStat(h,'Ball Possession'), possA=getStat(a,'Ball Possession');
+              const shots=getStat(h,'Total Shots'), shotsA=getStat(a,'Total Shots');
+              const shotsOn=getStat(h,'Shots on Goal'), shotsOnA=getStat(a,'Shots on Goal');
+              const corners=getStat(h,'Corner Kicks'), cornersA=getStat(a,'Corner Kicks');
+              const fouls=getStat(h,'Fouls'), foulsA=getStat(a,'Fouls');
+              const yellow=getStat(h,'Yellow Cards'), yellowA=getStat(a,'Yellow Cards');
+              const offsides=getStat(h,'Offsides'), offsidesA=getStat(a,'Offsides');
+              statsEl.innerHTML=`
+                <div class="det-section">
+                  <h3 class="det-section-title">📊 Statistiques du match</h3>
+                  <div class="det-stats-header">
+                    <span>${esc(m.home)}</span>
+                    <span>${esc(m.away)}</span>
+                  </div>
+                  ${statBar('Possession',poss+'%',possA+'%')}
+                  ${statBar('Tirs',shots,shotsA)}
+                  ${statBar('Tirs cadrés',shotsOn,shotsOnA)}
+                  ${statBar('Corners',corners,cornersA)}
+                  ${statBar('Fautes',fouls,foulsA)}
+                  ${statBar('Cartons jaunes',yellow,yellowA)}
+                  ${statBar('Hors-jeux',offsides,offsidesA)}
+                </div>`;
+            } else {
+              statsEl.innerHTML='';
+            }
+          } else {
+            statsEl.innerHTML='';
+          }
+        }catch(e){
+          const el=document.getElementById('detStatsBox');
+          if(el) el.innerHTML='';
+        }
+      } else {
+        const el=document.getElementById('detStatsBox');
+        if(el) el.innerHTML='';
+      }
+    }
     function closeModal(){currentOpenMatchId=null;modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){id=String(id);let m=data.find(x=>String(x.id)===id); if(!m)return;let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
