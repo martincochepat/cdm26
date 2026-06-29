@@ -188,8 +188,10 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }
       const tabs = rounds.map(r=>{
         const all=data.filter(m=>m.phase===r), done=all.filter(m=>matchStatusKey(m)==='finished').length;
-        const active=r===bracketActiveRound;
-        return `<button onclick="setBracketRound('${r}')" style="flex:0 0 auto;padding:8px 14px;border-radius:14px;border:1px solid ${active?'#ffd16688':'#ffffff18'};background:${active?'#ffd16622':'#ffffff08'};color:${active?'#ffd166':'#adc0d2'};font-weight:950;font-size:12px;cursor:pointer;white-space:nowrap;transition:.15s">${r}${all.length&&done?` <span style="background:#00a85940;color:#00a859;border-radius:99px;padding:1px 6px;font-size:10px">${done}/${all.length}</span>':''}</button>`;
+        const isActive=r===bracketActiveRound;
+        const badge = (all.length&&done) ? '<span style="background:#00a85940;color:#00a859;border-radius:99px;padding:1px 6px;font-size:10px">'+done+'/'+all.length+'</span>' : '';
+        const btn = '<button onclick="setBracketRound(\'' + r + '\')" style="flex:0 0 auto;padding:8px 14px;border-radius:14px;border:1px solid '+(isActive?'#ffd16688':'#ffffff18')+';background:'+(isActive?'#ffd16622':'#ffffff08')+';color:'+(isActive?'#ffd166':'#adc0d2')+';font-weight:950;font-size:12px;cursor:pointer;white-space:nowrap;transition:.15s">'+r+' '+badge+'</button>';
+        return btn;
       }).join('');
       const active=data.filter(m=>m.phase===bracketActiveRound).sort((a,b)=>matchStart(a)-matchStart(b));
       const body=active.length?active.map(matchCard).join(''):'<div style="color:#8fa6bd;text-align:center;padding:32px;border:1px dashed #ffffff18;border-radius:18px">Les matchs s\'afficheront ici au fil de la compétition.</div>';
