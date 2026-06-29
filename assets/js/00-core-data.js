@@ -27,7 +27,7 @@ let data = [
     function normalizeSupabaseMatch(row, index){
       const id = String(row.id ?? `supabase-${index}`);
       const tv = row.channel || row.tv || row.broadcast || 'À confirmer';
-      const isFree = row.free_tv === true || String(tv).toLowerCase().includes('m6');
+      const isFree = row.free_tv === true;
       return {
         id,
         date: row.date || row.match_date || '',
