@@ -41,8 +41,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
           return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));
         });
-        const homeGoals=goals.filter(e=>e.team_name===mainMatch.home||(flags[e.team_name]&&e.team_name===mainMatch.home));
-        const awayGoals=goals.filter(e=>e.team_name===mainMatch.away||(flags[e.team_name]&&e.team_name===mainMatch.away));
+        const homeGoals=goals.filter(e=>e.team_name===m.home||frName(e.team_name)===m.home||e.team_name===m.home);
+        const awayGoals=goals.filter(e=>e.team_name===m.away||frName(e.team_name)===m.away||e.team_name===m.away);
 
         // Badge statut
         const statusBadgeHtml=isLive
@@ -677,7 +677,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
 
       // Score header
       const scoreHtml=scored
-        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a} <span class="det-sep">-</span> ${m.score_b}</div>`
+        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a}<span class="det-sep"> - </span>${m.score_b}</div>`
         :`<div class="det-vs">VS</div>`;
 
       // Statut badge
