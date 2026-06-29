@@ -83,6 +83,7 @@ const EN_TO_FR = {
         });
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
         // resolveKnockoutTeams(); // désactivé - noms en dur dans 00-core-data.js
+        resolveKnockoutSlots();
         supabaseStatus = 'online';
         supabaseLastSync = new Date();
         renderAll();
@@ -311,5 +312,45 @@ function countdown(m){let diff=matchStart(m)-new Date(); if(diff<=0) return isLi
           if(newHome !== m.home) m.home = newHome;
           if(newAway !== m.away) m.away = newAway;
         }
+      });
+    }
+
+    // Résout automatiquement les slots "Vainqueur M73", "Perdant M101" etc.
+    // depuis les résultats déjà connus dans data
+    function resolveKnockoutSlots(){
+      // Index des matchs par round (ex: "M73" -> match object)
+      const byRound = {};
+      data.forEach(m => { if(m.round) byRound[m.round] = m; });
+
+      function resolveSlot(slot){
+        if(!slot) return slot;
+        const s = String(slot);
+        // "Vainqueur M73" -> winner du match M73
+        const mv = s.match(/^Vainqueur\s+(M\d+)$/i);
+        if(mv){
+          const ref = byRound[mv[1]];
+          if(ref && ref.winner && ref.winner !== 'draw' && ref.winner !== '') return ref.winner;
+          return s; // pas encore connu
+        }
+        // "Perdant M101" -> le perdant du match M101
+        const ml = s.match(/^Perdant\s+(M\d+)$/i);
+        if(ml){
+          const ref = byRound[ml[1]];
+          if(ref && ref.winner && ref.winner !== 'draw' && ref.status === 'finished'){
+            // Le perdant = celui qui n'est pas le winner
+            if(ref.winner === ref.home) return ref.away;
+            if(ref.winner === ref.away) return ref.home;
+          }
+          return s;
+        }
+        return slot;
+      }
+
+      data.forEach(m => {
+        if(String(m.phase||'').startsWith('Groupe')) return;
+        const newHome = resolveSlot(m.home);
+        const newAway = resolveSlot(m.away);
+        if(newHome !== m.home) m.home = newHome;
+        if(newAway !== m.away) m.away = newAway;
       });
     }
