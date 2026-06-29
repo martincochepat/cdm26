@@ -426,3 +426,71 @@ body:not(.home-active) .hero{
 .bk-tab-badge{background:#00a85940;color:#00a859;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:900;border:1px solid #00a85960;margin-left:6px}
 .bk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
 @media(max-width:640px){.bk-tab{min-width:0;font-size:11px;padding:10px 10px}.bk-grid{grid-template-columns:1fr}}
+
+/* ── Home Premium V83 ───────────────────────────────────────── */
+
+/* Match featured */
+.hm-match-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.hm-phase-tag{background:#ffffff14;color:#adc0d2;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800}
+.hm-match-actions{display:flex;align-items:center;gap:8px}
+.hm-live-badge{background:#ef3340;color:#fff;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:950;animation:pulse 1.5s infinite}
+.hm-done-badge{background:#ffffff14;color:#adc0d2;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800}
+.hm-next-badge{background:#ffd16620;color:#ffd166;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800;border:1px solid #ffd16640}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+/* Équipes */
+.hm-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:18px 0;cursor:pointer;border-top:1px solid #ffffff10;border-bottom:1px solid #ffffff10;margin-bottom:14px}
+.hm-team{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.hm-team-right{align-items:flex-end}
+.hm-flag{font-size:36px;line-height:1}
+.hm-team-name{font-size:16px;font-weight:950;color:#dcecff}
+.hm-winner .hm-team-name{color:#ffd166}
+.hm-score-block{text-align:center}
+.hm-score{font-size:32px;font-weight:950;color:#fff;background:#ffffff14;border-radius:16px;padding:10px 18px;min-width:90px;text-align:center;letter-spacing:-.03em}
+.hm-score-live{color:#ffd166;background:#ffd16618;box-shadow:0 0 20px #ffd16630}
+.hm-score-sep{color:#8fa6bd;margin:0 4px}
+.hm-vs{font-size:18px;color:#8fa6bd;font-weight:700;padding:6px}
+.hm-kickoff{font-size:22px;font-weight:950;color:#ffd166}
+.hm-scorers{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.hm-scorers span{font-size:10px;color:#8fa6bd;background:#ffffff0a;border-radius:6px;padding:2px 6px}
+
+/* Barre progression */
+.hm-progress{height:3px;background:#ffffff10;border-radius:99px;margin-bottom:14px;overflow:hidden}
+.hm-progress-bar{height:100%;background:#ffffff30;border-radius:99px;transition:.5s}
+.hm-progress-live{background:linear-gradient(90deg,#ffd166,#ef3340)}
+
+/* Meta grid */
+.hm-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.hm-meta-item{background:#ffffff08;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.hm-meta-label{font-size:10px;color:#8fa6bd;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.hm-meta-val{font-size:13px;font-weight:800;color:#dcecff}
+.hm-free{background:#00a85920;color:#00a859;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:900;border:1px solid #00a85940;margin-left:4px}
+
+/* TV rows */
+.hm-tv-row{display:grid;grid-template-columns:50px 1fr auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff10;cursor:pointer}
+.hm-tv-row:last-of-type{border-bottom:none}
+.hm-tv-row:hover{opacity:.8}
+.hm-tv-time{font-size:15px;font-weight:950;color:#ffd166}
+.hm-tv-teams{font-size:13px;font-weight:700;color:#dcecff;margin-bottom:2px}
+.hm-tv-meta{font-size:11px;color:#8fa6bd}
+.hm-tv-badge{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.hm-m6{background:#00a85920;color:#00a859;border:1px solid #00a85940;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900}
+.hm-bein{background:#ffffff10;color:#adc0d2;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:800}
+
+/* Upcoming rows */
+.hm-upcoming-row{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff10;cursor:pointer}
+.hm-upcoming-row:last-of-type{border-bottom:none}
+.hm-upcoming-row:hover{opacity:.8}
+.hm-upc-date{text-align:center}
+.hm-upc-date b{display:block;font-size:11px;color:#ffd166;font-weight:900}
+.hm-upc-date span{font-size:13px;font-weight:950;color:#fff}
+.hm-upc-teams{font-size:13px;font-weight:700;color:#dcecff;margin-bottom:2px}
+.hm-upc-meta{font-size:10px;color:#8fa6bd}
+.hm-upc-tv{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+
+@media(max-width:480px){
+  .hm-flag{font-size:28px}
+  .hm-team-name{font-size:14px}
+  .hm-score{font-size:26px;padding:8px 14px;min-width:70px}
+  .hm-meta-grid{grid-template-columns:1fr}
+}
