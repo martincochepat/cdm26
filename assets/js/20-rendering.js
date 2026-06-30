@@ -170,17 +170,16 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           const lrWA=lrWinner&&lrWinner===lastResult.away;
           const lrPen=(lastResult.pen_a!=null&&lastResult.pen_b!=null)?` <span class="lr-pen">(tab ${lastResult.pen_a}-${lastResult.pen_b})</span>`:'';
           lrBox.innerHTML=`
-            <h2 class="card-title">✅ Dernier résultat</h2>
+            <div class="lr-eyebrow">Dernier résultat · ${esc(lastResult.phase)}</div>
             <div class="lr-match" onclick="openDetail(${jsArg(lastResult.id)})">
-              <div class="lr-phase">${esc(lastResult.phase)}</div>
               <div class="lr-teams">
                 <div class="lr-team ${lrWH?'lr-winner':''}"><span class="lr-flag">${flags[lastResult.home]||'🏳️'}</span><span class="lr-name">${esc(lastResult.home)}</span></div>
                 <div class="lr-score">${lastResult.score_a} - ${lastResult.score_b}${lrPen}</div>
                 <div class="lr-team lr-team-right ${lrWA?'lr-winner':''}"><span class="lr-name">${esc(lastResult.away)}</span><span class="lr-flag">${flags[lastResult.away]||'🏳️'}</span></div>
               </div>
-              ${lrGoals.length?`<div class="lr-goals">${lrGoals.slice(0,4).map(e=>`⚽ ${e.elapsed?e.elapsed+"'":''} ${esc(e.player_name||'')}`).join(' · ')}</div>`:''}
+              ${lrGoals.length?`<div class="lr-goals">${lrGoals.slice(0,4).map(e=>`⚽ ${e.elapsed?e.elapsed+"'":''} ${esc(e.player_name||'')}`).join(' &nbsp;·&nbsp; ')}</div>`:''}
+              <div class="lr-cta">Voir les statistiques complètes <span class="lr-arrow">→</span></div>
             </div>
-            <button class="home-btn home-btn-secondary" onclick="openDetail(${jsArg(lastResult.id)})">Voir les stats complètes →</button>
           `;
         } else {
           lrBox.style.display='none';
