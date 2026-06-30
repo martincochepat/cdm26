@@ -260,16 +260,19 @@ async function supabasePatchMatch(matchId, patch) {
 function buildPatch(apiMatch, localMatch) {
   let { score_a, score_b, winner, team_a, team_b, pen_a, pen_b } = apiMatch;
   const wasPlaceholder = localMatch._wasPlaceholder;
+  const originalWinner = winner;
 
   if (localMatch._reversed) {
     [score_a, score_b] = [score_b, score_a];
     [team_a, team_b] = [team_b, team_a];
     if (pen_a != null && pen_b != null) [pen_a, pen_b] = [pen_b, pen_a];
-    if (winner === apiMatch.team_a) winner = localMatch.team_b;
-    else if (winner === apiMatch.team_b) winner = localMatch.team_a;
+    if (originalWinner === apiMatch.team_a) winner = localMatch.team_b;
+    else if (originalWinner === apiMatch.team_b) winner = localMatch.team_a;
+    else winner = originalWinner; // garde 'draw' ou la valeur originale si pas de correspondance
   } else {
-    if (winner === apiMatch.team_a) winner = wasPlaceholder ? apiMatch.team_a : localMatch.team_a;
-    else if (winner === apiMatch.team_b) winner = wasPlaceholder ? apiMatch.team_b : localMatch.team_b;
+    if (originalWinner === apiMatch.team_a) winner = wasPlaceholder ? apiMatch.team_a : (localMatch.team_a || apiMatch.team_a);
+    else if (originalWinner === apiMatch.team_b) winner = wasPlaceholder ? apiMatch.team_b : (localMatch.team_b || apiMatch.team_b);
+    else winner = originalWinner;
   }
 
   const patch = {
