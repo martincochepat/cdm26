@@ -908,21 +908,73 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const json=await res.json();
         const lineups=json.lineups||[];
         if(lineups.length<2){ el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>'; return; }
-        function teamLineup(t){
-          const coach=t.coach?.name||'';
-          const formation=t.formation||'';
-          const startXI=(t.startXI||[]).map(p=>p.player);
-          const subs=(t.substitutes||[]).map(p=>p.player);
-          return `
-            <div class="det-lineup-team">
-              <div class="det-lineup-head"><b>${esc(t.team?.name||'')}</b><span>${esc(formation)}${coach?' · '+esc(coach):''}</span></div>
-              <div class="det-lineup-list">
-                ${startXI.map(p=>`<div class="det-player"><span class="det-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span><span class="det-player-pos">${esc(p.pos||'')}</span></div>`).join('')}
-              </div>
-              ${subs.length?`<div class="det-subs-title">Remplaçants</div><div class="det-lineup-list">${subs.map(p=>`<div class="det-player det-player-sub"><span class="det-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span></div>`).join('')}</div>`:''}
-            </div>`;
+
+        const home=lineups[0], away=lineups[1];
+        const homeXI=(home.startXI||[]).map(p=>p.player);
+        const awayXI=(away.startXI||[]).map(p=>p.player);
+
+        // Parse grid "ligne:colonne" -> position % sur le terrain
+        // Home joue de bas en haut (lignes 1=gardien en bas), Away de haut en bas (miroir)
+        function parseGrid(grid){
+          if(!grid) return null;
+          const [row,col]=String(grid).split(':').map(Number);
+          return {row,col};
         }
-        el.innerHTML=`<div class="det-lineups-grid">${teamLineup(lineups[0])}${teamLineup(lineups[1])}</div>`;
+        function groupByRow(xi){
+          const rows={};
+          xi.forEach(p=>{
+            const g=parseGrid(p.grid);
+            if(!g) return;
+            if(!rows[g.row]) rows[g.row]=[];
+            rows[g.row].push({...p,col:g.col});
+          });
+          return rows;
+        }
+        function renderTeamOnPitch(xi,isHome){
+          const rows=groupByRow(xi);
+          const rowKeys=Object.keys(rows).map(Number).sort((a,b)=>a-b);
+          const totalRows=rowKeys.length||1;
+          return rowKeys.map((rk,idx)=>{
+            const players=rows[rk].sort((a,b)=>a.col-b.col);
+            const colCount=players.length||1;
+            // Position verticale : home en bas (100%->50%), away en haut (50%->0%)
+            const vertPct=isHome
+              ? 92 - (idx/(totalRows-1||1))*42
+              : 8 + (idx/(totalRows-1||1))*42;
+            return players.map((p,ci)=>{
+              const horizPct=((ci+1)/(colCount+1))*100;
+              return `<div class="pitch-player ${isHome?'pitch-home':'pitch-away'}" style="left:${horizPct}%;top:${vertPct}%">
+                <div class="pitch-player-dot">${p.number??''}</div>
+                <div class="pitch-player-name">${esc((p.name||'').split(' ').pop())}</div>
+              </div>`;
+            }).join('');
+          }).join('');
+        }
+
+        function subsList(t){
+          const subs=(t.substitutes||[]).map(p=>p.player);
+          if(!subs.length) return '';
+          return `<div class="det-subs-title">Remplaçants — ${esc(t.team?.name||'')}</div><div class="det-lineup-list">${subs.map(p=>`<div class="det-player det-player-sub"><span class="det-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span></div>`).join('')}</div>`;
+        }
+
+        el.innerHTML=`
+          <div class="pitch-header">
+            <div class="pitch-team-info"><b>${esc(home.team?.name||'')}</b><span>${esc(home.formation||'')}${home.coach?.name?' · '+esc(home.coach.name):''}</span></div>
+            <div class="pitch-team-info pitch-team-info-right"><b>${esc(away.team?.name||'')}</b><span>${esc(away.formation||'')}${away.coach?.name?' · '+esc(away.coach.name):''}</span></div>
+          </div>
+          <div class="pitch-wrap">
+            <div class="pitch">
+              <div class="pitch-halfway"></div>
+              <div class="pitch-circle"></div>
+              ${renderTeamOnPitch(homeXI,true)}
+              ${renderTeamOnPitch(awayXI,false)}
+            </div>
+          </div>
+          <div class="det-lineups-subs-grid">
+            ${subsList(home)}
+            ${subsList(away)}
+          </div>
+        `;
       }catch(e){
         el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>';
       }
@@ -1097,24 +1149,58 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const json=await res.json();
         const lineups=json.lineups||[];
         if(lineups.length<2){ el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>'; return; }
-        function teamLineup(t){
-          const coach=t.coach?.name||'';
-          const formation=t.formation||'';
-          const startXI=(t.startXI||[]).map(p=>p.player);
-          const subs=(t.substitutes||[]).map(p=>p.player);
-          return `
-            <div class="hm-fz-lineup-team">
-              <div class="hm-fz-lineup-head"><b>${esc(t.team?.name||'')}</b><span>${esc(formation)} · ${esc(coach)}</span></div>
-              <div class="hm-fz-lineup-list">
-                ${startXI.map(p=>`<div class="hm-fz-player"><span class="hm-fz-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span><span class="hm-fz-player-pos">${esc(p.pos||'')}</span></div>`).join('')}
-              </div>
-              <div class="hm-fz-subs-title">Remplaçants</div>
-              <div class="hm-fz-lineup-list hm-fz-lineup-subs">
-                ${subs.map(p=>`<div class="hm-fz-player hm-fz-player-sub"><span class="hm-fz-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span></div>`).join('')}
-              </div>
-            </div>`;
+
+        const home=lineups[0], away=lineups[1];
+        const homeXI=(home.startXI||[]).map(p=>p.player);
+        const awayXI=(away.startXI||[]).map(p=>p.player);
+
+        function parseGrid(grid){
+          if(!grid) return null;
+          const [row,col]=String(grid).split(':').map(Number);
+          return {row,col};
         }
-        el.innerHTML=`<div class="hm-fz-lineups-grid">${teamLineup(lineups[0])}${teamLineup(lineups[1])}</div>`;
+        function groupByRow(xi){
+          const rows={};
+          xi.forEach(p=>{
+            const g=parseGrid(p.grid);
+            if(!g) return;
+            if(!rows[g.row]) rows[g.row]=[];
+            rows[g.row].push({...p,col:g.col});
+          });
+          return rows;
+        }
+        function renderTeamOnPitch(xi,isHome){
+          const rows=groupByRow(xi);
+          const rowKeys=Object.keys(rows).map(Number).sort((a,b)=>a-b);
+          const totalRows=rowKeys.length||1;
+          return rowKeys.map((rk,idx)=>{
+            const players=rows[rk].sort((a,b)=>a.col-b.col);
+            const colCount=players.length||1;
+            const vertPct=isHome ? 92 - (idx/(totalRows-1||1))*42 : 8 + (idx/(totalRows-1||1))*42;
+            return players.map((p,ci)=>{
+              const horizPct=((ci+1)/(colCount+1))*100;
+              return `<div class="pitch-player ${isHome?'pitch-home':'pitch-away'}" style="left:${horizPct}%;top:${vertPct}%">
+                <div class="pitch-player-dot">${p.number??''}</div>
+                <div class="pitch-player-name">${esc((p.name||'').split(' ').pop())}</div>
+              </div>`;
+            }).join('');
+          }).join('');
+        }
+
+        el.innerHTML=`
+          <div class="pitch-header">
+            <div class="pitch-team-info"><b>${esc(home.team?.name||'')}</b><span>${esc(home.formation||'')}</span></div>
+            <div class="pitch-team-info pitch-team-info-right"><b>${esc(away.team?.name||'')}</b><span>${esc(away.formation||'')}</span></div>
+          </div>
+          <div class="pitch-wrap">
+            <div class="pitch">
+              <div class="pitch-halfway"></div>
+              <div class="pitch-circle"></div>
+              ${renderTeamOnPitch(homeXI,true)}
+              ${renderTeamOnPitch(awayXI,false)}
+            </div>
+          </div>
+        `;
       }catch(e){
         el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>';
       }
