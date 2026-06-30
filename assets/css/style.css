@@ -613,3 +613,16 @@ body:not(.home-active) .hero{
   .hm-fz-lineups-grid{grid-template-columns:1fr}
   .hm-fz-tab{font-size:11px;padding:8px 4px}
 }
+
+/* ── Dernier résultat (bloc compact) ─────────────────────────── */
+.lr-match{cursor:pointer}
+.lr-phase{font-size:11px;color:#8fa6bd;font-weight:800;margin-bottom:10px}
+.lr-teams{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.lr-team{display:flex;align-items:center;gap:7px;flex:1}
+.lr-team-right{justify-content:flex-end}
+.lr-flag{font-size:24px}
+.lr-name{font-size:13px;font-weight:800;color:#dcecff}
+.lr-winner .lr-name{color:#ffd166}
+.lr-score{font-size:18px;font-weight:950;color:#fff;background:#ffffff14;border-radius:10px;padding:5px 12px;white-space:nowrap}
+.lr-pen{font-size:10px;color:#ffd166;font-weight:700}
+.lr-goals{font-size:11px;color:#8fa6bd;text-align:center;padding-top:8px;border-top:1px solid #ffffff10}
