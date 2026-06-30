@@ -720,3 +720,59 @@ body:not(.home-active) .hero{
   .pitch-player-name{font-size:7px;max-width:46px}
   .det-lineups-subs-grid{grid-template-columns:1fr}
 }
+
+/* ── Live Center V86 ────────────────────────────────────────── */
+.live-nav-badge{background:#ef3340;color:#fff;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:950;margin-left:5px;animation:livePulse 1.5s infinite}
+.live-tab-badge{background:#ef3340;color:#fff;border-radius:99px;padding:1px 6px;font-size:9px;font-weight:950;margin-left:4px;animation:livePulse 1.5s infinite}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.6}}
+.nav-link-live{color:#ef3340!important}
+.tab-live{position:relative}
+.mobile-drawer-live{color:#ef3340!important;font-weight:950!important}
+
+#view-live{padding:0 0 30px}
+.lc-header{margin-bottom:18px}
+.lc-title{font-size:22px;font-weight:950;color:#fff;margin:0 0 4px}
+.lc-sub{font-size:13px;color:#8fa6bd;margin:0}
+
+.lc-empty{text-align:center;padding:60px 20px;background:#ffffff06;border:1px solid #ffffff10;border-radius:24px}
+.lc-empty-icon{font-size:48px;margin-bottom:12px}
+.lc-empty h2{font-size:18px;color:#dcecff;margin:0 0 8px}
+.lc-empty p{font-size:13px;color:#8fa6bd;margin:0 0 20px}
+.lc-next-match{display:inline-block;background:#ffffff08;border:1px solid #ffffff15;border-radius:18px;padding:20px 24px;cursor:pointer;max-width:380px}
+.lc-next-teams{display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:800;color:#dcecff;margin-bottom:14px}
+.lc-next-vs{color:#8fa6bd;font-size:12px}
+.lc-countdown{font-size:32px;font-weight:950;color:#ffd166;letter-spacing:.02em;margin-bottom:10px;font-variant-numeric:tabular-nums}
+.lc-next-meta{font-size:12px;color:#8fa6bd}
+
+.lc-focus-card{background:linear-gradient(135deg,#ffd16610,#ef334008);border:1.5px solid #ffd16640;border-radius:24px;padding:22px;margin-bottom:20px}
+.lc-focus-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.lc-focus-phase{font-size:11px;color:#8fa6bd;font-weight:800;background:#ffffff10;border-radius:99px;padding:4px 10px}
+.lc-focus-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;cursor:pointer;margin-bottom:14px}
+.lc-focus-team{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.lc-focus-team-right{align-items:flex-end}
+.lc-focus-flag{font-size:38px;line-height:1}
+.lc-focus-name{font-size:16px;font-weight:950;color:#dcecff}
+.lc-focus-score{font-size:34px;font-weight:950;color:#ffd166;text-align:center;letter-spacing:-.02em}
+.lc-focus-sep{color:#8fa6bd;margin:0 4px}
+.lc-scorers{display:flex;flex-direction:column;gap:2px}
+.lc-scorers span{font-size:10px;color:#8fa6bd;font-weight:700}
+.lc-focus-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#8fa6bd;margin:14px 0 16px}
+
+.lc-mini-list{margin-top:8px}
+.lc-mini-list-title{font-size:11px;color:#8fa6bd;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.lc-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.lc-mini{display:block;width:100%;text-align:left;background:#ffffff08;border:1.5px solid #ffffff15;border-radius:16px;padding:12px 14px;cursor:pointer;transition:.15s}
+.lc-mini:hover{background:#ffffff12}
+.lc-mini-active{border-color:#ffd16660;background:#ffd16612}
+.lc-mini-top{margin-bottom:8px}
+.lc-mini-live{font-size:10px;color:#ef3340;font-weight:950}
+.lc-mini-teams{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:#dcecff}
+.lc-mini-score{font-size:13px;font-weight:950;color:#ffd166;background:#ffffff10;border-radius:8px;padding:2px 8px}
+
+@media(max-width:640px){
+  .lc-focus-flag{font-size:30px}
+  .lc-focus-name{font-size:13px}
+  .lc-focus-score{font-size:26px}
+  .lc-countdown{font-size:26px}
+  .lc-mini-grid{grid-template-columns:1fr}
+}
