@@ -763,10 +763,10 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             <span class="det-flag">${flags[m.home]||'🏳️'}</span>
             <span class="det-name">${esc(m.home)}</span>
           </div>
-          ${scoreHtml}
+          <div class="det-score-block">${scoreHtml}</div>
           <div class="det-team det-team-right ${wA?'det-winner':''}">
-            <span class="det-name">${esc(m.away)}</span>
             <span class="det-flag">${flags[m.away]||'🏳️'}</span>
+            <span class="det-name">${esc(m.away)}</span>
           </div>
         </div>
         <div id="detStatsBox"><div class="det-stats-loading">Chargement des statistiques...</div></div>
