@@ -141,7 +141,21 @@ function winnerFromFixture(fx, status) {
   if (hg == null || ag == null) return null;
   if (Number(hg) > Number(ag)) return fx?.teams?.home?.name || "";
   if (Number(ag) > Number(hg)) return fx?.teams?.away?.name || "";
+  // Score à égalité après prolongation : vérifier les tirs au but
+  const penHome = fx?.score?.penalty?.home;
+  const penAway = fx?.score?.penalty?.away;
+  if (penHome != null && penAway != null) {
+    if (Number(penHome) > Number(penAway)) return fx?.teams?.home?.name || "";
+    if (Number(penAway) > Number(penHome)) return fx?.teams?.away?.name || "";
+  }
   return "draw";
+}
+
+function penaltyScore(fx) {
+  const penHome = fx?.score?.penalty?.home;
+  const penAway = fx?.score?.penalty?.away;
+  if (penHome == null || penAway == null) return { pen_a: null, pen_b: null };
+  return { pen_a: Number(penHome), pen_b: Number(penAway) };
 }
 
 function fixtureToCandidate(fx) {
@@ -149,12 +163,14 @@ function fixtureToCandidate(fx) {
   const status = normalizeStatus(fx?.fixture?.status);
   const home = fx?.teams?.home?.name || "";
   const away = fx?.teams?.away?.name || "";
+  const { pen_a, pen_b } = penaltyScore(fx);
   return {
     api_fixture_id: fx?.fixture?.id ? String(fx.fixture.id) : null,
     date, time_fr, team_a: home, team_b: away,
     home_key: teamKey(home), away_key: teamKey(away),
     status, minute: getMinute(fx?.fixture?.status),
     score_a: fx?.goals?.home ?? null, score_b: fx?.goals?.away ?? null,
+    pen_a, pen_b,
     winner: winnerFromFixture(fx, status),
   };
 }
@@ -242,12 +258,13 @@ async function supabasePatchMatch(matchId, patch) {
 }
 
 function buildPatch(apiMatch, localMatch) {
-  let { score_a, score_b, winner, team_a, team_b } = apiMatch;
+  let { score_a, score_b, winner, team_a, team_b, pen_a, pen_b } = apiMatch;
   const wasPlaceholder = localMatch._wasPlaceholder;
 
   if (localMatch._reversed) {
     [score_a, score_b] = [score_b, score_a];
     [team_a, team_b] = [team_b, team_a];
+    if (pen_a != null && pen_b != null) [pen_a, pen_b] = [pen_b, pen_a];
     if (winner === apiMatch.team_a) winner = localMatch.team_b;
     else if (winner === apiMatch.team_b) winner = localMatch.team_a;
   } else {
@@ -264,6 +281,12 @@ function buildPatch(apiMatch, localMatch) {
     api_fixture_id: apiMatch.api_fixture_id,
     updated_at: new Date().toISOString(),
   };
+
+  // Tirs au but (uniquement si présents)
+  if (pen_a != null && pen_b != null) {
+    patch.pen_a = pen_a;
+    patch.pen_b = pen_b;
+  }
 
   // Si le slot avait des placeholders, on met à jour les noms des équipes
   if (wasPlaceholder) {
