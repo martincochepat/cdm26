@@ -2,7 +2,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===activeTab));
       document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));document.querySelectorAll('.mobile-drawer [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
-      [renderHome,updateChips,renderHighlights,render,renderTeamsPage,renderStadiums,renderMapPage,renderTvGuide,renderGroups,renderBracket,renderFanZone].forEach(fn=>{try{fn()}catch(err){console.error('Render error:',fn.name,err)}});
+      [renderHome,renderLiveCenter,updateChips,renderHighlights,render,renderTeamsPage,renderStadiums,renderMapPage,renderTvGuide,renderGroups,renderBracket,renderFanZone].forEach(fn=>{try{fn()}catch(err){console.error('Render error:',fn.name,err)}});
     }
     function renderTeamPicker(){teamPicker.innerHTML=allTeams().map(t=>`<button class="team-chip ${followedTeams.has(t)?'on':''}" onclick="toggleTeam('${esc(t)}')">${flags[t]||'🏳️'} ${esc(t)}</button>`).join('')}
     function toggleTeam(t){followedTeams.has(t)?followedTeams.delete(t):followedTeams.add(t);localStorage.setItem('wc26_teams',JSON.stringify([...followedTeams]));renderTeamPicker();renderAll()}
@@ -1204,4 +1204,149 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }catch(e){
         el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>';
       }
+    }
+
+    // ── LIVE CENTER ──────────────────────────────────────────────
+    let liveCenterFocusId=null; // id du match affiché en grand
+    function renderLiveCenter(){
+      const box=document.getElementById('liveCenterBox');
+      if(!box) return;
+      const liveMatches=data.filter(m=>matchStatusKey(m)==='live').sort((a,b)=>matchStart(a)-matchStart(b));
+      const count=liveMatches.length;
+
+      // Met à jour les badges nav (desktop + mobile + tab grid)
+      [['liveNavBadge',' '+count],['liveNavBadgeMobile',count],['liveTabBadge',count]].forEach(([id,label])=>{
+        const el=document.getElementById(id);
+        if(!el) return;
+        if(count>0){ el.style.display='inline-flex'; el.innerHTML='●'+label; }
+        else { el.style.display='none'; }
+      });
+
+      if(!count){
+        // Aucun match en direct : afficher le prochain avec compte à rebours
+        const upcoming=data.filter(m=>matchStatusKey(m)==='upcoming').sort((a,b)=>matchStart(a)-matchStart(b))[0];
+        if(!upcoming){
+          box.innerHTML=`<div class="lc-empty"><div class="lc-empty-icon">⚽</div><h2>Aucun match en direct</h2><p>Reviens plus tard pour suivre les matchs en temps réel.</p></div>`;
+          return;
+        }
+        const target=matchStart(upcoming).getTime();
+        box.innerHTML=`
+          <div class="lc-empty">
+            <div class="lc-empty-icon">⏳</div>
+            <h2>Aucun match en direct actuellement</h2>
+            <p>Prochain coup d'envoi :</p>
+            <div class="lc-next-match" onclick="openDetail(${jsArg(upcoming.id)})">
+              <div class="lc-next-teams">
+                <span class="lc-next-team">${flags[upcoming.home]||'🏳️'} ${esc(upcoming.home)}</span>
+                <span class="lc-next-vs">vs</span>
+                <span class="lc-next-team">${esc(upcoming.away)} ${flags[upcoming.away]||'🏳️'}</span>
+              </div>
+              <div class="lc-countdown" id="lcCountdown" data-target="${target}">--:--:--</div>
+              <div class="lc-next-meta">${smartDateLabel(upcoming)} · ${esc(upcoming.time)} · ${esc(upcoming.stadium)}</div>
+            </div>
+          </div>`;
+        startLiveCountdown();
+        return;
+      }
+
+      // Focus = match sélectionné, sinon le premier live
+      if(!liveCenterFocusId || !liveMatches.find(m=>String(m.id)===liveCenterFocusId)){
+        liveCenterFocusId=String(liveMatches[0].id);
+      }
+      const focusMatch=liveMatches.find(m=>String(m.id)===liveCenterFocusId);
+
+      function miniCard(m){
+        const isFocus=String(m.id)===liveCenterFocusId;
+        const scored=m.score_a!==null&&m.score_a!==undefined;
+        return `<button class="lc-mini ${isFocus?'lc-mini-active':''}" onclick="setLiveFocus(${jsArg(m.id)})">
+          <div class="lc-mini-top"><span class="lc-mini-live">● ${m.minute?esc(m.minute)+"'":'LIVE'}</span></div>
+          <div class="lc-mini-teams">
+            <span class="lc-mini-team">${flags[m.home]||'🏳️'} ${esc(m.home)}</span>
+            <span class="lc-mini-score">${scored?m.score_a+'-'+m.score_b:'vs'}</span>
+            <span class="lc-mini-team">${esc(m.away)} ${flags[m.away]||'🏳️'}</span>
+          </div>
+        </button>`;
+      }
+
+      const miniListHtml=count>1?`
+        <div class="lc-mini-list">
+          <div class="lc-mini-list-title">Autres matchs en direct (${count})</div>
+          <div class="lc-mini-grid">${liveMatches.map(miniCard).join('')}</div>
+        </div>`:'';
+
+      box.innerHTML=`
+        <div class="lc-header">
+          <h2 class="lc-title">🔴 Live Center</h2>
+          <p class="lc-sub">${count} match${count>1?'s':''} en direct actuellement</p>
+        </div>
+        <div id="lcFocusCard"></div>
+        ${miniListHtml}
+      `;
+
+      renderLiveFocusCard(focusMatch);
+    }
+
+    function setLiveFocus(id){
+      liveCenterFocusId=String(id);
+      renderLiveCenter();
+    }
+
+    function renderLiveFocusCard(m){
+      const el=document.getElementById('lcFocusCard');
+      if(!el||!m) return;
+      const scored=m.score_a!==null&&m.score_a!==undefined&&m.score_b!==null&&m.score_b!==undefined;
+      const events=matchEventsByMatchId[String(m.id)]||[];
+      const goals=events.filter(e=>{
+        const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+        return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));
+      });
+      const homeGoals=goals.filter(e=>e.team_name===m.home||frName(e.team_name)===m.home);
+      const awayGoals=goals.filter(e=>e.team_name===m.away||frName(e.team_name)===m.away);
+      const scorerLine=(goals)=>goals.length
+        ?`<div class="lc-scorers">${goals.map(e=>`<span>⚽ ${e.elapsed?e.elapsed+"'":''} ${esc(e.player_name||'')}</span>`).join('')}</div>`:'';
+      const pct=m.minute?Math.min(100,Math.round((Number(m.minute)/90)*100)):0;
+
+      el.innerHTML=`
+        <div class="lc-focus-card">
+          <div class="lc-focus-top">
+            <span class="lc-focus-phase">${esc(m.phase)}</span>
+            <span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>
+          </div>
+          <div class="lc-focus-teams" onclick="openDetail(${jsArg(m.id)})">
+            <div class="lc-focus-team">
+              <span class="lc-focus-flag">${flags[m.home]||'🏳️'}</span>
+              <span class="lc-focus-name">${esc(m.home)}</span>
+              ${scorerLine(homeGoals)}
+            </div>
+            <div class="lc-focus-score">${scored?m.score_a+' <span class="lc-focus-sep">-</span> '+m.score_b:'VS'}</div>
+            <div class="lc-focus-team lc-focus-team-right">
+              <span class="lc-focus-name">${esc(m.away)}</span>
+              <span class="lc-focus-flag">${flags[m.away]||'🏳️'}</span>
+              ${scorerLine(awayGoals)}
+            </div>
+          </div>
+          <div class="hm-progress"><div class="hm-progress-bar hm-progress-live" style="width:${pct}%"></div></div>
+          <div class="lc-focus-meta">
+            <span>🏟️ ${esc(m.stadium)}</span>
+            <span>📍 ${esc(m.city)}</span>
+            <span>📺 ${esc(m.tv)}</span>
+          </div>
+          <button class="home-btn home-btn-primary" onclick="openDetail(${jsArg(m.id)})">Voir stats, compositions & plus →</button>
+        </div>`;
+    }
+
+    let liveCountdownInterval=null;
+    function startLiveCountdown(){
+      if(liveCountdownInterval) clearInterval(liveCountdownInterval);
+      function tick(){
+        const el=document.getElementById('lcCountdown');
+        if(!el) { clearInterval(liveCountdownInterval); return; }
+        const target=Number(el.dataset.target);
+        const diff=target-Date.now();
+        if(diff<=0){ el.textContent='Coup d\'envoi !'; renderLiveCenter(); return; }
+        const h=Math.floor(diff/3600000), mn=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+        el.textContent=String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      }
+      tick();
+      liveCountdownInterval=setInterval(tick,1000);
     }
