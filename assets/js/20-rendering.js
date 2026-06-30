@@ -716,8 +716,10 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       modalBody.scrollTop = scrollPos;
     }
 
+    let detailActiveTab='resume';
     async function openDetail(id){
       currentOpenMatchId=String(id);
+      detailActiveTab='resume';
       modal.querySelector('.modal-card').classList.remove('stadium-modal');
       modal.querySelector('.modal-head b').textContent='Détail du match';
       const m=data.find(x=>String(x.id)===String(id));
@@ -729,14 +731,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const wH=isDone&&m.winner?(m.winner===m.home):(isDone&&scored&&Number(m.score_a)>Number(m.score_b));
       const wA=isDone&&m.winner?(m.winner===m.away):(isDone&&scored&&Number(m.score_b)>Number(m.score_a));
       const freeTV=m.tv&&m.tv.includes('M6');
+      const showTabs=isLive||isDone;
 
-      // Événements existants (buts, cartons, remplacements)
       const events=matchEventsByMatchId[String(m.id)]||[];
-      const goals=events.filter(e=>{const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));});
-      const cards=events.filter(e=>String(e.event_type||'').toLowerCase()==='card');
-      const subs=events.filter(e=>String(e.event_type||'').toLowerCase()==='subst');
-
-      // Timeline complète (buts + cartons + remplacements triés par minute)
       const allEvents=[...events].sort((a,b)=>Number(a.elapsed||0)-Number(b.elapsed||0));
 
       function eventIcon(e){
@@ -748,43 +745,53 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         if(t==='subst') return '🔄';
         return '•';
       }
-
       function eventDesc(e){
-        const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
-        if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span style="color:#8fa6bd;font-size:11px">(passe: '+esc(e.assist_name)+')</span>':''}`;
-        if(t==='card') return `${esc(e.player_name||'')} <span style="color:#8fa6bd;font-size:11px">${esc(e.detail||'')}</span>`;
-        if(t==='subst') return `↑ ${esc(e.player_name||'')} <span style="color:#8fa6bd;font-size:11px">↓ ${esc(e.assist_name||'')}</span>`;
+        const t=String(e.event_type||'').toLowerCase();
+        if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span class="det-sub">(passe: '+esc(e.assist_name)+')</span>':''}`;
+        if(t==='card') return `${esc(e.player_name||'')} <span class="det-sub">${esc(e.detail||'')}</span>`;
+        if(t==='subst') return `↑ ${esc(e.player_name||'')} <span class="det-sub">↓ ${esc(e.assist_name||'')}</span>`;
         return esc(e.player_name||'');
       }
 
-      // Score header
       const scoreHtml=scored
         ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a}<span class="det-sep"> - </span>${m.score_b}</div>` + (m.pen_a!=null&&m.pen_b!=null?'<div class="det-pen">Tirs au but : <b>'+m.pen_a+' - '+m.pen_b+'</b></div>':'')
         :`<div class="det-vs">VS</div>`;
 
-      // Statut badge
       const stBadge=isLive
-        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}  </span>`
+        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>`
         :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
         :`<span class="hm-next-badge">⏳ ${smartDateLabel(m)} · ${esc(m.time)}</span>`;
 
-      // Timeline HTML
-      const timelineHtml=allEvents.length?`
-        <div class="det-section">
-          <h3 class="det-section-title">⏱️ Événements du match</h3>
-          <div class="det-timeline">
-            ${allEvents.map(e=>{
-              const isHome=e.team_name===m.home;
-              return `<div class="det-event ${isHome?'det-event-home':'det-event-away'}">
-                <div class="det-event-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
-                <div class="det-event-icon">${eventIcon(e)}</div>
-                <div class="det-event-desc">${eventDesc(e)}<div class="det-event-team">${esc(e.team_name||'')}</div></div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`:isDone||isLive?'<div class="det-section"><p style="color:#8fa6bd;font-size:13px;text-align:center">Événements non disponibles.</p></div>':'';
+      // Onglets (uniquement si live ou terminé)
+      const tabsHtml=showTabs?`
+        <div class="det-tabs">
+          <button class="det-tab det-tab-active" data-tab="resume" onclick="setDetailTab('resume')">Résumé</button>
+          <button class="det-tab" data-tab="stats" onclick="setDetailTab('stats')">Stats</button>
+          <button class="det-tab" data-tab="lineups" onclick="setDetailTab('lineups')">Compositions</button>
+          <button class="det-tab" data-tab="predictions" onclick="setDetailTab('predictions')">Prédictions</button>
+          <button class="det-tab" data-tab="h2h" onclick="setDetailTab('h2h')">Confrontations</button>
+        </div>`:'';
 
-      // Rendu initial (sans stats live — chargées après)
+      const resumePanel=allEvents.length?`
+        <div class="det-timeline">
+          ${allEvents.map(e=>{
+            const isHome=e.team_name===m.home||frName(e.team_name)===m.home;
+            return `<div class="det-event ${isHome?'det-event-home':'det-event-away'}">
+              <div class="det-event-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
+              <div class="det-event-icon">${eventIcon(e)}</div>
+              <div class="det-event-desc">${eventDesc(e)}<div class="det-event-team">${esc(e.team_name||'')}</div></div>
+            </div>`;
+          }).join('')}
+        </div>`:`<div class="det-empty">${isLive?'Aucun événement pour le moment.':isDone?'Aucun événement enregistré.':'Le résumé sera disponible pendant le match.'}</div>`;
+
+      const panelsHtml=showTabs?`
+        <div class="det-panel" data-panel="resume">${resumePanel}</div>
+        <div class="det-panel" data-panel="stats" style="display:none"><div class="det-stats-loading">Chargement des statistiques...</div></div>
+        <div class="det-panel" data-panel="lineups" style="display:none"><div class="det-stats-loading">Chargement des compositions...</div></div>
+        <div class="det-panel" data-panel="predictions" style="display:none"><div class="det-stats-loading">Chargement des prédictions...</div></div>
+        <div class="det-panel" data-panel="h2h" style="display:none"><div class="det-stats-loading">Chargement des confrontations...</div></div>
+      `:`<div class="det-section"><h3 class="det-section-title">⏳ Avant le match</h3><div id="detPredictionsPreview"><div class="det-stats-loading">Chargement des prédictions...</div></div></div>`;
+
       modalBody.innerHTML=`
         <div class="det-header">
           <span class="det-phase">${esc(m.phase)} · ${esc(m.round)}</span>
@@ -801,8 +808,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             <span class="det-name">${esc(m.away)}</span>
           </div>
         </div>
-        <div id="detStatsBox"><div class="det-stats-loading">Chargement des statistiques...</div></div>
-        ${timelineHtml}
+        ${tabsHtml}
+        ${panelsHtml}
         <div id="predictionBox"></div>
         <div class="det-section">
           <h3 class="det-section-title">🏟️ Informations</h3>
@@ -828,69 +835,167 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       if(!modal.classList.contains('open')) openModal();
       renderPredictionBox(m.id);
 
-      // Charger les stats depuis API-Football si fixture_id disponible
-      if(m.api_fixture_id && (isLive||isDone)){
-        try{
-          const statsEl=document.getElementById('detStatsBox');
-          const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
-          if(res.ok){
-            const json=await res.json();
-            const stats=json.stats||[];
-            if(stats.length>=2){
-              const h=stats[0], a=stats[1];
-              function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?found.value??0:0;}
-              function statBar(label,hVal,aVal){
-                const hNum=parseFloat(String(hVal).replace('%',''))||0;
-                const aNum=parseFloat(String(aVal).replace('%',''))||0;
-                const tot=hNum+aNum||1;
-                const hPct=Math.round((hNum/tot)*100);
-                return `<div class="det-stat-row">
-                  <span class="det-stat-val">${hVal}</span>
-                  <div class="det-stat-bar-wrap">
-                    <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
-                    <span class="det-stat-label">${label}</span>
-                    <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
-                  </div>
-                  <span class="det-stat-val">${aVal}</span>
-                </div>`;
-              }
-              const poss=getStat(h,'Ball Possession'), possA=getStat(a,'Ball Possession');
-              const shots=getStat(h,'Total Shots'), shotsA=getStat(a,'Total Shots');
-              const shotsOn=getStat(h,'Shots on Goal'), shotsOnA=getStat(a,'Shots on Goal');
-              const corners=getStat(h,'Corner Kicks'), cornersA=getStat(a,'Corner Kicks');
-              const fouls=getStat(h,'Fouls'), foulsA=getStat(a,'Fouls');
-              const yellow=getStat(h,'Yellow Cards'), yellowA=getStat(a,'Yellow Cards');
-              const offsides=getStat(h,'Offsides'), offsidesA=getStat(a,'Offsides');
-              statsEl.innerHTML=`
-                <div class="det-section">
-                  <h3 class="det-section-title">📊 Statistiques du match</h3>
-                  <div class="det-stats-header">
-                    <span>${esc(m.home)}</span>
-                    <span>${esc(m.away)}</span>
-                  </div>
-                  ${statBar('Possession',poss,possA)}
-                  ${statBar('Tirs',shots,shotsA)}
-                  ${statBar('Tirs cadrés',shotsOn,shotsOnA)}
-                  ${statBar('Corners',corners,cornersA)}
-                  ${statBar('Fautes',fouls,foulsA)}
-                  ${statBar('Cartons jaunes',yellow,yellowA)}
-                  ${statBar('Hors-jeux',offsides,offsidesA)}
-                </div>`;
-            } else {
-              statsEl.innerHTML='';
-            }
-          } else {
-            statsEl.innerHTML='';
-          }
-        }catch(e){
-          const el=document.getElementById('detStatsBox');
-          if(el) el.innerHTML='';
+      if(m.api_fixture_id){
+        if(showTabs){
+          loadDetailStats(m);
+          loadDetailLineups(m);
         }
-      } else {
-        const el=document.getElementById('detStatsBox');
-        if(el) el.innerHTML='';
+        loadDetailPredictions(m, showTabs);
+        loadDetailH2H(m);
       }
     }
+
+    function setDetailTab(tab){
+      detailActiveTab=tab;
+      document.querySelectorAll('.det-tab').forEach(b=>b.classList.toggle('det-tab-active',b.dataset.tab===tab));
+      document.querySelectorAll('.det-panel').forEach(p=>{p.style.display=p.dataset.panel===tab?'block':'none'});
+    }
+
+    async function loadDetailStats(m){
+      const els=document.querySelectorAll('.det-panel[data-panel="stats"]');
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const stats=json.stats||[];
+        if(stats.length<2){ el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const h=stats[0], a=stats[1];
+        function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
+        function statBar(label,hVal,aVal){
+          const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
+          const tot=hNum+aNum||1;
+          const hPct=Math.round((hNum/tot)*100);
+          return `<div class="det-stat-row">
+            <span class="det-stat-val">${hVal}</span>
+            <div class="det-stat-bar-wrap">
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
+              <span class="det-stat-label">${label}</span>
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
+            </div>
+            <span class="det-stat-val">${aVal}</span>
+          </div>`;
+        }
+        el.innerHTML=`
+          <div class="det-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
+          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
+          ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
+          ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
+          ${statBar('Tirs non cadrés',getStat(h,'Shots off Goal'),getStat(a,'Shots off Goal'))}
+          ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
+          ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
+          ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
+          ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
+          ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
+          ${statBar('Arrêts gardien',getStat(h,'Goalkeeper Saves'),getStat(a,'Goalkeeper Saves'))}
+          ${statBar('Passes totales',getStat(h,'Total passes'),getStat(a,'Total passes'))}
+          ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
+          ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
+        `;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadDetailLineups(m){
+      const els=document.querySelectorAll('.det-panel[data-panel="lineups"]');
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-lineups?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const lineups=json.lineups||[];
+        if(lineups.length<2){ el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>'; return; }
+        function teamLineup(t){
+          const coach=t.coach?.name||'';
+          const formation=t.formation||'';
+          const startXI=(t.startXI||[]).map(p=>p.player);
+          const subs=(t.substitutes||[]).map(p=>p.player);
+          return `
+            <div class="det-lineup-team">
+              <div class="det-lineup-head"><b>${esc(t.team?.name||'')}</b><span>${esc(formation)}${coach?' · '+esc(coach):''}</span></div>
+              <div class="det-lineup-list">
+                ${startXI.map(p=>`<div class="det-player"><span class="det-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span><span class="det-player-pos">${esc(p.pos||'')}</span></div>`).join('')}
+              </div>
+              ${subs.length?`<div class="det-subs-title">Remplaçants</div><div class="det-lineup-list">${subs.map(p=>`<div class="det-player det-player-sub"><span class="det-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span></div>`).join('')}</div>`:''}
+            </div>`;
+        }
+        el.innerHTML=`<div class="det-lineups-grid">${teamLineup(lineups[0])}${teamLineup(lineups[1])}</div>`;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadDetailPredictions(m, showTabs){
+      const selector=showTabs?'.det-panel[data-panel="predictions"]':'#detPredictionsPreview';
+      const els=document.querySelectorAll(selector);
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-predictions?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Prédictions non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const pred=(json.predictions||[])[0];
+        if(!pred){ el.innerHTML='<div class="det-empty">Prédictions non disponibles pour ce match.</div>'; return; }
+        const p=pred.predictions||{};
+        const pct=p.percent||{};
+        const homePct=parseInt(pct.home)||0, drawPct=parseInt(pct.draw)||0, awayPct=parseInt(pct.away)||0;
+        const advice=p.advice||'';
+        const winnerName=p.winner?.name||'';
+        const comp=pred.comparison||{};
+        function compRow(label,key){
+          const h=parseInt(comp[key]?.home)||0, a=parseInt(comp[key]?.away)||0;
+          return `<div class="det-stat-row">
+            <span class="det-stat-val">${h}%</span>
+            <div class="det-stat-bar-wrap">
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${h}%"></div></div>
+              <span class="det-stat-label">${label}</span>
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${a}%"></div></div>
+            </div>
+            <span class="det-stat-val">${a}%</span>
+          </div>`;
+        }
+        el.innerHTML=`
+          <div class="det-pred-probs">
+            <div class="det-pred-prob"><span class="det-pred-prob-label">${esc(m.home)}</span><div class="det-pred-prob-bar"><div style="width:${homePct}%;background:#ffd166"></div></div><span class="det-pred-prob-val">${homePct}%</span></div>
+            <div class="det-pred-prob"><span class="det-pred-prob-label">Nul</span><div class="det-pred-prob-bar"><div style="width:${drawPct}%;background:#8fa6bd"></div></div><span class="det-pred-prob-val">${drawPct}%</span></div>
+            <div class="det-pred-prob"><span class="det-pred-prob-label">${esc(m.away)}</span><div class="det-pred-prob-bar"><div style="width:${awayPct}%;background:#ef3340"></div></div><span class="det-pred-prob-val">${awayPct}%</span></div>
+          </div>
+          ${winnerName?`<div class="det-pred-winner">🔮 Vainqueur prédit : <b>${esc(frName(winnerName))}</b></div>`:''}
+          ${advice?`<div class="det-pred-advice">${esc(advice)}</div>`:''}
+          ${comp.att?`<div class="det-pred-comp-title">Comparaison des forces</div>${compRow('Attaque','att')}${compRow('Défense','def')}${compRow('Forme','form')}${compRow('Total H2H','h2h')}`:''}
+        `;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Prédictions non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadDetailH2H(m){
+      const els=document.querySelectorAll('.det-panel[data-panel="h2h"]');
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-h2h?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Confrontations non disponibles.</div>'; return; }
+        const json=await res.json();
+        const h2h=json.h2h||[];
+        if(!h2h.length){ el.innerHTML='<div class="det-empty">Aucune confrontation historique connue.</div>'; return; }
+        el.innerHTML=`<div class="det-h2h-list">${h2h.slice(0,8).map(fx=>{
+          const home=frName(fx.teams?.home?.name||''), away=frName(fx.teams?.away?.name||'');
+          const hg=fx.goals?.home, ag=fx.goals?.away;
+          const date=fx.fixture?.date?new Date(fx.fixture.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'';
+          return `<div class="det-h2h-row">
+            <span class="det-h2h-date">${date}</span>
+            <span class="det-h2h-match">${esc(home)} <b>${hg??'-'} - ${ag??'-'}</b> ${esc(away)}</span>
+          </div>`;
+        }).join('')}</div>`;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Confrontations non disponibles.</div>';
+      }
+    }
+
     function closeModal(){currentOpenMatchId=null;modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){id=String(id);let m=data.find(x=>String(x.id)===id); if(!m)return;let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
