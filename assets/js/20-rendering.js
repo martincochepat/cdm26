@@ -3,6 +3,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));document.querySelectorAll('.mobile-drawer [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
       [renderHome,renderLiveCenter,updateChips,renderHighlights,render,renderTeamsPage,renderStadiums,renderMapPage,renderTvGuide,renderGroups,renderBracket,renderFanZone].forEach(fn=>{try{fn()}catch(err){console.error('Render error:',fn.name,err)}});
+      try{checkGoalAnimation()}catch(err){console.error('checkGoalAnimation error:',err)}
     }
     function renderTeamPicker(){teamPicker.innerHTML=allTeams().map(t=>`<button class="team-chip ${followedTeams.has(t)?'on':''}" onclick="toggleTeam('${esc(t)}')">${flags[t]||'🏳️'} ${esc(t)}</button>`).join('')}
     function toggleTeam(t){followedTeams.has(t)?followedTeams.delete(t):followedTeams.add(t);localStorage.setItem('wc26_teams',JSON.stringify([...followedTeams]));renderTeamPicker();renderAll()}
@@ -236,7 +237,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <button class="home-btn home-btn-secondary" onclick="switchTab('matches')">Voir tous les matchs →</button>
       `;
 
-      checkGoalAnimation();
       renderHeroInfoCard();
     }
 
@@ -356,7 +356,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const prev=_prevScores[key];
         const curr={a:m.score_a,b:m.score_b};
         if(prev && (curr.a!==prev.a || curr.b!==prev.b)){
-          // But marqué ! Animer le score dans la fiche si ouverte
+          // 1) Fiche détail ouverte sur ce match précis
           if(currentOpenMatchId===key){
             const el=document.querySelector('.det-score');
             if(el){
@@ -368,12 +368,35 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
               },2500);
             }
           }
-          // Animer aussi le score home featured
-          const featEl=document.querySelector('.hm-score');
-          if(featEl){
-            featEl.classList.add('hm-score-goal');
-            setTimeout(()=>featEl.classList.remove('hm-score-goal'),2500);
+          // 2) Bloc featured home, uniquement si c'est bien ce match qui y est affiché
+          const featEl=document.getElementById('featuredBox');
+          if(featEl && featEl.querySelector('.hm-teams')?.getAttribute('onclick')?.includes("'"+key+"'")){
+            const scoreEl=featEl.querySelector('.hm-score');
+            if(scoreEl){
+              scoreEl.classList.add('hm-score-goal');
+              setTimeout(()=>scoreEl.classList.remove('hm-score-goal'),2500);
+            }
           }
+          // 3) Live Center : carte focus si c'est ce match qui est en focus
+          if(typeof liveCenterFocusId!=='undefined' && liveCenterFocusId===key){
+            const lcEl=document.querySelector('.lc-focus-score');
+            if(lcEl){
+              lcEl.classList.add('lc-focus-score-goal');
+              const oldHtml=lcEl.innerHTML;
+              lcEl.innerHTML='<span class="det-goal-text">BUT !</span>';
+              setTimeout(()=>{
+                lcEl.innerHTML=curr.a+' <span class="lc-focus-sep">-</span> '+curr.b;
+                lcEl.classList.remove('lc-focus-score-goal');
+              },2500);
+            }
+          }
+          // 4) Mini-card Live Center correspondant à ce match (toujours visible même hors focus)
+          document.querySelectorAll('.lc-mini').forEach(btn=>{
+            if(btn.getAttribute('onclick')?.includes("'"+key+"'")){
+              btn.classList.add('lc-mini-goal');
+              setTimeout(()=>btn.classList.remove('lc-mini-goal'),2500);
+            }
+          });
         }
         _prevScores[key]=curr;
       });
