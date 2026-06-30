@@ -555,3 +555,8 @@ body:not(.home-active) .hero{
 /* Fix score inline */
 .det-score{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;flex-direction:row!important}
 .det-teams{min-height:100px}
+
+/* Tirs au but */
+.hm-pen{font-size:11px;color:#ffd166;font-weight:800;text-align:center;margin-top:4px}
+.det-pen{font-size:13px;color:#ffd166;font-weight:800;text-align:center;margin-top:6px}
+.bk-pen{font-size:10px;color:#ffd166;font-weight:800;text-align:center;margin-top:3px}
