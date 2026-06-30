@@ -130,6 +130,15 @@ function normalizeStatus(apiStatus) {
   return "upcoming";
 }
 
+function getPeriod(apiStatus) {
+  const short = String(apiStatus?.short || "").toUpperCase();
+  if (short === "HT") return "HT";
+  if (short === "ET") return "ET";
+  if (short === "P") return "PEN";
+  if (short === "BT") return "BT";
+  return null;
+}
+
 function getMinute(apiStatus) {
   const n = Number(apiStatus?.elapsed);
   return Number.isFinite(n) ? n : null;
@@ -169,6 +178,7 @@ function fixtureToCandidate(fx) {
     date, time_fr, team_a: home, team_b: away,
     home_key: teamKey(home), away_key: teamKey(away),
     status, minute: getMinute(fx?.fixture?.status),
+    period: getPeriod(fx?.fixture?.status),
     score_a: fx?.goals?.home ?? null, score_b: fx?.goals?.away ?? null,
     pen_a, pen_b,
     winner: winnerFromFixture(fx, status),
@@ -280,6 +290,7 @@ function buildPatch(apiMatch, localMatch) {
     score_a,
     score_b,
     minute: apiMatch.minute,
+    period: apiMatch.period,
     winner,
     api_fixture_id: apiMatch.api_fixture_id,
     updated_at: new Date().toISOString(),
