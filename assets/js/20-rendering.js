@@ -31,8 +31,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const isLive=mainStatus==='live';
         const isDone=mainStatus==='finished';
         const scored=mainMatch.score_a!==null&&mainMatch.score_a!==undefined&&mainMatch.score_b!==null&&mainMatch.score_b!==undefined;
-        const wH=isDone&&scored&&Number(mainMatch.score_a)>Number(mainMatch.score_b);
-        const wA=isDone&&scored&&Number(mainMatch.score_b)>Number(mainMatch.score_a);
+        const wH=isDone&&mainMatch.winner?(mainMatch.winner===mainMatch.home):(isDone&&scored&&Number(mainMatch.score_a)>Number(mainMatch.score_b));
+        const wA=isDone&&mainMatch.winner?(mainMatch.winner===mainMatch.away):(isDone&&scored&&Number(mainMatch.score_b)>Number(mainMatch.score_a));
         const freeTV=mainMatch.tv&&mainMatch.tv.includes('M6');
 
         // Événements du match (buts)
@@ -81,7 +81,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             </div>
             <div class="hm-score-block">
               ${scored
-                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>`
+                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>` + (mainMatch.pen_a!=null&&mainMatch.pen_b!=null?'<div class="hm-pen">Tirs au but : '+mainMatch.pen_a+'-'+mainMatch.pen_b+'</div>':'')
                 :`<div class="hm-vs">VS</div><div class="hm-kickoff">${esc(mainMatch.time)}</div>`
               }
             </div>
@@ -327,15 +327,15 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const isDone = k === 'finished';
         const scored = m.score_a !== null && m.score_a !== undefined && m.score_b !== null && m.score_b !== undefined;
         const freeTV = m.tv && m.tv.includes('M6');
-        const wH = isDone && scored && Number(m.score_a) > Number(m.score_b);
-        const wA = isDone && scored && Number(m.score_b) > Number(m.score_a);
+        const wH = isDone && m.winner ? (m.winner===m.home) : (isDone && scored && Number(m.score_a) > Number(m.score_b));
+        const wA = isDone && m.winner ? (m.winner===m.away) : (isDone && scored && Number(m.score_b) > Number(m.score_a));
         const cardClass = 'bk-card' + (isLive?' bk-live':'') + (isDone?' bk-done':'');
         const statusBadge = isLive
           ? '<span class="bk-badge bk-badge-live">● EN DIRECT</span>'
           : isDone ? '<span class="bk-badge bk-badge-done">✓ Terminé</span>' : '';
         const freeBadge = freeTV ? '<span class="bk-badge bk-badge-free">M6/M6+</span>' : '';
         const scoreHtml = scored
-          ? '<div class="bk-score'+(isLive?' bk-score-live':'')+'">'+m.score_a+' - '+m.score_b+'</div>'
+          ? '<div class="bk-score'+(isLive?' bk-score-live':'')+'">'+m.score_a+' - '+m.score_b+'</div>'+(m.pen_a!=null&&m.pen_b!=null?'<div class="bk-pen">tab '+m.pen_a+'-'+m.pen_b+'</div>':'')
           : '<div class="bk-vs">VS</div>';
         return '<div class="'+cardClass+'" onclick="openDetail('+jsArg(m.id)+')">'
           +'<div class="bk-top">'+statusBadge+'<span class="bk-date">'+dateLabel(m.date)+' · '+m.time+'</span>'+freeBadge+'</div>'
@@ -644,8 +644,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const k=matchStatusKey(m);
       const isLive=k==='live', isDone=k==='finished';
       const scored=m.score_a!==null&&m.score_a!==undefined&&m.score_b!==null&&m.score_b!==undefined;
-      const wH=isDone&&scored&&Number(m.score_a)>Number(m.score_b);
-      const wA=isDone&&scored&&Number(m.score_b)>Number(m.score_a);
+      const wH=isDone&&m.winner?(m.winner===m.home):(isDone&&scored&&Number(m.score_a)>Number(m.score_b));
+      const wA=isDone&&m.winner?(m.winner===m.away):(isDone&&scored&&Number(m.score_b)>Number(m.score_a));
       const freeTV=m.tv&&m.tv.includes('M6');
 
       // Événements existants (buts, cartons, remplacements)
@@ -677,7 +677,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
 
       // Score header
       const scoreHtml=scored
-        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a}<span class="det-sep"> - </span>${m.score_b}</div>`
+        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a}<span class="det-sep"> - </span>${m.score_b}</div>` + (m.pen_a!=null&&m.pen_b!=null?'<div class="det-pen">Tirs au but : <b>'+m.pen_a+' - '+m.pen_b+'</b></div>':'')
         :`<div class="det-vs">VS</div>`;
 
       // Statut badge
