@@ -141,7 +141,21 @@ function winnerFromFixture(fx, status) {
   if (hg == null || ag == null) return null;
   if (Number(hg) > Number(ag)) return fx?.teams?.home?.name || "";
   if (Number(ag) > Number(hg)) return fx?.teams?.away?.name || "";
+  // Score à égalité après prolongation : vérifier les tirs au but
+  const penHome = fx?.score?.penalty?.home;
+  const penAway = fx?.score?.penalty?.away;
+  if (penHome != null && penAway != null) {
+    if (Number(penHome) > Number(penAway)) return fx?.teams?.home?.name || "";
+    if (Number(penAway) > Number(penHome)) return fx?.teams?.away?.name || "";
+  }
   return "draw";
+}
+
+function penaltyScore(fx) {
+  const penHome = fx?.score?.penalty?.home;
+  const penAway = fx?.score?.penalty?.away;
+  if (penHome == null || penAway == null) return { pen_a: null, pen_b: null };
+  return { pen_a: Number(penHome), pen_b: Number(penAway) };
 }
 
 function fixtureToCandidate(fx) {
@@ -149,12 +163,14 @@ function fixtureToCandidate(fx) {
   const status = normalizeStatus(fx?.fixture?.status);
   const home = fx?.teams?.home?.name || "";
   const away = fx?.teams?.away?.name || "";
+  const { pen_a, pen_b } = penaltyScore(fx);
   return {
     api_fixture_id: fx?.fixture?.id ? String(fx.fixture.id) : null,
     date, time_fr, team_a: home, team_b: away,
     home_key: teamKey(home), away_key: teamKey(away),
     status, minute: getMinute(fx?.fixture?.status),
     score_a: fx?.goals?.home ?? null, score_b: fx?.goals?.away ?? null,
+    pen_a, pen_b,
     winner: winnerFromFixture(fx, status),
   };
 }
@@ -174,7 +190,7 @@ async function fetchWorldCupFixtures() {
 }
 
 async function supabaseGetMatches() {
-  const url = `${SUPABASE_URL}/rest/v1/matches?select=id,date,time_fr,team_a,team_b,status,score_a,score_b,minute,winner,api_fixture_id&date=gte.2026-06-01&date=lte.2026-07-31`;
+  const url = `${SUPABASE_URL}/rest/v1/matches?select=id,date,time_fr,team_a,team_b,phase,status,score_a,score_b,minute,winner,api_fixture_id&date=gte.2026-06-01&date=lte.2026-07-31`;
   const r = await fetch(url, {
     headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
   });
@@ -183,9 +199,38 @@ async function supabaseGetMatches() {
   return JSON.parse(text);
 }
 
+function isPlaceholder(name) {
+  if (!name) return true;
+  const n = String(name).toLowerCase();
+  return (
+    n.includes('groupe') || n.includes('group') ||
+    n.includes('winner') || n.includes('loser') ||
+    n.includes('1er') || n.includes('2ème') || n.includes('2eme') ||
+    n.includes('vainqueur') || n.includes('perdant') ||
+    n.match(/^[a-z]\d+$/) // ex: "A1", "B2"
+  );
+}
+
 function findLocalMatch(apiMatch, localMatches) {
   const candidates = [];
   for (const m of localMatches) {
+    const aIsPlaceholder = isPlaceholder(m.team_a);
+    const bIsPlaceholder = isPlaceholder(m.team_b);
+    const hasPlaceholders = aIsPlaceholder || bIsPlaceholder;
+
+    if (hasPlaceholders) {
+      // Pour les matchs de phase finale avec placeholders :
+      // on matche uniquement sur la date (± 1 jour) et on évite de matcher
+      // un slot déjà assigné à de vraies équipes
+      const dd = dateDistanceDays(m.date, apiMatch.date);
+      if (dd <= 1) {
+        // Score élevé = peu prioritaire, on préfère les matchs sans placeholder
+        candidates.push({ match: { ...m, _reversed: false, _wasPlaceholder: true }, score: 50 + dd * 10, dd });
+      }
+      continue;
+    }
+
+    // Matching normal pour les matchs de groupes (vraies équipes)
     const sameOrder = sameTeam(m.team_a, apiMatch.team_a) && sameTeam(m.team_b, apiMatch.team_b);
     const reversed = sameTeam(m.team_a, apiMatch.team_b) && sameTeam(m.team_b, apiMatch.team_a);
     if (!sameOrder && !reversed) continue;
@@ -213,22 +258,45 @@ async function supabasePatchMatch(matchId, patch) {
 }
 
 function buildPatch(apiMatch, localMatch) {
-  let { score_a, score_b, winner } = apiMatch;
+  let { score_a, score_b, winner, team_a, team_b, pen_a, pen_b } = apiMatch;
+  const wasPlaceholder = localMatch._wasPlaceholder;
+  const originalWinner = winner;
+
   if (localMatch._reversed) {
     [score_a, score_b] = [score_b, score_a];
-    if (winner === apiMatch.team_a) winner = localMatch.team_b;
-    else if (winner === apiMatch.team_b) winner = localMatch.team_a;
+    [team_a, team_b] = [team_b, team_a];
+    if (pen_a != null && pen_b != null) [pen_a, pen_b] = [pen_b, pen_a];
+    if (originalWinner === apiMatch.team_a) winner = localMatch.team_b;
+    else if (originalWinner === apiMatch.team_b) winner = localMatch.team_a;
+    else winner = originalWinner; // garde 'draw' ou la valeur originale si pas de correspondance
   } else {
-    if (winner === apiMatch.team_a) winner = localMatch.team_a;
-    else if (winner === apiMatch.team_b) winner = localMatch.team_b;
+    if (originalWinner === apiMatch.team_a) winner = wasPlaceholder ? apiMatch.team_a : (localMatch.team_a || apiMatch.team_a);
+    else if (originalWinner === apiMatch.team_b) winner = wasPlaceholder ? apiMatch.team_b : (localMatch.team_b || apiMatch.team_b);
+    else winner = originalWinner;
   }
-  // Inclut team_a/team_b pour mettre à jour les équipes qualifiées en phase finale
-  const team_a = localMatch._reversed ? apiMatch.team_b : apiMatch.team_a;
-  const team_b = localMatch._reversed ? apiMatch.team_a : apiMatch.team_b;
-  const patch = { status: apiMatch.status, score_a, score_b, minute: apiMatch.minute, winner, api_fixture_id: apiMatch.api_fixture_id, updated_at: new Date().toISOString() };
-  // Met à jour les noms d'équipes seulement si l'API en a des vrais (pas "TBD" ou vide)
-  if (team_a && team_a !== 'TBD' && team_a !== 'tbd') patch.team_a = team_a;
-  if (team_b && team_b !== 'TBD' && team_b !== 'tbd') patch.team_b = team_b;
+
+  const patch = {
+    status: apiMatch.status,
+    score_a,
+    score_b,
+    minute: apiMatch.minute,
+    winner,
+    api_fixture_id: apiMatch.api_fixture_id,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Tirs au but (uniquement si présents)
+  if (pen_a != null && pen_b != null) {
+    patch.pen_a = pen_a;
+    patch.pen_b = pen_b;
+  }
+
+  // Si le slot avait des placeholders, on met à jour les noms des équipes
+  if (wasPlaceholder) {
+    patch.team_a = team_a;
+    patch.team_b = team_b;
+  }
+
   return patch;
 }
 
@@ -302,11 +370,13 @@ async function sync({ dryRun = false } = {}) {
 
   return {
     ok: true,
-    version: "API-FOOTBALL-V73-SIMPLE",
+    version: "API-FOOTBALL-V74-KNOCKOUT",
     dryRun,
     api_fixtures_received: fixtures.length,
     updates_ready: updates.length,
+    placeholder_slots_filled: updates.filter(u => u.patch.team_a).length,
     unmatched_count: unmatched.length,
+    unmatched_sample: unmatched.slice(0, 5),
     events_synced: eventResults.length,
     sample_updates: updates.slice(0, 6),
     note: dryRun ? "Dry run." : `Sync complète — ${updates.length} matchs mis à jour.`,

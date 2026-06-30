@@ -1,16 +1,14 @@
-// API route : stats d'un match via API-Football (avec cache mémoire 30s)
 const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY;
 
-// Cache en mémoire (persiste tant que la fonction serverless reste "chaude")
-const cache = global.__statsCache || (global.__statsCache = new Map());
-const CACHE_TTL = 30 * 1000; // 30 secondes
+const cache = global.__lineupsCache || (global.__lineupsCache = new Map());
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (compositions ne changent plus après le coup d'envoi)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const { fixture_id } = req.query;
   if (!fixture_id) return res.status(400).json({ error: 'fixture_id requis' });
 
-  const cacheKey = `stats_${fixture_id}`;
+  const cacheKey = `lineups_${fixture_id}`;
   const cached = cache.get(cacheKey);
   if (cached && (Date.now() - cached.time) < CACHE_TTL) {
     res.setHeader('X-Cache', 'HIT');
@@ -18,11 +16,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const r = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${encodeURIComponent(fixture_id)}`, {
+    const r = await fetch(`https://v3.football.api-sports.io/fixtures/lineups?fixture=${encodeURIComponent(fixture_id)}`, {
       headers: { 'x-apisports-key': API_FOOTBALL_KEY }
     });
     const data = await r.json();
-    const result = { stats: Array.isArray(data.response) ? data.response : [] };
+    const result = { lineups: Array.isArray(data.response) ? data.response : [] };
     cache.set(cacheKey, { data: result, time: Date.now() });
     res.setHeader('X-Cache', 'MISS');
     res.status(200).json(result);

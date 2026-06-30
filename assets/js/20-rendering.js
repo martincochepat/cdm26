@@ -23,19 +23,19 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
       const tvTitle=tvToday.length?'Ce soir à la TV':'Prochaines diffusions TV';
       const mainMatch=liveMatches[0]||upcoming[0]||finished[0];
+      const lastResult=finished[0]; // pour le bloc "dernier résultat" séparé
       const mainStatus=mainMatch?matchStatusKey(mainMatch):'upcoming';
       const followed=[...followedTeams];
 
-      // ── FEATURED BOX ──────────────────────────────────────────
+      // ── FEATURED BOX (premium, style Flashscore) ──────────────
       if(mainMatch){
         const isLive=mainStatus==='live';
         const isDone=mainStatus==='finished';
         const scored=mainMatch.score_a!==null&&mainMatch.score_a!==undefined&&mainMatch.score_b!==null&&mainMatch.score_b!==undefined;
-        const wH=isDone&&scored&&Number(mainMatch.score_a)>Number(mainMatch.score_b);
-        const wA=isDone&&scored&&Number(mainMatch.score_b)>Number(mainMatch.score_a);
+        const wH=isDone&&mainMatch.winner?(mainMatch.winner===mainMatch.home):(isDone&&scored&&Number(mainMatch.score_a)>Number(mainMatch.score_b));
+        const wA=isDone&&mainMatch.winner?(mainMatch.winner===mainMatch.away):(isDone&&scored&&Number(mainMatch.score_b)>Number(mainMatch.score_a));
         const freeTV=mainMatch.tv&&mainMatch.tv.includes('M6');
 
-        // Événements du match (buts)
         const events=matchEventsByMatchId[String(mainMatch.id)]||[];
         const goals=events.filter(e=>{
           const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
@@ -44,30 +44,74 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const homeGoals=goals.filter(e=>e.team_name===mainMatch.home||frName(e.team_name)===mainMatch.home);
         const awayGoals=goals.filter(e=>e.team_name===mainMatch.away||frName(e.team_name)===mainMatch.away);
 
-        // Badge statut
         const statusBadgeHtml=isLive
           ?`<span class="hm-live-badge">● EN DIRECT${mainMatch.minute?` · ${esc(mainMatch.minute)}'`:''}</span>`
           :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
           :`<span class="hm-next-badge">⏳ À venir</span>`;
 
-        // Barre de progression
         const pct=isLive&&mainMatch.minute?Math.min(100,Math.round((Number(mainMatch.minute)/90)*100)):isDone?100:0;
         const progressHtml=isLive||isDone?`<div class="hm-progress"><div class="hm-progress-bar${isLive?' hm-progress-live':''}" style="width:${pct}%"></div></div>`:'';
 
-        // Scorers
-        const scorerLine=(side,goals)=>goals.length
+        const scorerLine=(goals)=>goals.length
           ?`<div class="hm-scorers">${goals.map(e=>`<span>⚽ ${e.elapsed?e.elapsed+"'":''}  ${esc(e.player_name||'But')}</span>`).join('')}</div>`:'';
 
-        // Stats (depuis match_events si disponibles)
-        const statsHtml=''; // sera enrichi quand stats Supabase disponibles
+        const penHtml=(mainMatch.pen_a!=null&&mainMatch.pen_b!=null)?`<div class="hm-pen">Tirs au but : ${mainMatch.pen_a}-${mainMatch.pen_b}</div>`:'';
 
-        // Titre contextuel
-        const titleIcon=isLive?'🔴':isDone?'✅':'⏳';
-        const titleText=isLive?'Match en cours':isDone?'Dernier résultat':'Prochain match';
+        // ── Onglets (uniquement pertinents si live ou terminé) ──
+        const showTabs=isLive||isDone;
+        const tabsNav=showTabs?`
+          <div class="hm-fz-tabs">
+            <button class="hm-fz-tab hm-fz-tab-active" data-tab="resume" onclick="setFeaturedTab('resume')">Résumé</button>
+            <button class="hm-fz-tab" data-tab="stats" onclick="setFeaturedTab('stats')">Stats</button>
+            <button class="hm-fz-tab" data-tab="lineups" onclick="setFeaturedTab('lineups')">Compositions</button>
+          </div>`:'';
+
+        // ── Panel Résumé : timeline complète ──
+        function eventIcon(e){
+          const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+          if(t==='goal'&&d.includes('own')) return '⚽🔴';
+          if(t==='goal') return '⚽';
+          if(t==='card'&&d.includes('yellow')) return '🟨';
+          if(t==='card'&&d.includes('red')) return '🟥';
+          if(t==='subst') return '🔄';
+          return '•';
+        }
+        function eventDesc(e){
+          const t=String(e.event_type||'').toLowerCase();
+          if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span class="hm-fz-sub">(passe: '+esc(e.assist_name)+')</span>':''}`;
+          if(t==='card') return `${esc(e.player_name||'')} <span class="hm-fz-sub">${esc(e.detail||'')}</span>`;
+          if(t==='subst') return `↑ ${esc(e.player_name||'')} <span class="hm-fz-sub">↓ ${esc(e.assist_name||'')}</span>`;
+          return esc(e.player_name||'');
+        }
+        const allEvents=[...events].sort((a,b)=>Number(a.elapsed||0)-Number(b.elapsed||0));
+        const resumePanel=allEvents.length?`
+          <div class="hm-fz-timeline">
+            ${allEvents.map(e=>{
+              const isHome=e.team_name===mainMatch.home||frName(e.team_name)===mainMatch.home;
+              return `<div class="hm-fz-event ${isHome?'hm-fz-event-home':'hm-fz-event-away'}">
+                <div class="hm-fz-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
+                <div class="hm-fz-icon">${eventIcon(e)}</div>
+                <div class="hm-fz-desc">${eventDesc(e)}</div>
+              </div>`;
+            }).join('')}
+          </div>`:`<div class="hm-fz-empty">${isLive?'Aucun événement pour le moment.':isDone?'Aucun événement enregistré.':''}</div>`;
+
+        // ── Panel Stats (placeholder, chargé en async) ──
+        const statsPanel=`<div id="hmStatsPanel" class="hm-fz-stats-loading">Chargement des statistiques...</div>`;
+
+        // ── Panel Compositions (placeholder, chargé en async) ──
+        const lineupsPanel=`<div id="hmLineupsPanel" class="hm-fz-stats-loading">Chargement des compositions...</div>`;
+
+        const panelsHtml=showTabs?`
+          <div class="hm-fz-panel" data-panel="resume">${resumePanel}</div>
+          <div class="hm-fz-panel" data-panel="stats" style="display:none">${statsPanel}</div>
+          <div class="hm-fz-panel" data-panel="lineups" style="display:none">${lineupsPanel}</div>
+        `:'';
 
         featuredBox.innerHTML=`
+          <div class="hm-title-eyebrow">${isLive?'🔴 Match en cours':isDone?'✅ Dernier résultat':'⏳ Prochain match'}</div>
           <div class="hm-match-header">
-            <span class="hm-phase-tag">${esc(mainMatch.phase)} · ${esc(mainMatch.round)}</span>
+            <span class="hm-phase-tag">${esc(mainMatch.phase)}${mainMatch.round&&mainMatch.round!==mainMatch.phase?' · '+esc(mainMatch.round):''}</span>
             <div class="hm-match-actions">
               <button class="fav ${favs.has(String(mainMatch.id))?'on':''}" onclick="toggleFav(${jsArg(mainMatch.id)})">${favs.has(String(mainMatch.id))?'★':'☆'}</button>
               ${statusBadgeHtml}
@@ -77,21 +121,23 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             <div class="hm-team ${wH?'hm-winner':''}">
               <span class="hm-flag">${flags[mainMatch.home]||'🏳️'}</span>
               <span class="hm-team-name">${esc(mainMatch.home)}</span>
-              ${scorerLine('home',homeGoals)}
+              ${scorerLine(homeGoals)}
             </div>
             <div class="hm-score-block">
               ${scored
-                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>`
+                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>` + penHtml
                 :`<div class="hm-vs">VS</div><div class="hm-kickoff">${esc(mainMatch.time)}</div>`
               }
             </div>
             <div class="hm-team hm-team-right ${wA?'hm-winner':''}">
               <span class="hm-team-name">${esc(mainMatch.away)}</span>
               <span class="hm-flag">${flags[mainMatch.away]||'🏳️'}</span>
-              ${scorerLine('away',awayGoals)}
+              ${scorerLine(awayGoals)}
             </div>
           </div>
           ${progressHtml}
+          ${tabsNav}
+          ${panelsHtml}
           <div class="hm-meta-grid">
             <div class="hm-meta-item"><span class="hm-meta-label">📅 Date</span><span class="hm-meta-val">${smartDateLabel(mainMatch)}</span></div>
             <div class="hm-meta-item"><span class="hm-meta-label">⏰ Heure</span><span class="hm-meta-val">${esc(mainMatch.time)}</span></div>
@@ -101,8 +147,44 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           </div>
           <button class="home-btn home-btn-primary" onclick="openDetail(${jsArg(mainMatch.id)})">Voir le détail complet →</button>
         `;
+
+        // Charger stats + lineups si en direct ou terminé et fixture_id dispo
+        if(mainMatch.api_fixture_id && showTabs){
+          loadFeaturedStats(mainMatch);
+          loadFeaturedLineups(mainMatch);
+        }
       } else {
         featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
+      }
+
+      // ── DERNIER RÉSULTAT (bloc compact, si différent du featured) ──
+      if(document.getElementById('lastResultBox')){
+        const lrBox=document.getElementById('lastResultBox');
+        if(lastResult && lastResult.id!==mainMatch?.id){
+          const lrEvents=matchEventsByMatchId[String(lastResult.id)]||[];
+          const lrGoals=lrEvents.filter(e=>{
+            const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+            return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));
+          });
+          const lrWinner=lastResult.winner;
+          const lrWH=lrWinner&&lrWinner===lastResult.home;
+          const lrWA=lrWinner&&lrWinner===lastResult.away;
+          const lrPen=(lastResult.pen_a!=null&&lastResult.pen_b!=null)?` <span class="lr-pen">(tab ${lastResult.pen_a}-${lastResult.pen_b})</span>`:'';
+          lrBox.innerHTML=`
+            <div class="lr-eyebrow">Dernier résultat · ${esc(lastResult.phase)}</div>
+            <div class="lr-match" onclick="openDetail(${jsArg(lastResult.id)})">
+              <div class="lr-teams">
+                <div class="lr-team ${lrWH?'lr-winner':''}"><span class="lr-flag">${flags[lastResult.home]||'🏳️'}</span><span class="lr-name">${esc(lastResult.home)}</span></div>
+                <div class="lr-score">${lastResult.score_a} - ${lastResult.score_b}${lrPen}</div>
+                <div class="lr-team lr-team-right ${lrWA?'lr-winner':''}"><span class="lr-name">${esc(lastResult.away)}</span><span class="lr-flag">${flags[lastResult.away]||'🏳️'}</span></div>
+              </div>
+              ${lrGoals.length?`<div class="lr-goals">${lrGoals.slice(0,4).map(e=>`⚽ ${e.elapsed?e.elapsed+"'":''} ${esc(e.player_name||'')}`).join(' &nbsp;·&nbsp; ')}</div>`:''}
+              <div class="lr-cta">Voir les statistiques complètes <span class="lr-arrow">→</span></div>
+            </div>
+          `;
+        } else {
+          lrBox.style.display='none';
+        }
       }
 
       // ── CE SOIR À LA TV ────────────────────────────────────────
@@ -186,7 +268,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const mine=favList.length?`<p class="small"><b>${favList.length}</b> match(s) en favori. Clique sur le filtre Favoris pour les voir.</p>`:'<p class="small">Ajoute des favoris pour créer ton programme perso.</p>';
       tvBox.innerHTML=`<h2>Guide TV gratuit</h2>${tv||'<p class="small">Aucune diffusion M6 trouvée.</p>'}${mine}`;
     }
-    function render(){let arr=filtered(),current='';list.innerHTML=arr.map(m=>{let k=matchStatusKey(m),live=k==='live',mine=followedTeams.has(m.home)||followedTeams.has(m.away),status=statusBadge(m),d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="date-title">${d}</h3>`):'',favBtn=`<button class="fav ${favs.has(String(m.id))?'on':''}" onclick="toggleFav(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Favori':'☆ Favori'}</button>`;return `${head}<article class="match ${live?'live':''}" id="match-${esc(m.id)}"><div class="match-head"><span class="tag">${esc(m.round)} · ${esc(m.phase)}</span><div class="match-actions">${mine?'<span class="tag">Mon équipe</span>':''}${favBtn}<button class="detail-btn" onclick="openDetail(${jsArg(m.id)})">Détails</button>${status}</div></div><div class="teams">${team(m.home)}${scoreCenter(m)}${team(m.away,'away')}</div>${matchScorersMini(m)}${(matchStatusKey(m)!=='finished' && !isPast(m))?`<button class="quick-predict-btn" onclick="openDetail(${jsArg(m.id)})">🔥 Pronostiquer ce match</button>`:''}<div class="info"><div><b>Heure France</b><span class="time-main">${esc(m.time)}</span></div><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Ville</b>${esc(m.city)}</div><div><b>Diffusion FR</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div></article>`}).join('')||'<div class="panel empty">Aucun match trouvé avec ces filtres.</div>'}
+    function render(){let arr=filtered(),current='';list.innerHTML=arr.map(m=>{let k=matchStatusKey(m),live=k==='live',mine=followedTeams.has(m.home)||followedTeams.has(m.away),status=statusBadge(m),d=dateLabel(m.date),head=d!==current?(current=d,`<h3 class="date-title">${d}</h3>`):'',favBtn=`<button class="fav ${favs.has(String(m.id))?'on':''}" onclick="toggleFav(${jsArg(m.id)})">${favs.has(String(m.id))?'★ Favori':'☆ Favori'}</button>`;return `${head}<article class="match ${live?'live':''}" id="match-${esc(m.id)}"><div class="match-head"><span class="tag">${esc(m.round)} · ${esc(m.phase)}</span><div class="match-actions">${mine?'<span class="tag">Mon équipe</span>':''}${favBtn}<button class="detail-btn" onclick="openDetail(${jsArg(m.id)})">Détails</button>${status}</div></div><div class="teams">${team(m.home)}${scoreCenter(m)}${team(m.away,'away')}</div>${(m.pen_a!=null&&m.pen_b!=null)?`<div class="list-pen">Tirs au but : <b>${m.pen_a} - ${m.pen_b}</b></div>`:''}${matchScorersMini(m)}${(matchStatusKey(m)!=='finished' && !isPast(m))?`<button class="quick-predict-btn" onclick="openDetail(${jsArg(m.id)})">🔥 Pronostiquer ce match</button>`:''}<div class="info"><div><b>Heure France</b><span class="time-main">${esc(m.time)}</span></div><div><b>Stade</b>${esc(m.stadium)}</div><div><b>Ville</b>${esc(m.city)}</div><div><b>Diffusion FR</b>${esc(m.tv)} ${m.tv.includes('M6')?'<br><span class="free-badge">gratuit M6/M6+</span>':''}</div></div></article>`}).join('')||'<div class="panel empty">Aucun match trouvé avec ces filtres.</div>'}
 
     function teamGroupName(t){
       const m=data.find(x=>x.home===t||x.away===t);
@@ -327,15 +409,15 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const isDone = k === 'finished';
         const scored = m.score_a !== null && m.score_a !== undefined && m.score_b !== null && m.score_b !== undefined;
         const freeTV = m.tv && m.tv.includes('M6');
-        const wH = isDone && scored && Number(m.score_a) > Number(m.score_b);
-        const wA = isDone && scored && Number(m.score_b) > Number(m.score_a);
+        const wH = isDone && m.winner ? (m.winner===m.home) : (isDone && scored && Number(m.score_a) > Number(m.score_b));
+        const wA = isDone && m.winner ? (m.winner===m.away) : (isDone && scored && Number(m.score_b) > Number(m.score_a));
         const cardClass = 'bk-card' + (isLive?' bk-live':'') + (isDone?' bk-done':'');
         const statusBadge = isLive
           ? '<span class="bk-badge bk-badge-live">● EN DIRECT</span>'
           : isDone ? '<span class="bk-badge bk-badge-done">✓ Terminé</span>' : '';
         const freeBadge = freeTV ? '<span class="bk-badge bk-badge-free">M6/M6+</span>' : '';
         const scoreHtml = scored
-          ? '<div class="bk-score'+(isLive?' bk-score-live':'')+'">'+m.score_a+' - '+m.score_b+'</div>'
+          ? '<div class="bk-score'+(isLive?' bk-score-live':'')+'">'+m.score_a+' - '+m.score_b+'</div>'+(m.pen_a!=null&&m.pen_b!=null?'<div class="bk-pen">tab '+m.pen_a+'-'+m.pen_b+'</div>':'')
           : '<div class="bk-vs">VS</div>';
         return '<div class="'+cardClass+'" onclick="openDetail('+jsArg(m.id)+')">'
           +'<div class="bk-top">'+statusBadge+'<span class="bk-date">'+dateLabel(m.date)+' · '+m.time+'</span>'+freeBadge+'</div>'
@@ -634,8 +716,10 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       modalBody.scrollTop = scrollPos;
     }
 
+    let detailActiveTab='resume';
     async function openDetail(id){
       currentOpenMatchId=String(id);
+      detailActiveTab='resume';
       modal.querySelector('.modal-card').classList.remove('stadium-modal');
       modal.querySelector('.modal-head b').textContent='Détail du match';
       const m=data.find(x=>String(x.id)===String(id));
@@ -644,17 +728,12 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const k=matchStatusKey(m);
       const isLive=k==='live', isDone=k==='finished';
       const scored=m.score_a!==null&&m.score_a!==undefined&&m.score_b!==null&&m.score_b!==undefined;
-      const wH=isDone&&scored&&Number(m.score_a)>Number(m.score_b);
-      const wA=isDone&&scored&&Number(m.score_b)>Number(m.score_a);
+      const wH=isDone&&m.winner?(m.winner===m.home):(isDone&&scored&&Number(m.score_a)>Number(m.score_b));
+      const wA=isDone&&m.winner?(m.winner===m.away):(isDone&&scored&&Number(m.score_b)>Number(m.score_a));
       const freeTV=m.tv&&m.tv.includes('M6');
+      const showTabs=isLive||isDone;
 
-      // Événements existants (buts, cartons, remplacements)
       const events=matchEventsByMatchId[String(m.id)]||[];
-      const goals=events.filter(e=>{const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));});
-      const cards=events.filter(e=>String(e.event_type||'').toLowerCase()==='card');
-      const subs=events.filter(e=>String(e.event_type||'').toLowerCase()==='subst');
-
-      // Timeline complète (buts + cartons + remplacements triés par minute)
       const allEvents=[...events].sort((a,b)=>Number(a.elapsed||0)-Number(b.elapsed||0));
 
       function eventIcon(e){
@@ -666,43 +745,53 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         if(t==='subst') return '🔄';
         return '•';
       }
-
       function eventDesc(e){
-        const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
-        if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span style="color:#8fa6bd;font-size:11px">(passe: '+esc(e.assist_name)+')</span>':''}`;
-        if(t==='card') return `${esc(e.player_name||'')} <span style="color:#8fa6bd;font-size:11px">${esc(e.detail||'')}</span>`;
-        if(t==='subst') return `↑ ${esc(e.player_name||'')} <span style="color:#8fa6bd;font-size:11px">↓ ${esc(e.assist_name||'')}</span>`;
+        const t=String(e.event_type||'').toLowerCase();
+        if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span class="det-sub">(passe: '+esc(e.assist_name)+')</span>':''}`;
+        if(t==='card') return `${esc(e.player_name||'')} <span class="det-sub">${esc(e.detail||'')}</span>`;
+        if(t==='subst') return `↑ ${esc(e.player_name||'')} <span class="det-sub">↓ ${esc(e.assist_name||'')}</span>`;
         return esc(e.player_name||'');
       }
 
-      // Score header
       const scoreHtml=scored
-        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a}<span class="det-sep"> - </span>${m.score_b}</div>`
+        ?`<div class="det-score${isLive?' det-score-live':''}">${m.score_a}<span class="det-sep"> - </span>${m.score_b}</div>` + (m.pen_a!=null&&m.pen_b!=null?'<div class="det-pen">Tirs au but : <b>'+m.pen_a+' - '+m.pen_b+'</b></div>':'')
         :`<div class="det-vs">VS</div>`;
 
-      // Statut badge
       const stBadge=isLive
-        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}  </span>`
+        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>`
         :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
         :`<span class="hm-next-badge">⏳ ${smartDateLabel(m)} · ${esc(m.time)}</span>`;
 
-      // Timeline HTML
-      const timelineHtml=allEvents.length?`
-        <div class="det-section">
-          <h3 class="det-section-title">⏱️ Événements du match</h3>
-          <div class="det-timeline">
-            ${allEvents.map(e=>{
-              const isHome=e.team_name===m.home;
-              return `<div class="det-event ${isHome?'det-event-home':'det-event-away'}">
-                <div class="det-event-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
-                <div class="det-event-icon">${eventIcon(e)}</div>
-                <div class="det-event-desc">${eventDesc(e)}<div class="det-event-team">${esc(e.team_name||'')}</div></div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`:isDone||isLive?'<div class="det-section"><p style="color:#8fa6bd;font-size:13px;text-align:center">Événements non disponibles.</p></div>':'';
+      // Onglets (uniquement si live ou terminé)
+      const tabsHtml=showTabs?`
+        <div class="det-tabs">
+          <button class="det-tab det-tab-active" data-tab="resume" onclick="setDetailTab('resume')">Résumé</button>
+          <button class="det-tab" data-tab="stats" onclick="setDetailTab('stats')">Stats</button>
+          <button class="det-tab" data-tab="lineups" onclick="setDetailTab('lineups')">Compositions</button>
+          <button class="det-tab" data-tab="predictions" onclick="setDetailTab('predictions')">Prédictions</button>
+          <button class="det-tab" data-tab="h2h" onclick="setDetailTab('h2h')">Confrontations</button>
+        </div>`:'';
 
-      // Rendu initial (sans stats live — chargées après)
+      const resumePanel=allEvents.length?`
+        <div class="det-timeline">
+          ${allEvents.map(e=>{
+            const isHome=e.team_name===m.home||frName(e.team_name)===m.home;
+            return `<div class="det-event ${isHome?'det-event-home':'det-event-away'}">
+              <div class="det-event-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
+              <div class="det-event-icon">${eventIcon(e)}</div>
+              <div class="det-event-desc">${eventDesc(e)}<div class="det-event-team">${esc(e.team_name||'')}</div></div>
+            </div>`;
+          }).join('')}
+        </div>`:`<div class="det-empty">${isLive?'Aucun événement pour le moment.':isDone?'Aucun événement enregistré.':'Le résumé sera disponible pendant le match.'}</div>`;
+
+      const panelsHtml=showTabs?`
+        <div class="det-panel" data-panel="resume">${resumePanel}</div>
+        <div class="det-panel" data-panel="stats" style="display:none"><div class="det-stats-loading">Chargement des statistiques...</div></div>
+        <div class="det-panel" data-panel="lineups" style="display:none"><div class="det-stats-loading">Chargement des compositions...</div></div>
+        <div class="det-panel" data-panel="predictions" style="display:none"><div class="det-stats-loading">Chargement des prédictions...</div></div>
+        <div class="det-panel" data-panel="h2h" style="display:none"><div class="det-stats-loading">Chargement des confrontations...</div></div>
+      `:`<div class="det-section"><h3 class="det-section-title">⏳ Avant le match</h3><div id="detPredictionsPreview"><div class="det-stats-loading">Chargement des prédictions...</div></div></div>`;
+
       modalBody.innerHTML=`
         <div class="det-header">
           <span class="det-phase">${esc(m.phase)} · ${esc(m.round)}</span>
@@ -713,14 +802,14 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             <span class="det-flag">${flags[m.home]||'🏳️'}</span>
             <span class="det-name">${esc(m.home)}</span>
           </div>
-          ${scoreHtml}
+          <div class="det-score-block">${scoreHtml}</div>
           <div class="det-team det-team-right ${wA?'det-winner':''}">
-            <span class="det-name">${esc(m.away)}</span>
             <span class="det-flag">${flags[m.away]||'🏳️'}</span>
+            <span class="det-name">${esc(m.away)}</span>
           </div>
         </div>
-        <div id="detStatsBox"><div class="det-stats-loading">Chargement des statistiques...</div></div>
-        ${timelineHtml}
+        ${tabsHtml}
+        ${panelsHtml}
         <div id="predictionBox"></div>
         <div class="det-section">
           <h3 class="det-section-title">🏟️ Informations</h3>
@@ -746,67 +835,219 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       if(!modal.classList.contains('open')) openModal();
       renderPredictionBox(m.id);
 
-      // Charger les stats depuis API-Football si fixture_id disponible
-      if(m.api_fixture_id && (isLive||isDone)){
-        try{
-          const statsEl=document.getElementById('detStatsBox');
-          const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
-          if(res.ok){
-            const json=await res.json();
-            const stats=json.stats||[];
-            if(stats.length>=2){
-              const h=stats[0], a=stats[1];
-              function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?found.value??0:0;}
-              function statBar(label,hVal,aVal){
-                const tot=Number(hVal)+Number(aVal)||1;
-                const hPct=Math.round((Number(hVal)/tot)*100);
-                return `<div class="det-stat-row">
-                  <span class="det-stat-val">${hVal}</span>
-                  <div class="det-stat-bar-wrap">
-                    <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
-                    <span class="det-stat-label">${label}</span>
-                    <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
-                  </div>
-                  <span class="det-stat-val">${aVal}</span>
-                </div>`;
-              }
-              const poss=getStat(h,'Ball Possession'), possA=getStat(a,'Ball Possession');
-              const shots=getStat(h,'Total Shots'), shotsA=getStat(a,'Total Shots');
-              const shotsOn=getStat(h,'Shots on Goal'), shotsOnA=getStat(a,'Shots on Goal');
-              const corners=getStat(h,'Corner Kicks'), cornersA=getStat(a,'Corner Kicks');
-              const fouls=getStat(h,'Fouls'), foulsA=getStat(a,'Fouls');
-              const yellow=getStat(h,'Yellow Cards'), yellowA=getStat(a,'Yellow Cards');
-              const offsides=getStat(h,'Offsides'), offsidesA=getStat(a,'Offsides');
-              statsEl.innerHTML=`
-                <div class="det-section">
-                  <h3 class="det-section-title">📊 Statistiques du match</h3>
-                  <div class="det-stats-header">
-                    <span>${esc(m.home)}</span>
-                    <span>${esc(m.away)}</span>
-                  </div>
-                  ${statBar('Possession',poss+'%',possA+'%')}
-                  ${statBar('Tirs',shots,shotsA)}
-                  ${statBar('Tirs cadrés',shotsOn,shotsOnA)}
-                  ${statBar('Corners',corners,cornersA)}
-                  ${statBar('Fautes',fouls,foulsA)}
-                  ${statBar('Cartons jaunes',yellow,yellowA)}
-                  ${statBar('Hors-jeux',offsides,offsidesA)}
-                </div>`;
-            } else {
-              statsEl.innerHTML='';
-            }
-          } else {
-            statsEl.innerHTML='';
-          }
-        }catch(e){
-          const el=document.getElementById('detStatsBox');
-          if(el) el.innerHTML='';
+      if(m.api_fixture_id){
+        if(showTabs){
+          loadDetailStats(m);
+          loadDetailLineups(m);
         }
-      } else {
-        const el=document.getElementById('detStatsBox');
-        if(el) el.innerHTML='';
+        loadDetailPredictions(m, showTabs);
+        loadDetailH2H(m);
       }
     }
+
+    function setDetailTab(tab){
+      detailActiveTab=tab;
+      document.querySelectorAll('.det-tab').forEach(b=>b.classList.toggle('det-tab-active',b.dataset.tab===tab));
+      document.querySelectorAll('.det-panel').forEach(p=>{p.style.display=p.dataset.panel===tab?'block':'none'});
+    }
+
+    async function loadDetailStats(m){
+      const els=document.querySelectorAll('.det-panel[data-panel="stats"]');
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const stats=json.stats||[];
+        if(stats.length<2){ el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const h=stats[0], a=stats[1];
+        function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
+        function statBar(label,hVal,aVal){
+          const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
+          const tot=hNum+aNum||1;
+          const hPct=Math.round((hNum/tot)*100);
+          return `<div class="det-stat-row">
+            <span class="det-stat-val">${hVal}</span>
+            <div class="det-stat-bar-wrap">
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
+              <span class="det-stat-label">${label}</span>
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
+            </div>
+            <span class="det-stat-val">${aVal}</span>
+          </div>`;
+        }
+        el.innerHTML=`
+          <div class="det-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
+          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
+          ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
+          ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
+          ${statBar('Tirs non cadrés',getStat(h,'Shots off Goal'),getStat(a,'Shots off Goal'))}
+          ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
+          ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
+          ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
+          ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
+          ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
+          ${statBar('Arrêts gardien',getStat(h,'Goalkeeper Saves'),getStat(a,'Goalkeeper Saves'))}
+          ${statBar('Passes totales',getStat(h,'Total passes'),getStat(a,'Total passes'))}
+          ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
+          ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
+        `;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadDetailLineups(m){
+      const els=document.querySelectorAll('.det-panel[data-panel="lineups"]');
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-lineups?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const lineups=json.lineups||[];
+        if(lineups.length<2){ el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>'; return; }
+
+        const home=lineups[0], away=lineups[1];
+        const homeXI=(home.startXI||[]).map(p=>p.player);
+        const awayXI=(away.startXI||[]).map(p=>p.player);
+
+        // Parse grid "ligne:colonne" -> position % sur le terrain
+        // Home joue de bas en haut (lignes 1=gardien en bas), Away de haut en bas (miroir)
+        function parseGrid(grid){
+          if(!grid) return null;
+          const [row,col]=String(grid).split(':').map(Number);
+          return {row,col};
+        }
+        function groupByRow(xi){
+          const rows={};
+          xi.forEach(p=>{
+            const g=parseGrid(p.grid);
+            if(!g) return;
+            if(!rows[g.row]) rows[g.row]=[];
+            rows[g.row].push({...p,col:g.col});
+          });
+          return rows;
+        }
+        function renderTeamOnPitch(xi,isHome){
+          const rows=groupByRow(xi);
+          const rowKeys=Object.keys(rows).map(Number).sort((a,b)=>a-b);
+          const totalRows=rowKeys.length||1;
+          return rowKeys.map((rk,idx)=>{
+            const players=rows[rk].sort((a,b)=>a.col-b.col);
+            const colCount=players.length||1;
+            // Position verticale : home en bas (100%->50%), away en haut (50%->0%)
+            const vertPct=isHome
+              ? 95 - (idx/(totalRows-1||1))*38
+              : 5 + (idx/(totalRows-1||1))*38;
+            return players.map((p,ci)=>{
+              const horizPct=((ci+1)/(colCount+1))*100;
+              return `<div class="pitch-player ${isHome?'pitch-home':'pitch-away'}" style="left:${horizPct}%;top:${vertPct}%">
+                <div class="pitch-player-dot">${p.number??''}</div>
+                <div class="pitch-player-name">${esc((p.name||'').split(' ').pop())}</div>
+              </div>`;
+            }).join('');
+          }).join('');
+        }
+
+        function subsList(t){
+          const subs=(t.substitutes||[]).map(p=>p.player);
+          if(!subs.length) return '';
+          return `<div class="det-subs-title">Remplaçants — ${esc(t.team?.name||'')}</div><div class="det-lineup-list">${subs.map(p=>`<div class="det-player det-player-sub"><span class="det-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span></div>`).join('')}</div>`;
+        }
+
+        el.innerHTML=`
+          <div class="pitch-header">
+            <div class="pitch-team-info"><b>${esc(home.team?.name||'')}</b><span>${esc(home.formation||'')}${home.coach?.name?' · '+esc(home.coach.name):''}</span></div>
+            <div class="pitch-team-info pitch-team-info-right"><b>${esc(away.team?.name||'')}</b><span>${esc(away.formation||'')}${away.coach?.name?' · '+esc(away.coach.name):''}</span></div>
+          </div>
+          <div class="pitch-wrap">
+            <div class="pitch">
+              <div class="pitch-halfway"></div>
+              <div class="pitch-circle"></div>
+              ${renderTeamOnPitch(homeXI,true)}
+              ${renderTeamOnPitch(awayXI,false)}
+            </div>
+          </div>
+          <div class="det-lineups-subs-grid">
+            ${subsList(home)}
+            ${subsList(away)}
+          </div>
+        `;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Compositions non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadDetailPredictions(m, showTabs){
+      const selector=showTabs?'.det-panel[data-panel="predictions"]':'#detPredictionsPreview';
+      const els=document.querySelectorAll(selector);
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-predictions?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Prédictions non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const pred=(json.predictions||[])[0];
+        if(!pred){ el.innerHTML='<div class="det-empty">Prédictions non disponibles pour ce match.</div>'; return; }
+        const p=pred.predictions||{};
+        const pct=p.percent||{};
+        const homePct=parseInt(pct.home)||0, drawPct=parseInt(pct.draw)||0, awayPct=parseInt(pct.away)||0;
+        const advice=p.advice||'';
+        const winnerName=p.winner?.name||'';
+        const comp=pred.comparison||{};
+        function compRow(label,key){
+          const h=parseInt(comp[key]?.home)||0, a=parseInt(comp[key]?.away)||0;
+          return `<div class="det-stat-row">
+            <span class="det-stat-val">${h}%</span>
+            <div class="det-stat-bar-wrap">
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${h}%"></div></div>
+              <span class="det-stat-label">${label}</span>
+              <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${a}%"></div></div>
+            </div>
+            <span class="det-stat-val">${a}%</span>
+          </div>`;
+        }
+        el.innerHTML=`
+          <div class="det-pred-probs">
+            <div class="det-pred-prob"><span class="det-pred-prob-label">${esc(m.home)}</span><div class="det-pred-prob-bar"><div style="width:${homePct}%;background:#ffd166"></div></div><span class="det-pred-prob-val">${homePct}%</span></div>
+            <div class="det-pred-prob"><span class="det-pred-prob-label">Nul</span><div class="det-pred-prob-bar"><div style="width:${drawPct}%;background:#8fa6bd"></div></div><span class="det-pred-prob-val">${drawPct}%</span></div>
+            <div class="det-pred-prob"><span class="det-pred-prob-label">${esc(m.away)}</span><div class="det-pred-prob-bar"><div style="width:${awayPct}%;background:#ef3340"></div></div><span class="det-pred-prob-val">${awayPct}%</span></div>
+          </div>
+          ${winnerName?`<div class="det-pred-winner">🔮 Vainqueur prédit : <b>${esc(frName(winnerName))}</b></div>`:''}
+          ${advice?`<div class="det-pred-advice">${esc(advice)}</div>`:''}
+          ${comp.att?`<div class="det-pred-comp-title">Comparaison des forces</div>${compRow('Attaque','att')}${compRow('Défense','def')}${compRow('Forme','form')}${compRow('Total H2H','h2h')}`:''}
+        `;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Prédictions non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadDetailH2H(m){
+      const els=document.querySelectorAll('.det-panel[data-panel="h2h"]');
+      const el=els[els.length-1];
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-h2h?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="det-empty">Confrontations non disponibles.</div>'; return; }
+        const json=await res.json();
+        const h2h=json.h2h||[];
+        if(!h2h.length){ el.innerHTML='<div class="det-empty">Aucune confrontation historique connue.</div>'; return; }
+        el.innerHTML=`<div class="det-h2h-list">${h2h.slice(0,8).map(fx=>{
+          const home=frName(fx.teams?.home?.name||''), away=frName(fx.teams?.away?.name||'');
+          const hg=fx.goals?.home, ag=fx.goals?.away;
+          const date=fx.fixture?.date?new Date(fx.fixture.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'';
+          return `<div class="det-h2h-row">
+            <span class="det-h2h-date">${date}</span>
+            <span class="det-h2h-match">${esc(home)} <b>${hg??'-'} - ${ag??'-'}</b> ${esc(away)}</span>
+          </div>`;
+        }).join('')}</div>`;
+      }catch(e){
+        el.innerHTML='<div class="det-empty">Confrontations non disponibles.</div>';
+      }
+    }
+
     function closeModal(){currentOpenMatchId=null;modal.classList.remove('open');unlockModalScroll();modal.querySelector('.modal-card').classList.remove('stadium-modal');modal.querySelector('.modal-head b').textContent='Détail du match'; const mb=document.getElementById('modalBody'); if(mb) mb.scrollTop=0;}
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open')) closeModal()});
     async function shareMatch(id){id=String(id);let m=data.find(x=>String(x.id)===id); if(!m)return;let text=`${m.home} vs ${m.away} · ${dateLabel(m.date)} à ${m.time} · ${m.stadium}, ${m.city} · Diffusion : ${m.tv}`; if(navigator.share) await navigator.share({title:'Coupe du Monde 2026',text,url:location.href}); else {await navigator.clipboard.writeText(text+' '+location.href); alert('Match copié !')}}
@@ -848,4 +1089,119 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           el.scrollIntoView({behavior:'smooth',block:'start'});
         }
       },160);
+    }
+
+    // ── Featured box : gestion onglets + chargement stats/lineups ──
+    function setFeaturedTab(tab){
+      document.querySelectorAll('.hm-fz-tab').forEach(b=>b.classList.toggle('hm-fz-tab-active',b.dataset.tab===tab));
+      document.querySelectorAll('.hm-fz-panel').forEach(p=>{p.style.display=p.dataset.panel===tab?'block':'none'});
+    }
+
+    async function loadFeaturedStats(m){
+      const el=document.getElementById('hmStatsPanel');
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const stats=json.stats||[];
+        if(stats.length<2){ el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const h=stats[0], a=stats[1];
+        function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
+        function statBar(label,hVal,aVal){
+          const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
+          const tot=hNum+aNum||1;
+          const hPct=Math.round((hNum/tot)*100);
+          return `<div class="hm-fz-stat-row">
+            <span class="hm-fz-stat-val">${hVal}</span>
+            <div class="hm-fz-stat-bar-wrap">
+              <div class="hm-fz-stat-bar"><div class="hm-fz-stat-fill hm-fz-stat-home" style="width:${hPct}%"></div></div>
+              <span class="hm-fz-stat-label">${label}</span>
+              <div class="hm-fz-stat-bar"><div class="hm-fz-stat-fill hm-fz-stat-away" style="width:${100-hPct}%"></div></div>
+            </div>
+            <span class="hm-fz-stat-val">${aVal}</span>
+          </div>`;
+        }
+        el.innerHTML=`
+          <div class="hm-fz-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
+          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
+          ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
+          ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
+          ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
+          ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
+          ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
+          ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
+          ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
+          ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
+          ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
+        `;
+      }catch(e){
+        el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadFeaturedLineups(m){
+      const el=document.getElementById('hmLineupsPanel');
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-lineups?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const lineups=json.lineups||[];
+        if(lineups.length<2){ el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>'; return; }
+
+        const home=lineups[0], away=lineups[1];
+        const homeXI=(home.startXI||[]).map(p=>p.player);
+        const awayXI=(away.startXI||[]).map(p=>p.player);
+
+        function parseGrid(grid){
+          if(!grid) return null;
+          const [row,col]=String(grid).split(':').map(Number);
+          return {row,col};
+        }
+        function groupByRow(xi){
+          const rows={};
+          xi.forEach(p=>{
+            const g=parseGrid(p.grid);
+            if(!g) return;
+            if(!rows[g.row]) rows[g.row]=[];
+            rows[g.row].push({...p,col:g.col});
+          });
+          return rows;
+        }
+        function renderTeamOnPitch(xi,isHome){
+          const rows=groupByRow(xi);
+          const rowKeys=Object.keys(rows).map(Number).sort((a,b)=>a-b);
+          const totalRows=rowKeys.length||1;
+          return rowKeys.map((rk,idx)=>{
+            const players=rows[rk].sort((a,b)=>a.col-b.col);
+            const colCount=players.length||1;
+            const vertPct=isHome ? 95 - (idx/(totalRows-1||1))*38 : 5 + (idx/(totalRows-1||1))*38;
+            return players.map((p,ci)=>{
+              const horizPct=((ci+1)/(colCount+1))*100;
+              return `<div class="pitch-player ${isHome?'pitch-home':'pitch-away'}" style="left:${horizPct}%;top:${vertPct}%">
+                <div class="pitch-player-dot">${p.number??''}</div>
+                <div class="pitch-player-name">${esc((p.name||'').split(' ').pop())}</div>
+              </div>`;
+            }).join('');
+          }).join('');
+        }
+
+        el.innerHTML=`
+          <div class="pitch-header">
+            <div class="pitch-team-info"><b>${esc(home.team?.name||'')}</b><span>${esc(home.formation||'')}</span></div>
+            <div class="pitch-team-info pitch-team-info-right"><b>${esc(away.team?.name||'')}</b><span>${esc(away.formation||'')}</span></div>
+          </div>
+          <div class="pitch-wrap">
+            <div class="pitch">
+              <div class="pitch-halfway"></div>
+              <div class="pitch-circle"></div>
+              ${renderTeamOnPitch(homeXI,true)}
+              ${renderTeamOnPitch(awayXI,false)}
+            </div>
+          </div>
+        `;
+      }catch(e){
+        el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>';
+      }
     }
