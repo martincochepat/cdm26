@@ -562,3 +562,53 @@ body:not(.home-active) .hero{
 .bk-pen{font-size:10px;color:#ffd166;font-weight:800;text-align:center;margin-top:3px}
 
 .list-pen{text-align:center;font-size:12px;color:#ffd166;font-weight:900;background:#ffd16615;border:1px solid #ffd16640;border-radius:99px;padding:4px 12px;margin:8px auto 14px;width:fit-content}
+
+/* ── Featured box premium style Flashscore V84 ──────────────── */
+.hm-fz-tabs{display:flex;gap:6px;margin:16px 0 14px;border-bottom:1px solid #ffffff12;padding-bottom:0}
+.hm-fz-tab{flex:1;padding:10px 8px;background:transparent;border:none;border-bottom:2px solid transparent;color:#8fa6bd;font-weight:900;font-size:12px;cursor:pointer;transition:.2s}
+.hm-fz-tab:hover{color:#dcecff}
+.hm-fz-tab-active{color:#ffd166!important;border-bottom-color:#ffd166!important}
+.hm-fz-panel{margin-bottom:16px}
+.hm-fz-empty{color:#8fa6bd;font-size:13px;text-align:center;padding:20px}
+.hm-fz-stats-loading{color:#8fa6bd;font-size:13px;text-align:center;padding:20px}
+
+/* Timeline résumé */
+.hm-fz-timeline{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto;padding-right:4px}
+.hm-fz-timeline::-webkit-scrollbar{width:4px}
+.hm-fz-timeline::-webkit-scrollbar-thumb{background:#ffffff20;border-radius:99px}
+.hm-fz-event{display:grid;grid-template-columns:32px 22px 1fr;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:#ffffff06}
+.hm-fz-event-home{border-left:2px solid #ffd16650}
+.hm-fz-event-away{border-left:2px solid #ef334050}
+.hm-fz-min{font-size:10px;font-weight:950;color:#ffd166;text-align:right}
+.hm-fz-icon{font-size:14px;text-align:center}
+.hm-fz-desc{font-size:11px;font-weight:700;color:#dcecff}
+.hm-fz-sub{color:#8fa6bd;font-size:10px;font-weight:600}
+
+/* Stats bars */
+.hm-fz-stats-header{display:flex;justify-content:space-between;font-size:12px;font-weight:900;color:#8fa6bd;margin-bottom:10px}
+.hm-fz-stat-row{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:8px;margin-bottom:9px}
+.hm-fz-stat-val{font-size:12px;font-weight:950;color:#fff;text-align:center}
+.hm-fz-stat-bar-wrap{display:flex;flex-direction:column;gap:3px;align-items:center}
+.hm-fz-stat-label{font-size:10px;color:#8fa6bd;font-weight:700;text-align:center}
+.hm-fz-stat-bar{width:100%;height:5px;background:#ffffff10;border-radius:99px;overflow:hidden}
+.hm-fz-stat-fill{height:100%;border-radius:99px}
+.hm-fz-stat-home{background:linear-gradient(90deg,#ffd166,#ff9f43);float:left}
+.hm-fz-stat-away{background:linear-gradient(90deg,#ef3340,#ff6b6b);float:right}
+
+/* Compositions */
+.hm-fz-lineups-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hm-fz-lineup-team{font-size:11px}
+.hm-fz-lineup-head{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #ffffff10}
+.hm-fz-lineup-head b{font-size:13px;color:#dcecff}
+.hm-fz-lineup-head span{font-size:10px;color:#8fa6bd;font-weight:700}
+.hm-fz-lineup-list{display:flex;flex-direction:column;gap:4px}
+.hm-fz-player{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:6px;padding:4px 6px;border-radius:8px;background:#ffffff06}
+.hm-fz-player-num{font-size:10px;font-weight:950;color:#ffd166;text-align:center}
+.hm-fz-player-pos{font-size:9px;color:#8fa6bd;font-weight:700}
+.hm-fz-player-sub{opacity:.7}
+.hm-fz-subs-title{font-size:10px;color:#8fa6bd;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
+
+@media(max-width:640px){
+  .hm-fz-lineups-grid{grid-template-columns:1fr}
+  .hm-fz-tab{font-size:11px;padding:8px 4px}
+}
