@@ -46,6 +46,7 @@ let data = [
         winner: row.winner || '',
         pen_a: row.pen_a === null || row.pen_a === undefined || row.pen_a === '' ? null : Number(row.pen_a),
         pen_b: row.pen_b === null || row.pen_b === undefined || row.pen_b === '' ? null : Number(row.pen_b),
+        api_fixture_id: row.api_fixture_id || null,
         _dynamic: true
       }
     }
