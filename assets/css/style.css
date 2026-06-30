@@ -632,3 +632,8 @@ body:not(.home-active) .hero{
 .lr-match:hover .lr-cta{color:#ffd166}
 .lr-arrow{transition:.2s}
 .lr-match:hover .lr-arrow{transform:translateX(2px)}
+
+/* ── Titre contextuel premium ─────────────────────────────────── */
+.hm-title-eyebrow{font-size:11px;font-weight:950;color:#ffd166;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+#featuredBox{position:relative;overflow:hidden}
+#featuredBox::before{content:'';position:absolute;top:-50%;right:-20%;width:60%;height:200%;background:radial-gradient(circle,#ffd16608,transparent 70%);pointer-events:none}
