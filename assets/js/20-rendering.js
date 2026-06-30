@@ -939,8 +939,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             const colCount=players.length||1;
             // Position verticale : home en bas (100%->50%), away en haut (50%->0%)
             const vertPct=isHome
-              ? 92 - (idx/(totalRows-1||1))*42
-              : 8 + (idx/(totalRows-1||1))*42;
+              ? 95 - (idx/(totalRows-1||1))*38
+              : 5 + (idx/(totalRows-1||1))*38;
             return players.map((p,ci)=>{
               const horizPct=((ci+1)/(colCount+1))*100;
               return `<div class="pitch-player ${isHome?'pitch-home':'pitch-away'}" style="left:${horizPct}%;top:${vertPct}%">
@@ -1176,7 +1176,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           return rowKeys.map((rk,idx)=>{
             const players=rows[rk].sort((a,b)=>a.col-b.col);
             const colCount=players.length||1;
-            const vertPct=isHome ? 92 - (idx/(totalRows-1||1))*42 : 8 + (idx/(totalRows-1||1))*42;
+            const vertPct=isHome ? 95 - (idx/(totalRows-1||1))*38 : 5 + (idx/(totalRows-1||1))*38;
             return players.map((p,ci)=>{
               const horizPct=((ci+1)/(colCount+1))*100;
               return `<div class="pitch-player ${isHome?'pitch-home':'pitch-away'}" style="left:${horizPct}%;top:${vertPct}%">
