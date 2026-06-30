@@ -23,6 +23,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const tvList=(tvToday.length?tvToday:upcoming.filter(m=>m.tv.includes('M6')||m.tv.includes('beIN'))).slice(0,3);
       const tvTitle=tvToday.length?'Ce soir à la TV':'Prochaines diffusions TV';
       const mainMatch=liveMatches[0]||upcoming[0]||finished[0];
+      const lastResult=finished[0]; // pour le bloc "dernier résultat" séparé
       const mainStatus=mainMatch?matchStatusKey(mainMatch):'upcoming';
       const followed=[...followedTeams];
 
@@ -153,6 +154,37 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         }
       } else {
         featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
+      }
+
+      // ── DERNIER RÉSULTAT (bloc compact, si différent du featured) ──
+      if(document.getElementById('lastResultBox')){
+        const lrBox=document.getElementById('lastResultBox');
+        if(lastResult && lastResult.id!==mainMatch?.id){
+          const lrEvents=matchEventsByMatchId[String(lastResult.id)]||[];
+          const lrGoals=lrEvents.filter(e=>{
+            const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+            return !d.includes('missed')&&(t==='goal'||d.includes('goal')||d.includes('penalty'));
+          });
+          const lrWinner=lastResult.winner;
+          const lrWH=lrWinner&&lrWinner===lastResult.home;
+          const lrWA=lrWinner&&lrWinner===lastResult.away;
+          const lrPen=(lastResult.pen_a!=null&&lastResult.pen_b!=null)?` <span class="lr-pen">(tab ${lastResult.pen_a}-${lastResult.pen_b})</span>`:'';
+          lrBox.innerHTML=`
+            <h2 class="card-title">✅ Dernier résultat</h2>
+            <div class="lr-match" onclick="openDetail(${jsArg(lastResult.id)})">
+              <div class="lr-phase">${esc(lastResult.phase)}</div>
+              <div class="lr-teams">
+                <div class="lr-team ${lrWH?'lr-winner':''}"><span class="lr-flag">${flags[lastResult.home]||'🏳️'}</span><span class="lr-name">${esc(lastResult.home)}</span></div>
+                <div class="lr-score">${lastResult.score_a} - ${lastResult.score_b}${lrPen}</div>
+                <div class="lr-team lr-team-right ${lrWA?'lr-winner':''}"><span class="lr-name">${esc(lastResult.away)}</span><span class="lr-flag">${flags[lastResult.away]||'🏳️'}</span></div>
+              </div>
+              ${lrGoals.length?`<div class="lr-goals">${lrGoals.slice(0,4).map(e=>`⚽ ${e.elapsed?e.elapsed+"'":''} ${esc(e.player_name||'')}`).join(' · ')}</div>`:''}
+            </div>
+            <button class="home-btn home-btn-secondary" onclick="openDetail(${jsArg(lastResult.id)})">Voir les stats complètes →</button>
+          `;
+        } else {
+          lrBox.style.display='none';
+        }
       }
 
       // ── CE SOIR À LA TV ────────────────────────────────────────
