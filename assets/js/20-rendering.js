@@ -26,7 +26,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const mainStatus=mainMatch?matchStatusKey(mainMatch):'upcoming';
       const followed=[...followedTeams];
 
-      // ── FEATURED BOX ──────────────────────────────────────────
+      // ── FEATURED BOX (premium, style Flashscore) ──────────────
       if(mainMatch){
         const isLive=mainStatus==='live';
         const isDone=mainStatus==='finished';
@@ -35,7 +35,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const wA=isDone&&mainMatch.winner?(mainMatch.winner===mainMatch.away):(isDone&&scored&&Number(mainMatch.score_b)>Number(mainMatch.score_a));
         const freeTV=mainMatch.tv&&mainMatch.tv.includes('M6');
 
-        // Événements du match (buts)
         const events=matchEventsByMatchId[String(mainMatch.id)]||[];
         const goals=events.filter(e=>{
           const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
@@ -44,26 +43,69 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const homeGoals=goals.filter(e=>e.team_name===mainMatch.home||frName(e.team_name)===mainMatch.home);
         const awayGoals=goals.filter(e=>e.team_name===mainMatch.away||frName(e.team_name)===mainMatch.away);
 
-        // Badge statut
         const statusBadgeHtml=isLive
           ?`<span class="hm-live-badge">● EN DIRECT${mainMatch.minute?` · ${esc(mainMatch.minute)}'`:''}</span>`
           :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
           :`<span class="hm-next-badge">⏳ À venir</span>`;
 
-        // Barre de progression
         const pct=isLive&&mainMatch.minute?Math.min(100,Math.round((Number(mainMatch.minute)/90)*100)):isDone?100:0;
         const progressHtml=isLive||isDone?`<div class="hm-progress"><div class="hm-progress-bar${isLive?' hm-progress-live':''}" style="width:${pct}%"></div></div>`:'';
 
-        // Scorers
-        const scorerLine=(side,goals)=>goals.length
+        const scorerLine=(goals)=>goals.length
           ?`<div class="hm-scorers">${goals.map(e=>`<span>⚽ ${e.elapsed?e.elapsed+"'":''}  ${esc(e.player_name||'But')}</span>`).join('')}</div>`:'';
 
-        // Stats (depuis match_events si disponibles)
-        const statsHtml=''; // sera enrichi quand stats Supabase disponibles
+        const penHtml=(mainMatch.pen_a!=null&&mainMatch.pen_b!=null)?`<div class="hm-pen">Tirs au but : ${mainMatch.pen_a}-${mainMatch.pen_b}</div>`:'';
 
-        // Titre contextuel
-        const titleIcon=isLive?'🔴':isDone?'✅':'⏳';
-        const titleText=isLive?'Match en cours':isDone?'Dernier résultat':'Prochain match';
+        // ── Onglets (uniquement pertinents si live ou terminé) ──
+        const showTabs=isLive||isDone;
+        const tabsNav=showTabs?`
+          <div class="hm-fz-tabs">
+            <button class="hm-fz-tab hm-fz-tab-active" data-tab="resume" onclick="setFeaturedTab('resume')">Résumé</button>
+            <button class="hm-fz-tab" data-tab="stats" onclick="setFeaturedTab('stats')">Stats</button>
+            <button class="hm-fz-tab" data-tab="lineups" onclick="setFeaturedTab('lineups')">Compositions</button>
+          </div>`:'';
+
+        // ── Panel Résumé : timeline complète ──
+        function eventIcon(e){
+          const t=String(e.event_type||'').toLowerCase(),d=String(e.detail||'').toLowerCase();
+          if(t==='goal'&&d.includes('own')) return '⚽🔴';
+          if(t==='goal') return '⚽';
+          if(t==='card'&&d.includes('yellow')) return '🟨';
+          if(t==='card'&&d.includes('red')) return '🟥';
+          if(t==='subst') return '🔄';
+          return '•';
+        }
+        function eventDesc(e){
+          const t=String(e.event_type||'').toLowerCase();
+          if(t==='goal') return `${esc(e.player_name||'But')}${e.assist_name?' <span class="hm-fz-sub">(passe: '+esc(e.assist_name)+')</span>':''}`;
+          if(t==='card') return `${esc(e.player_name||'')} <span class="hm-fz-sub">${esc(e.detail||'')}</span>`;
+          if(t==='subst') return `↑ ${esc(e.player_name||'')} <span class="hm-fz-sub">↓ ${esc(e.assist_name||'')}</span>`;
+          return esc(e.player_name||'');
+        }
+        const allEvents=[...events].sort((a,b)=>Number(a.elapsed||0)-Number(b.elapsed||0));
+        const resumePanel=allEvents.length?`
+          <div class="hm-fz-timeline">
+            ${allEvents.map(e=>{
+              const isHome=e.team_name===mainMatch.home||frName(e.team_name)===mainMatch.home;
+              return `<div class="hm-fz-event ${isHome?'hm-fz-event-home':'hm-fz-event-away'}">
+                <div class="hm-fz-min">${e.elapsed?e.elapsed+"'":''}${e.extra?'+'+e.extra:''}</div>
+                <div class="hm-fz-icon">${eventIcon(e)}</div>
+                <div class="hm-fz-desc">${eventDesc(e)}</div>
+              </div>`;
+            }).join('')}
+          </div>`:`<div class="hm-fz-empty">${isLive?'Aucun événement pour le moment.':isDone?'Aucun événement enregistré.':''}</div>`;
+
+        // ── Panel Stats (placeholder, chargé en async) ──
+        const statsPanel=`<div id="hmStatsPanel" class="hm-fz-stats-loading">Chargement des statistiques...</div>`;
+
+        // ── Panel Compositions (placeholder, chargé en async) ──
+        const lineupsPanel=`<div id="hmLineupsPanel" class="hm-fz-stats-loading">Chargement des compositions...</div>`;
+
+        const panelsHtml=showTabs?`
+          <div class="hm-fz-panel" data-panel="resume">${resumePanel}</div>
+          <div class="hm-fz-panel" data-panel="stats" style="display:none">${statsPanel}</div>
+          <div class="hm-fz-panel" data-panel="lineups" style="display:none">${lineupsPanel}</div>
+        `:'';
 
         featuredBox.innerHTML=`
           <div class="hm-match-header">
@@ -77,21 +119,23 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             <div class="hm-team ${wH?'hm-winner':''}">
               <span class="hm-flag">${flags[mainMatch.home]||'🏳️'}</span>
               <span class="hm-team-name">${esc(mainMatch.home)}</span>
-              ${scorerLine('home',homeGoals)}
+              ${scorerLine(homeGoals)}
             </div>
             <div class="hm-score-block">
               ${scored
-                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>` + (mainMatch.pen_a!=null&&mainMatch.pen_b!=null?'<div class="hm-pen">Tirs au but : '+mainMatch.pen_a+'-'+mainMatch.pen_b+'</div>':'')
+                ?`<div class="hm-score${isLive?' hm-score-live':''}">${mainMatch.score_a} <span class="hm-score-sep">-</span> ${mainMatch.score_b}</div>` + penHtml
                 :`<div class="hm-vs">VS</div><div class="hm-kickoff">${esc(mainMatch.time)}</div>`
               }
             </div>
             <div class="hm-team hm-team-right ${wA?'hm-winner':''}">
               <span class="hm-team-name">${esc(mainMatch.away)}</span>
               <span class="hm-flag">${flags[mainMatch.away]||'🏳️'}</span>
-              ${scorerLine('away',awayGoals)}
+              ${scorerLine(awayGoals)}
             </div>
           </div>
           ${progressHtml}
+          ${tabsNav}
+          ${panelsHtml}
           <div class="hm-meta-grid">
             <div class="hm-meta-item"><span class="hm-meta-label">📅 Date</span><span class="hm-meta-val">${smartDateLabel(mainMatch)}</span></div>
             <div class="hm-meta-item"><span class="hm-meta-label">⏰ Heure</span><span class="hm-meta-val">${esc(mainMatch.time)}</span></div>
@@ -101,6 +145,12 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           </div>
           <button class="home-btn home-btn-primary" onclick="openDetail(${jsArg(mainMatch.id)})">Voir le détail complet →</button>
         `;
+
+        // Charger stats + lineups si en direct ou terminé et fixture_id dispo
+        if(mainMatch.api_fixture_id && showTabs){
+          loadFeaturedStats(mainMatch);
+          loadFeaturedLineups(mainMatch);
+        }
       } else {
         featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
       }
@@ -848,4 +898,85 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           el.scrollIntoView({behavior:'smooth',block:'start'});
         }
       },160);
+    }
+
+    // ── Featured box : gestion onglets + chargement stats/lineups ──
+    function setFeaturedTab(tab){
+      document.querySelectorAll('.hm-fz-tab').forEach(b=>b.classList.toggle('hm-fz-tab-active',b.dataset.tab===tab));
+      document.querySelectorAll('.hm-fz-panel').forEach(p=>{p.style.display=p.dataset.panel===tab?'block':'none'});
+    }
+
+    async function loadFeaturedStats(m){
+      const el=document.getElementById('hmStatsPanel');
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-stats?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const stats=json.stats||[];
+        if(stats.length<2){ el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>'; return; }
+        const h=stats[0], a=stats[1];
+        function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
+        function statBar(label,hVal,aVal){
+          const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
+          const tot=hNum+aNum||1;
+          const hPct=Math.round((hNum/tot)*100);
+          return `<div class="hm-fz-stat-row">
+            <span class="hm-fz-stat-val">${hVal}</span>
+            <div class="hm-fz-stat-bar-wrap">
+              <div class="hm-fz-stat-bar"><div class="hm-fz-stat-fill hm-fz-stat-home" style="width:${hPct}%"></div></div>
+              <span class="hm-fz-stat-label">${label}</span>
+              <div class="hm-fz-stat-bar"><div class="hm-fz-stat-fill hm-fz-stat-away" style="width:${100-hPct}%"></div></div>
+            </div>
+            <span class="hm-fz-stat-val">${aVal}</span>
+          </div>`;
+        }
+        el.innerHTML=`
+          <div class="hm-fz-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
+          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
+          ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
+          ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
+          ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
+          ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
+          ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
+          ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
+          ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
+          ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
+          ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
+        `;
+      }catch(e){
+        el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>';
+      }
+    }
+
+    async function loadFeaturedLineups(m){
+      const el=document.getElementById('hmLineupsPanel');
+      if(!el) return;
+      try{
+        const res=await fetch(`/api/match-lineups?fixture_id=${encodeURIComponent(m.api_fixture_id)}`);
+        if(!res.ok){ el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>'; return; }
+        const json=await res.json();
+        const lineups=json.lineups||[];
+        if(lineups.length<2){ el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>'; return; }
+        function teamLineup(t){
+          const coach=t.coach?.name||'';
+          const formation=t.formation||'';
+          const startXI=(t.startXI||[]).map(p=>p.player);
+          const subs=(t.substitutes||[]).map(p=>p.player);
+          return `
+            <div class="hm-fz-lineup-team">
+              <div class="hm-fz-lineup-head"><b>${esc(t.team?.name||'')}</b><span>${esc(formation)} · ${esc(coach)}</span></div>
+              <div class="hm-fz-lineup-list">
+                ${startXI.map(p=>`<div class="hm-fz-player"><span class="hm-fz-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span><span class="hm-fz-player-pos">${esc(p.pos||'')}</span></div>`).join('')}
+              </div>
+              <div class="hm-fz-subs-title">Remplaçants</div>
+              <div class="hm-fz-lineup-list hm-fz-lineup-subs">
+                ${subs.map(p=>`<div class="hm-fz-player hm-fz-player-sub"><span class="hm-fz-player-num">${p.number??''}</span><span>${esc(p.name||'')}</span></div>`).join('')}
+              </div>
+            </div>`;
+        }
+        el.innerHTML=`<div class="hm-fz-lineups-grid">${teamLineup(lineups[0])}${teamLineup(lineups[1])}</div>`;
+      }catch(e){
+        el.innerHTML='<div class="hm-fz-empty">Compositions non disponibles pour ce match.</div>';
+      }
     }
