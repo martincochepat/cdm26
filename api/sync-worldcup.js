@@ -190,7 +190,7 @@ async function fetchWorldCupFixtures() {
 }
 
 async function supabaseGetMatches() {
-  const url = `${SUPABASE_URL}/rest/v1/matches?select=id,date,time_fr,team_a,team_b,phase,round,status,score_a,score_b,minute,winner,api_fixture_id&date=gte.2026-06-01&date=lte.2026-07-31`;
+  const url = `${SUPABASE_URL}/rest/v1/matches?select=id,date,time_fr,team_a,team_b,phase,status,score_a,score_b,minute,winner,api_fixture_id&date=gte.2026-06-01&date=lte.2026-07-31`;
   const r = await fetch(url, {
     headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
   });
