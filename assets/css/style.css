@@ -558,5 +558,7 @@ body:not(.home-active) .hero{
 
 /* Tirs au but */
 .hm-pen{font-size:11px;color:#ffd166;font-weight:800;text-align:center;margin-top:4px}
-.det-pen{font-size:13px;color:#ffd166;font-weight:800;text-align:center;margin-top:6px}
+.det-pen{font-size:12px;color:#ffd166;font-weight:900;text-align:center;margin-top:8px;background:#ffd16615;border:1px solid #ffd16640;border-radius:99px;padding:4px 10px;white-space:nowrap}
 .bk-pen{font-size:10px;color:#ffd166;font-weight:800;text-align:center;margin-top:3px}
+
+.list-pen{text-align:center;font-size:12px;color:#ffd166;font-weight:900;background:#ffd16615;border:1px solid #ffd16640;border-radius:99px;padding:4px 12px;margin:8px auto 0;width:fit-content}
