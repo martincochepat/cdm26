@@ -109,8 +109,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         `:'';
 
         featuredBox.innerHTML=`
+          <div class="hm-title-eyebrow">${isLive?'🔴 Match en cours':isDone?'✅ Dernier résultat':'⏳ Prochain match'}</div>
           <div class="hm-match-header">
-            <span class="hm-phase-tag">${esc(mainMatch.phase)} · ${esc(mainMatch.round)}</span>
+            <span class="hm-phase-tag">${esc(mainMatch.phase)}${mainMatch.round&&mainMatch.round!==mainMatch.phase?' · '+esc(mainMatch.round):''}</span>
             <div class="hm-match-actions">
               <button class="fav ${favs.has(String(mainMatch.id))?'on':''}" onclick="toggleFav(${jsArg(mainMatch.id)})">${favs.has(String(mainMatch.id))?'★':'☆'}</button>
               ${statusBadgeHtml}
