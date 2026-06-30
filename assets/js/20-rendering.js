@@ -840,8 +840,10 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
               const h=stats[0], a=stats[1];
               function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?found.value??0:0;}
               function statBar(label,hVal,aVal){
-                const tot=Number(hVal)+Number(aVal)||1;
-                const hPct=Math.round((Number(hVal)/tot)*100);
+                const hNum=parseFloat(String(hVal).replace('%',''))||0;
+                const aNum=parseFloat(String(aVal).replace('%',''))||0;
+                const tot=hNum+aNum||1;
+                const hPct=Math.round((hNum/tot)*100);
                 return `<div class="det-stat-row">
                   <span class="det-stat-val">${hVal}</span>
                   <div class="det-stat-bar-wrap">
@@ -866,7 +868,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
                     <span>${esc(m.home)}</span>
                     <span>${esc(m.away)}</span>
                   </div>
-                  ${statBar('Possession',poss+'%',possA+'%')}
+                  ${statBar('Possession',poss,possA)}
                   ${statBar('Tirs',shots,shotsA)}
                   ${statBar('Tirs cadrés',shotsOn,shotsOnA)}
                   ${statBar('Corners',corners,cornersA)}
