@@ -776,3 +776,7 @@ body:not(.home-active) .hero{
   .lc-countdown{font-size:26px}
   .lc-mini-grid{grid-template-columns:1fr}
 }
+
+/* Animation BUT étendue au Live Center */
+.lc-focus-score-goal{animation:goalPulse .4s ease forwards!important}
+.lc-mini-goal{animation:goalPulse .4s ease!important;border-color:#ef334080!important}
