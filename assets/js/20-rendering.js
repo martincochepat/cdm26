@@ -46,7 +46,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const awayGoals=goals.filter(e=>e.team_name===mainMatch.away||frName(e.team_name)===mainMatch.away);
 
         const statusBadgeHtml=isLive
-          ?`<span class="hm-live-badge">● EN DIRECT${mainMatch.minute?` · ${esc(mainMatch.minute)}'`:''}</span>`
+          ?`<span class="hm-live-badge">● EN DIRECT${liveLabel(mainMatch)?' · '+liveLabel(mainMatch):''}</span>`
           :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
           :`<span class="hm-next-badge">⏳ À venir</span>`;
 
@@ -781,7 +781,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         :`<div class="det-vs">VS</div>`;
 
       const stBadge=isLive
-        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>`
+        ?`<span class="hm-live-badge">● EN DIRECT${liveLabel(m)?' · '+liveLabel(m):''}</span>`
         :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
         :`<span class="hm-next-badge">⏳ ${smartDateLabel(m)} · ${esc(m.time)}</span>`;
 
@@ -1282,7 +1282,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const isFocus=String(m.id)===liveCenterFocusId;
         const scored=m.score_a!==null&&m.score_a!==undefined;
         return `<button class="lc-mini ${isFocus?'lc-mini-active':''}" onclick="setLiveFocus(${jsArg(m.id)})">
-          <div class="lc-mini-top"><span class="lc-mini-live">● ${m.minute?esc(m.minute)+"'":'LIVE'}</span></div>
+          <div class="lc-mini-top"><span class="lc-mini-live">● ${liveLabel(m)||'LIVE'}</span></div>
           <div class="lc-mini-teams">
             <span class="lc-mini-team">${flags[m.home]||'🏳️'} ${esc(m.home)}</span>
             <span class="lc-mini-score">${scored?m.score_a+'-'+m.score_b:'vs'}</span>
@@ -1333,7 +1333,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <div class="lc-focus-card">
           <div class="lc-focus-top">
             <span class="lc-focus-phase">${esc(m.phase)}</span>
-            <span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>
+            <span class="hm-live-badge">● EN DIRECT${liveLabel(m)?' · '+liveLabel(m):''}</span>
           </div>
           <div class="lc-focus-teams" onclick="openDetail(${jsArg(m.id)})">
             <div class="lc-focus-team">
@@ -1372,4 +1372,13 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }
       tick();
       liveCountdownInterval=setInterval(tick,1000);
+    }
+
+    // Affiche "Mi-temps" / "Prolongation" / minute selon le statut détaillé
+    function liveLabel(m){
+      if(m.period==='HT') return 'Mi-temps';
+      if(m.period==='ET') return 'Prolongation'+(m.minute?' · '+esc(m.minute)+"'":'');
+      if(m.period==='PEN') return 'Tirs au but';
+      if(m.period==='BT') return 'Pause prolongation';
+      return m.minute?esc(m.minute)+"'":'';
     }
