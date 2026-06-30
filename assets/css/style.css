@@ -614,15 +614,21 @@ body:not(.home-active) .hero{
   .hm-fz-tab{font-size:11px;padding:8px 4px}
 }
 
-/* ── Dernier résultat (bloc compact) ─────────────────────────── */
+/* ── Dernier résultat (bloc compact, secondaire) ──────────────── */
+#lastResultBox{padding:18px 20px;background:#ffffff05;border:1px solid #ffffff10}
+.lr-eyebrow{font-size:10px;color:#8fa6bd;font-weight:900;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.lr-eyebrow::before{content:'';width:5px;height:5px;border-radius:50%;background:#00a859;display:inline-block}
 .lr-match{cursor:pointer}
-.lr-phase{font-size:11px;color:#8fa6bd;font-weight:800;margin-bottom:10px}
-.lr-teams{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-.lr-team{display:flex;align-items:center;gap:7px;flex:1}
+.lr-teams{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.lr-team{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
 .lr-team-right{justify-content:flex-end}
-.lr-flag{font-size:24px}
-.lr-name{font-size:13px;font-weight:800;color:#dcecff}
-.lr-winner .lr-name{color:#ffd166}
-.lr-score{font-size:18px;font-weight:950;color:#fff;background:#ffffff14;border-radius:10px;padding:5px 12px;white-space:nowrap}
+.lr-flag{font-size:22px;flex-shrink:0}
+.lr-name{font-size:13px;font-weight:800;color:#c8d6e5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr-winner .lr-name{color:#ffd166;font-weight:950}
+.lr-score{font-size:16px;font-weight:950;color:#fff;background:#ffffff12;border-radius:10px;padding:5px 12px;white-space:nowrap;flex-shrink:0}
 .lr-pen{font-size:10px;color:#ffd166;font-weight:700}
-.lr-goals{font-size:11px;color:#8fa6bd;text-align:center;padding-top:8px;border-top:1px solid #ffffff10}
+.lr-goals{font-size:11px;color:#8fa6bd;text-align:center;padding-top:10px;margin-top:2px;border-top:1px solid #ffffff08}
+.lr-cta{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:#8fa6bd;font-weight:800;margin-top:12px;transition:.2s}
+.lr-match:hover .lr-cta{color:#ffd166}
+.lr-arrow{transition:.2s}
+.lr-match:hover .lr-arrow{transform:translateX(2px)}
