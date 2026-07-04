@@ -554,9 +554,11 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       } else if(item){
         const quizKey=`wc26_quiz_${localDateKey()}_${item.id}`;
         const answered=localStorage.getItem(quizKey);
-        const options=(item.options||[]).filter(Boolean);
+        // Mélange les options aléatoirement (évite que la bonne réponse soit toujours en 1ère position)
+        const options=(item.options||[]).filter(Boolean).slice();
+        for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
         const sourceLabel=quizLoaded?'Question du jour':'Question locale';
-        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered?(o===item.correct_answer?'good':(o===answered?'bad':'')):''}\" ${answered?'disabled':''} onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
+        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered?(o===item.correct_answer?'good':(o===answered?'bad':'')):''}\" onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')" style="${answered?'pointer-events:none;':''}"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
       } else {
         quizBox.innerHTML='<div class="empty-soft">Quiz indisponible pour le moment.</div>';
       }
