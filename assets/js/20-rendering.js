@@ -914,8 +914,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
             <div class="det-poss-circle">
               <svg width="80" height="80" viewBox="0 0 80 80">
                 <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff10" stroke-width="7"/>
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#E24B4A" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference-awayDash}" stroke-linecap="round"/>
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#185FA5" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${homeDash}" stroke-linecap="round" opacity="0.9"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff30" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference-awayDash}" stroke-linecap="round"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffd166" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${homeDash}" stroke-linecap="round" opacity="0.9"/>
               </svg>
               <div class="det-poss-val"><span>${possH}%</span><span>poss.</span></div>
             </div>
