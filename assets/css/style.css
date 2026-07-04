@@ -520,8 +520,8 @@ body:not(.home-active) .hero{
 .det-stat-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
 .det-stat-label{font-size:10px;color:#8fa6bd;font-weight:700;text-align:center}
 .det-stat-bar{width:100%;display:flex;align-items:center;height:5px;gap:2px}
-.det-stat-home-bar{height:5px;border-radius:3px;background:#185FA5;transition:.3s}
-.det-stat-away-bar{height:5px;border-radius:3px;background:#E24B4A;transition:.3s}
+.det-stat-home-bar{height:5px;border-radius:3px;background:#ffd166;transition:.3s}
+.det-stat-away-bar{height:5px;border-radius:3px;background:#ffffff40;transition:.3s}
 .det-stat-divider{width:2px;height:7px;background:#ffffff15;flex-shrink:0;border-radius:1px}
 .det-poss-wrap{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:18px;padding:14px;background:#ffffff06;border-radius:16px;border:1px solid #ffffff10}
 .det-poss-circle{position:relative;width:80px;height:80px;flex-shrink:0}
@@ -532,8 +532,8 @@ body:not(.home-active) .hero{
 .det-poss-labels{display:flex;flex-direction:column;gap:8px}
 .det-poss-label{display:flex;align-items:center;gap:8px}
 .det-poss-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.det-poss-dot-home{background:#185FA5}
-.det-poss-dot-away{background:#E24B4A}
+.det-poss-dot-home{background:#ffd166}
+.det-poss-dot-away{background:#ffffff50}
 .det-poss-label span{font-size:12px;color:#8fa6bd}
 .det-poss-label strong{font-size:13px;color:#dcecff;font-weight:800;margin-left:auto;padding-left:12px}
 .det-stats-loading{color:#8fa6bd;font-size:13px;text-align:center;padding:16px}
@@ -653,11 +653,11 @@ body:not(.home-active) .hero{
 #featuredBox::before{content:'';position:absolute;top:-50%;right:-20%;width:60%;height:200%;background:radial-gradient(circle,#ffd16608,transparent 70%);pointer-events:none}
 
 /* ── Fiche match : onglets premium V85 ──────────────────────── */
-.det-tabs{display:flex;gap:6px;margin:18px 0 16px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.det-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:18px 0 16px}
 .det-tabs::-webkit-scrollbar{display:none}
-.det-tab{flex:0 0 auto;padding:7px 14px;background:#ffffff0a;border:1.5px solid #ffffff15;border-radius:99px;color:#8fa6bd;font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap;transition:.2s;text-align:center}
-.det-tab:hover{background:#ffffff14;color:#dcecff;border-color:#ffffff28}
-.det-tab-active{background:#ffd16620!important;border-color:#ffd16660!important;color:#ffd166!important}
+.det-tab{padding:8px 4px;background:#ffffff08;border:1px solid #ffffff12;border-radius:12px;color:#8fa6bd;font-weight:800;font-size:11px;cursor:pointer;white-space:nowrap;transition:.2s;text-align:center;width:100%}
+.det-tab:hover{background:#ffffff12;color:#dcecff}
+.det-tab-active{background:#ffd16618!important;border-color:#ffd16650!important;color:#ffd166!important}
 .det-panel{margin-bottom:18px}
 .det-empty{color:#8fa6bd;font-size:13px;text-align:center;padding:24px}
 .det-sub{color:#8fa6bd;font-size:11px;font-weight:600}
