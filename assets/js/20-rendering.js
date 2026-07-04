@@ -554,11 +554,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       } else if(item){
         const quizKey=`wc26_quiz_${localDateKey()}_${item.id}`;
         const answered=localStorage.getItem(quizKey);
-        // Mélange les options aléatoirement (évite que la bonne réponse soit toujours en 1ère position)
-        const options=(item.options||[]).filter(Boolean).slice();
-        for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
+        const options=(item.options||[]).filter(Boolean);
         const sourceLabel=quizLoaded?'Question du jour':'Question locale';
-        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered?(o===item.correct_answer?'good':(o===answered?'bad':'')):''}\" onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')" style="${answered?'pointer-events:none;':''}"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
+        quizBox.innerHTML=`<div class="mini" style="margin-bottom:8px;color:#adc0d2">${sourceLabel}</div><b>${esc(item.question)}</b>`+options.map(o=>`<button class="quiz-option ${answered?(o===item.correct_answer?'good':(o===answered?'bad':'')):''}\" ${answered?'disabled':''} onclick="answerQuiz('${esc(quizKey)}','${esc(o)}')"><span>${esc(o)}</span>${answered&&o===item.correct_answer?'✅':''}</button>`).join('')+(answered?'<div class="mini" style="margin-top:8px;color:#ffd166">Nouveau quiz demain.</div>':'');
       } else {
         quizBox.innerHTML='<div class="empty-soft">Quiz indisponible pour le moment.</div>';
       }
@@ -792,9 +790,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <div class="det-tabs">
           <button class="det-tab det-tab-active" data-tab="resume" onclick="setDetailTab('resume')">Résumé</button>
           <button class="det-tab" data-tab="stats" onclick="setDetailTab('stats')">Stats</button>
-          <button class="det-tab" data-tab="lineups" onclick="setDetailTab('lineups')">Compositions</button>
+          <button class="det-tab" data-tab="lineups" onclick="setDetailTab('lineups')">Compos</button>
           <button class="det-tab" data-tab="predictions" onclick="setDetailTab('predictions')">Prédictions</button>
-          <button class="det-tab" data-tab="h2h" onclick="setDetailTab('h2h')">Confrontations</button>
+          <button class="det-tab" data-tab="h2h" onclick="setDetailTab('h2h')">H2H</button>
         </div>`:'';
 
       const resumePanel=allEvents.length?`
@@ -895,16 +893,37 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           return `<div class="det-stat-row">
             <span class="det-stat-val">${hVal}</span>
             <div class="det-stat-bar-wrap">
-              <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
+              <div class="det-stat-bar">
+                <div class="det-stat-home-bar" style="flex:${hPct}"></div>
+                <div class="det-stat-divider"></div>
+                <div class="det-stat-away-bar" style="flex:${100-hPct}"></div>
+              </div>
               <span class="det-stat-label">${label}</span>
-              <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
             </div>
             <span class="det-stat-val">${aVal}</span>
           </div>`;
         }
+        const possH=parseFloat(String(getStat(h,'Ball Possession')).replace('%',''))||0;
+        const possA=parseFloat(String(getStat(a,'Ball Possession')).replace('%',''))||0;
+        const circumference=2*Math.PI*34;
+        const homeDash=Math.round((possH/100)*circumference);
+        const awayDash=Math.round((possA/100)*circumference);
         el.innerHTML=`
           <div class="det-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
-          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
+          <div class="det-poss-wrap">
+            <div class="det-poss-circle">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff10" stroke-width="7"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#E24B4A" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference-awayDash}" stroke-linecap="round"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#185FA5" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${homeDash}" stroke-linecap="round" opacity="0.9"/>
+              </svg>
+              <div class="det-poss-val"><span>${possH}%</span><span>poss.</span></div>
+            </div>
+            <div class="det-poss-labels">
+              <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-home"></div><span>${esc(m.home)}</span><strong>${possH}%</strong></div>
+              <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-away"></div><span>${esc(m.away)}</span><strong>${possA}%</strong></div>
+            </div>
+          </div>
           ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
           ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
           ${statBar('Tirs non cadrés',getStat(h,'Shots off Goal'),getStat(a,'Shots off Goal'))}
@@ -914,7 +933,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
           ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
           ${statBar('Arrêts gardien',getStat(h,'Goalkeeper Saves'),getStat(a,'Goalkeeper Saves'))}
-          ${statBar('Passes totales',getStat(h,'Total passes'),getStat(a,'Total passes'))}
           ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
           ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
         `;
