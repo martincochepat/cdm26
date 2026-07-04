@@ -140,7 +140,8 @@
             const pct = total ? Math.round(count * 100 / total) : 0;
             const selected = already === choice ? 'selected' : '';
             const isSelected = already === choice;
-            return `<button class="prediction-option ${selected}" ${already ? 'disabled' : ''} onclick="votePrediction(${jsArg(matchId)},'${choice}')" style="${isSelected ? 'background:linear-gradient(135deg,#ffd16633,#ff9f4333);border-color:#ffd166;box-shadow:0 0 0 2px #ffd16644' : ''}">
+            const isVoted = !!already;
+            return `<button class="prediction-option ${selected}" onclick="votePrediction(${jsArg(matchId)},'${choice}')" style="${isVoted?'pointer-events:none;':'cursor:pointer;'}${isSelected ? 'background:linear-gradient(135deg,#ffd16633,#ff9f4333);border-color:#ffd166;box-shadow:0 0 0 2px #ffd16644' : ''}">
               <b style="${isSelected ? 'color:#ffd166' : ''}">${isSelected ? '✅ ' : ''}${esc(predictionLabel(m, choice))}</b>
               <span>${pct}% · ${count}${isSelected ? ' · Mon vote' : ''}</span>
               <div class="prediction-bar" style="grid-column:1/-1"><i style="width:${pct}%;${isSelected ? 'background:linear-gradient(90deg,#ffd166,#ff9f43)' : ''}"></i></div>
