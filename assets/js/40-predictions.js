@@ -170,10 +170,10 @@
         </div>
         ${isKnockout?`
         <div class="pred-qualifier-wrap" id="predQualifierWrap" style="display:none">
-          <p class="prediction-sub">Score nul → qui se qualifie ?</p>
+          <p class="prediction-sub">Score nul : qui se qualifie ?</p>
           <div class="pred-qualifier-btns">
-            <button class="pred-qual-btn" id="predQualA" onclick="selectQualifier(${jsArg(m.home)})">${esc(m.home)}</button>
-            <button class="pred-qual-btn" id="predQualB" onclick="selectQualifier(${jsArg(m.away)})">${esc(m.away)}</button>
+            <button class="pred-qual-btn" id="predQualA" onclick="selectQualifier('${m.home}')">${esc(m.home)}</button>
+            <button class="pred-qual-btn" id="predQualB" onclick="selectQualifier('${m.away}')">${esc(m.away)}</button>
           </div>
         </div>`:''}
         <button class="pred-submit-btn" id="predSubmitBtn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>
@@ -209,9 +209,10 @@
       const m = data.find(x=>String(x.id)===String(matchId));
       const isKnockout = m && !String(m.phase||'').startsWith('Groupe');
 
-      // En phase finale, si score nul, qualifié obligatoire
+      // En phase finale, si score nul, qualifié obligatoire — affiche les boutons si pas encore choisi
       if(isKnockout && sa===sb && !_selectedQualifier){
-        alert('Score nul en phase finale : indique qui se qualifie !');
+        const wrap=document.getElementById('predQualifierWrap');
+        if(wrap) wrap.style.display='block';
         return;
       }
 
@@ -284,24 +285,36 @@
         return;
       }
       try{
-        if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
-          await authFetch(`match_predictions?user_id=eq.${currentUser.id}&match_id=eq.${matchId}`, {
-            method: 'DELETE',
-            headers: { Prefer: 'return=minimal' }
-          });
-        } else {
-          // User non connecté : supprimer par user_key
-          await supabaseDelete(`match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${matchId}`);
+        const url = typeof currentUser !== 'undefined' && currentUser
+          ? `match_predictions?user_id=eq.${currentUser.id}&match_id=eq.${String(matchId)}`
+          : `match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${String(matchId)}`;
+
+        const SUPA_URL = window._supabaseUrl || document.querySelector('[data-supabase-url]')?.dataset?.supabaseUrl;
+        const SUPA_KEY = window._supabaseKey || document.querySelector('[data-supabase-key]')?.dataset?.supabaseKey;
+
+        // Méthode directe via supabaseFetch si disponible
+        if(typeof supabaseFetch === 'function'){
+          await supabaseFetch(url, { method:'DELETE' });
+        } else if(typeof authFetch === 'function'){
+          await authFetch(url, { method:'DELETE', headers:{ Prefer:'return=minimal' } });
         }
+
         _selectedQualifier = null;
-        // Recharger les données puis re-rendre (petit délai pour laisser le temps à Supabase)
-        if(typeof loadDynamicData === 'function'){
-          await loadDynamicData();
-          await new Promise(r => setTimeout(r, 300));
+        // Vider localement predictionRows pour ce match puis re-rendre
+        if(Array.isArray(window.predictionRows)){
+          window.predictionRows = window.predictionRows.filter(r =>
+            !(String(r.match_id)===String(matchId) &&
+              (r.user_id===(currentUser?.id) || String(r.user_key)===String(predictionUserKey)))
+          );
+        }
+        if(typeof predictionRows !== 'undefined' && Array.isArray(predictionRows)){
+          predictionRows = predictionRows.filter(r =>
+            !(String(r.match_id)===String(matchId) &&
+              (r.user_id===(currentUser?.id) || String(r.user_key)===String(predictionUserKey)))
+          );
         }
         await renderPredictionBox(matchId);
       }catch(e){
-        console.error(e);
-        alert("Impossible de modifier le pronostic pour le moment.");
+        console.error('cancelPrediction error:', e);
       }
     }
