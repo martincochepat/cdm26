@@ -816,3 +816,5 @@ body:not(.home-active) .hero{
 .pred-voted-score{font-size:18px;font-weight:950;color:#dcecff;text-align:center;margin:10px 0}
 .pred-voted-score span{color:#ffd166;margin:0 8px}
 .pred-voted-qualifier{font-size:12px;color:#8fa6bd;text-align:center;margin-top:4px}
+.pred-modify-btn{width:100%;padding:10px;border-radius:14px;border:1px solid #ffffff20;background:transparent;color:#8fa6bd;font-weight:800;font-size:12px;cursor:pointer;margin-top:10px;transition:.2s}
+.pred-modify-btn:hover{border-color:#ffd16640;color:#ffd166}
