@@ -230,7 +230,7 @@
           score_a_pick: sa,
           score_b_pick: sb,
           qualifier_pick: qualifierPick,
-          user_key: predictionUserKey,
+          user_key: predictionUserKey || String(Date.now()),
         };
         if(typeof currentUser !== 'undefined' && currentUser) payload.user_id = currentUser.id;
 
