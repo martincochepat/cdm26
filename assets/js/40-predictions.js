@@ -147,6 +147,7 @@
           ${qp?`<div class="pred-voted-qualifier">Se qualifie : <b>${esc(qp)}</b></div>`:''}
           <p class="prediction-sub" style="margin-top:8px">Score exact → 5pts · Bon vainqueur → 3pts</p>
           <span class="prediction-total">${total} vote${total>1?'s':''}</span>
+          <button class="pred-modify-btn" onclick="cancelPrediction(${jsArg(matchId)})">✏️ Modifier mon pronostic</button>
         </div>`;
         return;
       }
@@ -159,12 +160,12 @@
         <div class="pred-score-inputs">
           <div class="pred-team-col">
             <span class="pred-team-name">${esc(m.home)}</span>
-            <input type="number" id="predScoreA" value="1" min="0" max="20" class="pred-score-input">
+            <input type="number" id="predScoreA" value="0" min="0" max="20" class="pred-score-input">
           </div>
           <span class="pred-dash">-</span>
           <div class="pred-team-col">
-            <input type="number" id="predScoreB" value="0" min="0" max="20" class="pred-score-input">
             <span class="pred-team-name">${esc(m.away)}</span>
+            <input type="number" id="predScoreB" value="0" min="0" max="20" class="pred-score-input">
           </div>
         </div>
         ${isKnockout?`
@@ -175,7 +176,7 @@
             <button class="pred-qual-btn" id="predQualB" onclick="selectQualifier(${jsArg(m.away)})">${esc(m.away)}</button>
           </div>
         </div>`:''}
-        <button class="pred-submit-btn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>
+        <button class="pred-submit-btn" id="predSubmitBtn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>
         <span class="prediction-total">${total} vote${total>1?'s':''}</span>
       </div>`;
 
@@ -244,6 +245,13 @@
         }
 
         _selectedQualifier = null;
+        // Feedback visuel immédiat
+        const submitBtn = document.getElementById('predSubmitBtn');
+        if(submitBtn){
+          submitBtn.textContent = '✅ Pronostic enregistré !';
+          submitBtn.style.background = 'linear-gradient(90deg,#00a859,#00c96e)';
+          submitBtn.disabled = true;
+        }
         await loadPredictions();
         await renderPredictionBox(matchId);
         if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
@@ -266,5 +274,28 @@
       }catch(e){
         console.error(e);
         alert("Impossible d'enregistrer le pronostic.");
+      }
+    }
+
+    async function cancelPrediction(matchId){
+      // Vérifie que le match n'a pas commencé
+      const m = data.find(x=>String(x.id)===String(matchId));
+      if(!m || matchStatusKey(m)==='live' || matchStatusKey(m)==='finished' || isPast(m)){
+        alert('Le match a déjà commencé, impossible de modifier ton pronostic.');
+        return;
+      }
+      try{
+        if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
+          await authFetch(`match_predictions?user_id=eq.${currentUser.id}&match_id=eq.${matchId}`, {
+            method: 'DELETE',
+            headers: { Prefer: 'return=minimal' }
+          });
+        }
+        _selectedQualifier = null;
+        await loadPredictions();
+        await renderPredictionBox(matchId);
+      }catch(e){
+        console.error(e);
+        alert("Impossible de modifier le pronostic pour le moment.");
       }
     }
