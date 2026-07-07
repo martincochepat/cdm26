@@ -223,12 +223,20 @@
 
       try{
         const id = String(matchId);
-        // Supprimer tout vote existant avant d'insérer (évite les doublons)
+        // Supprimer tout vote existant via fetch direct (évite les erreurs de parsing JSON de authFetch)
         try {
-          const delUrl = typeof currentUser !== 'undefined' && currentUser
-            ? `match_predictions?user_id=eq.${currentUser.id}&match_id=eq.${id}`
-            : `match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${id}`;
-          if(typeof authFetch === 'function') await authFetch(delUrl, {method:'DELETE',headers:{Prefer:'return=minimal'}});
+          const SUPABASE_URL = 'https://lclnnxirkuuwexxcmmho.supabase.co';
+          const SUPABASE_KEY = typeof currentUser !== 'undefined' && currentUser
+            ? (window.__supabaseToken || localStorage.getItem('supabase.auth.token') || '')
+            : '';
+          const delFilter = typeof currentUser !== 'undefined' && currentUser
+            ? `user_id=eq.${currentUser.id}&match_id=eq.${id}`
+            : `user_key=eq.${predictionUserKey}&match_id=eq.${id}`;
+          // Utiliser authFetch mais ignorer l'erreur de parsing
+          if(typeof authFetch === 'function'){
+            authFetch(`match_predictions?${delFilter}`, {method:'DELETE',headers:{Prefer:'return=minimal'}}).catch(()=>{});
+            await new Promise(r=>setTimeout(r,200));
+          }
         } catch(_){}
 
         const payload = {
