@@ -136,10 +136,14 @@
         const sa = pred?.score_a_pick;
         const sb = pred?.score_b_pick;
         const qp = pred?.qualifier_pick;
-        const scoreDisplay = (sa!==null&&sa!==undefined&&sb!==null&&sb!==undefined) ? `${sa} - ${sb}` : already==='draw'?'Nul':already==='home'?m.home:m.away;
+        const hasScore = sa!==null&&sa!==undefined&&sb!==null&&sb!==undefined;
+        const winnerLabel = already==='home'?m.home : already==='away'?m.away : 'Match nul';
         box.innerHTML = `<div class="prediction-card">
           <h3>✅ Ton pronostic</h3>
-          <div class="pred-voted-score">${esc(m.home)} <span>${scoreDisplay}</span> ${esc(m.away)}</div>
+          ${hasScore
+            ? `<div class="pred-voted-score">${esc(m.home)} <span>${sa} - ${sb}</span> ${esc(m.away)}</div>`
+            : `<div class="pred-voted-score"><span>${esc(winnerLabel)}</span></div>`
+          }
           ${qp?`<div class="pred-voted-qualifier">Se qualifie : <b>${esc(qp)}</b></div>`:''}
           <p class="prediction-sub" style="margin-top:8px">Score exact → 5pts · Bon vainqueur → 3pts</p>
           <span class="prediction-total">${total} vote${total>1?'s':''}</span>
