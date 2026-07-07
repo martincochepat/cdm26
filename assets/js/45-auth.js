@@ -204,7 +204,7 @@ async function handleAuthCallback() {
 async function recalculateUserPoints(userId) {
   try {
     // Récupère tous les pronostics de l'utilisateur
-    const preds = await authFetch(`match_predictions?user_id=eq.${userId}&select=match_id,choice`);
+    const preds = await authFetch(`match_predictions?user_id=eq.${userId}&select=match_id,choice,score_a_pick,score_b_pick,qualifier_pick`);
 
     let points = 0;
     let correct = 0;
@@ -215,14 +215,45 @@ async function recalculateUserPoints(userId) {
       if (!match || (match.status !== 'finished' && matchStatusKey(match) !== 'finished')) continue;
       if (match.score_a === null || match.score_b === null) continue;
 
-      // realResult en home/draw/away pour matcher pred.choice
-      const realResult = match.score_a > match.score_b ? 'home'
-        : match.score_a < match.score_b ? 'away'
-        : 'draw';
+      const realA = Number(match.score_a);
+      const realB = Number(match.score_b);
+      const realResult = realA > realB ? 'home' : realA < realB ? 'away' : 'draw';
 
-      if (pred.choice === realResult) {
-        points += 3;
-        correct++;
+      // Score exact → +5pts
+      if (pred.score_a_pick !== null && pred.score_a_pick !== undefined &&
+          pred.score_b_pick !== null && pred.score_b_pick !== undefined &&
+          Number(pred.score_a_pick) === realA && Number(pred.score_b_pick) === realB) {
+        // En phase finale avec nul : vérifier aussi le qualifié
+        const isKnockout = !String(match.phase||'').startsWith('Groupe');
+        if (isKnockout && realResult === 'draw') {
+          const realWinner = match.winner && match.winner !== 'draw' ? match.winner : null;
+          if (realWinner && pred.qualifier_pick === realWinner) {
+            points += 5;
+            correct++;
+          } else if (!pred.qualifier_pick) {
+            // Score exact sans qualifié → +3pts quand même
+            points += 3;
+            correct++;
+          }
+        } else {
+          points += 5;
+          correct++;
+        }
+      }
+      // Bon vainqueur (pas score exact) → +3pts
+      else if (pred.choice === realResult) {
+        // Phase finale nul : vérifier le qualifié
+        const isKnockout = !String(match.phase||'').startsWith('Groupe');
+        if (isKnockout && realResult === 'draw' && pred.qualifier_pick) {
+          const realWinner = match.winner && match.winner !== 'draw' ? match.winner : null;
+          if (realWinner && pred.qualifier_pick === realWinner) {
+            points += 3;
+            correct++;
+          }
+        } else if (!(isKnockout && realResult === 'draw' && !pred.qualifier_pick)) {
+          points += 3;
+          correct++;
+        }
       }
     }
 
@@ -400,7 +431,8 @@ function renderAuthBlock(myRank) {
             <p style="color:#b9c9d8;line-height:1.65;margin:0;font-size:15px">Vote sur chaque match, réponds au quiz du jour.<br>Les points tombent dès que les résultats sont officiels.</p>
           </div>
           <div style="display:flex;gap:10px;flex-shrink:0">
-            <div style="display:flex;flex-direction:column;align-items:center;background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px 18px;font-size:13px;gap:5px;color:#eaf5ff;text-align:center">✅ Vainqueur<b style="color:#ffd166;font-size:19px;font-weight:950;display:block">+3 pts</b></div>
+            <div style="display:flex;flex-direction:column;align-items:center;background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px 18px;font-size:13px;gap:5px;color:#eaf5ff;text-align:center">🎯 Score exact<b style="color:#ffd166;font-size:19px;font-weight:950;display:block">+5 pts</b></div>
+            <div style="display:flex;flex-direction:column;align-items:center;background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px 18px;font-size:13px;gap:5px;color:#eaf5ff;text-align:center">✅ Bon vainqueur<b style="color:#ffd166;font-size:19px;font-weight:950;display:block">+3 pts</b></div>
             <div style="display:flex;flex-direction:column;align-items:center;background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px 18px;font-size:13px;gap:5px;color:#eaf5ff;text-align:center">🧠 Quiz<b style="color:#ffd166;font-size:19px;font-weight:950;display:block">+2 pts</b></div>
           </div>
         </div>

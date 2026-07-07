@@ -90,67 +90,165 @@
       if(!box) return;
       const m = data.find(x => String(x.id) === String(matchId));
       if(!m) return;
+      const isKnockout = !String(m.phase||'').startsWith('Groupe');
 
-      // Match terminé
-      if(matchStatusKey(m) === 'finished' || isPast(m)){
-        box.innerHTML = `<div class="prediction-card"><h3>🔒 Pronostic fermé</h3><p class="prediction-sub">Ce match est déjà terminé, les votes sont désactivés.</p></div>`;
+      // Fermé si match commencé (live) ou terminé
+      const k = matchStatusKey(m);
+      if(k === 'live' || k === 'finished' || isPast(m)){
+        const msg = k==='live' ? '⏱️ Match en cours' : '🔒 Match terminé';
+        const sub = k==='live' ? 'Le pronostic est fermé depuis le coup d&apos;envoi.' : 'Les votes sont désactivés.';
+        box.innerHTML = `<div class="prediction-card"><h3>${msg}</h3><p class="prediction-sub">${sub}</p></div>`;
         return;
       }
 
       // Pas connecté → bloc flouté
       const isLoggedIn = typeof currentUser !== 'undefined' && currentUser !== null;
       if(!isLoggedIn){
-        const options = ['home','draw','away'];
         box.innerHTML = `<div style="position:relative;border-radius:20px;overflow:hidden">
           <div style="filter:blur(4px);pointer-events:none;user-select:none;opacity:.65">
             <div class="prediction-card">
-              <h3>🔥 Pronostic du match</h3>
-              <p class="prediction-sub">Qui va gagner ? Vote une seule fois.</p>
-              <div class="prediction-options">
-                ${options.map(choice => `<button class="prediction-option" disabled style="cursor:default">
-                  <b>${esc(predictionLabel(m, choice))}</b>
-                  <span>─</span>
-                  <div class="prediction-bar" style="grid-column:1/-1"><i style="width:33%"></i></div>
-                </button>`).join('')}
+              <h3>🎯 Pronostic du match</h3>
+              <p class="prediction-sub">Entre le score exact et gagne jusqu'à 5 pts.</p>
+              <div class="pred-score-inputs">
+                <div class="pred-team-col"><span>${esc(m.home)}</span><input type="number" value="1" min="0" max="20" class="pred-score-input" disabled></div>
+                <span class="pred-dash">-</span>
+                <div class="pred-team-col"><input type="number" value="0" min="0" max="20" class="pred-score-input" disabled><span>${esc(m.away)}</span></div>
               </div>
             </div>
           </div>
           <div onclick="openAuthModal()" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#06142299;backdrop-filter:blur(4px);border-radius:20px;border:1px solid #ffffff14;cursor:pointer">
             <div style="text-align:center;padding:20px">
               <div style="font-size:28px;margin-bottom:8px">🔒</div>
-              <div style="color:#dcecff;font-weight:900;font-size:15px;margin-bottom:12px;line-height:1.4">Connecte-toi pour pronostiquer<br>et gagner des points</div>
-              <button onclick="event.stopPropagation();openAuthModal()" style="background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;-webkit-text-fill-color:#061426;border:none;border-radius:14px;padding:11px 18px;font-weight:950;font-size:14px;cursor:pointer;font-family:inherit">Créer mon compte →</button>
+              <div style="color:#dcecff;font-weight:900;font-size:15px;margin-bottom:12px">Connecte-toi pour pronostiquer</div>
+              <button onclick="event.stopPropagation();openAuthModal()" style="background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;border:none;border-radius:14px;padding:11px 18px;font-weight:950;font-size:14px;cursor:pointer">Créer mon compte →</button>
             </div>
           </div>
         </div>`;
         return;
       }
 
-      // Connecté → pronostic depuis predictionRows
       const already = myPredictionForMatch(matchId);
       const { counts, total } = predictionStatsForMatch(matchId);
-      const options = ['home','draw','away'];
 
+      if(already){
+        // Déjà voté : afficher le vote + stats
+        const pred = (predictionRows||[]).find(r => String(r.match_id)===String(matchId) && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey)));
+        const sa = pred?.score_a_pick;
+        const sb = pred?.score_b_pick;
+        const qp = pred?.qualifier_pick;
+        const scoreDisplay = (sa!==null&&sa!==undefined&&sb!==null&&sb!==undefined) ? `${sa} - ${sb}` : already==='draw'?'Nul':already==='home'?m.home:m.away;
+        box.innerHTML = `<div class="prediction-card">
+          <h3>✅ Ton pronostic</h3>
+          <div class="pred-voted-score">${esc(m.home)} <span>${scoreDisplay}</span> ${esc(m.away)}</div>
+          ${qp?`<div class="pred-voted-qualifier">Se qualifie : <b>${esc(qp)}</b></div>`:''}
+          <p class="prediction-sub" style="margin-top:8px">Score exact → 5pts · Bon vainqueur → 3pts</p>
+          <span class="prediction-total">${total} vote${total>1?'s':''}</span>
+        </div>`;
+        return;
+      }
+
+      // Formulaire score exact
       box.innerHTML = `<div class="prediction-card">
-        <h3>🔥 Pronostic du match</h3>
-        <p class="prediction-sub">Qui va gagner ? Vote une seule fois.</p>
-        <div class="prediction-options">
-          ${options.map(choice => {
-            const count = counts[choice] || 0;
-            const pct = total ? Math.round(count * 100 / total) : 0;
-            const selected = already === choice ? 'selected' : '';
-            const isSelected = already === choice;
-            const isVoted = !!already;
-            return `<button class="prediction-option ${selected}" onclick="votePrediction(${jsArg(matchId)},'${choice}')" style="${isVoted?'pointer-events:none;':'cursor:pointer;'}${isSelected ? 'background:linear-gradient(135deg,#ffd16633,#ff9f4333);border-color:#ffd166;box-shadow:0 0 0 2px #ffd16644' : ''}">
-              <b style="${isSelected ? 'color:#ffd166' : ''}">${isSelected ? '✅ ' : ''}${esc(predictionLabel(m, choice))}</b>
-              <span>${pct}% · ${count}${isSelected ? ' · Mon vote' : ''}</span>
-              <div class="prediction-bar" style="grid-column:1/-1"><i style="width:${pct}%;${isSelected ? 'background:linear-gradient(90deg,#ffd166,#ff9f43)' : ''}"></i></div>
-            </button>`;
-          }).join('')}
+        <div class="pred-rules-banner">🆕 Nouvelles règles · Score exact = <b>+5pts</b> · Bon vainqueur = <b>+3pts</b></div>
+        <h3>🎯 Pronostic du match</h3>
+        <p class="prediction-sub">Entre le score que tu penses voir à la fin du temps réglementaire.</p>
+        <div class="pred-score-inputs">
+          <div class="pred-team-col">
+            <span class="pred-team-name">${esc(m.home)}</span>
+            <input type="number" id="predScoreA" value="1" min="0" max="20" class="pred-score-input">
+          </div>
+          <span class="pred-dash">-</span>
+          <div class="pred-team-col">
+            <input type="number" id="predScoreB" value="0" min="0" max="20" class="pred-score-input">
+            <span class="pred-team-name">${esc(m.away)}</span>
+          </div>
         </div>
-        <span class="prediction-total">${total} vote${total > 1 ? 's' : ''}</span>
-        <div class="prediction-note">${already ? 'Merci pour ton vote ✅' : 'Les résultats s\'actualisent après ton vote.'}</div>
+        ${isKnockout?`
+        <div class="pred-qualifier-wrap" id="predQualifierWrap" style="display:none">
+          <p class="prediction-sub">Score nul → qui se qualifie ?</p>
+          <div class="pred-qualifier-btns">
+            <button class="pred-qual-btn" id="predQualA" onclick="selectQualifier(${jsArg(m.home)})">${esc(m.home)}</button>
+            <button class="pred-qual-btn" id="predQualB" onclick="selectQualifier(${jsArg(m.away)})">${esc(m.away)}</button>
+          </div>
+        </div>`:''}
+        <button class="pred-submit-btn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>
+        <span class="prediction-total">${total} vote${total>1?'s':''}</span>
       </div>`;
+
+      if(isKnockout){
+        // Afficher/masquer le sélecteur de qualifié si score nul
+        function checkQualifier(){
+          const a=parseInt(document.getElementById('predScoreA')?.value)||0;
+          const b=parseInt(document.getElementById('predScoreB')?.value)||0;
+          const wrap=document.getElementById('predQualifierWrap');
+          if(wrap) wrap.style.display=(a===b)?'block':'none';
+        }
+        document.getElementById('predScoreA')?.addEventListener('input',checkQualifier);
+        document.getElementById('predScoreB')?.addEventListener('input',checkQualifier);
+      }
+    }
+
+    let _selectedQualifier = null;
+    function selectQualifier(team){
+      _selectedQualifier = team;
+      document.querySelectorAll('.pred-qual-btn').forEach(b=>{
+        b.classList.toggle('pred-qual-selected', b.textContent.trim()===team);
+      });
+    }
+
+    async function submitScorePrediction(matchId){
+      const sa = parseInt(document.getElementById('predScoreA')?.value);
+      const sb = parseInt(document.getElementById('predScoreB')?.value);
+      if(isNaN(sa)||isNaN(sb)){ alert('Entre un score valide.'); return; }
+
+      const m = data.find(x=>String(x.id)===String(matchId));
+      const isKnockout = m && !String(m.phase||'').startsWith('Groupe');
+
+      // En phase finale, si score nul, qualifié obligatoire
+      if(isKnockout && sa===sb && !_selectedQualifier){
+        alert('Score nul en phase finale : indique qui se qualifie !');
+        return;
+      }
+
+      const qualifierPick = (isKnockout && sa===sb) ? _selectedQualifier : null;
+
+      // Détermine le choice home/draw/away pour la rétrocompatibilité
+      const choice = sa>sb ? 'home' : sa<sb ? 'away' : 'draw';
+
+      try{
+        const id = String(matchId);
+        if(myPredictionForMatch(id)) return;
+
+        const payload = {
+          match_id: id,
+          choice,
+          score_a_pick: sa,
+          score_b_pick: sb,
+          qualifier_pick: qualifierPick,
+          user_key: predictionUserKey,
+        };
+        if(typeof currentUser !== 'undefined' && currentUser) payload.user_id = currentUser.id;
+
+        if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
+          await authFetch('match_predictions', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          await supabasePost('match_predictions', payload);
+        }
+
+        _selectedQualifier = null;
+        await loadPredictions();
+        await renderPredictionBox(matchId);
+        if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
+          await recalculateUserPoints(currentUser.id);
+        }
+      }catch(e){
+        console.error(e);
+        alert("Impossible d'enregistrer le pronostic pour le moment.");
+      }
     }
 
     async function votePrediction(matchId, choice){
@@ -163,6 +261,6 @@
         }
       }catch(e){
         console.error(e);
-        alert('Impossible d\'enregistrer le pronostic pour le moment.');
+        alert("Impossible d'enregistrer le pronostic.");
       }
     }
