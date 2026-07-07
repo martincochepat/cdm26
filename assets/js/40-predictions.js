@@ -278,7 +278,6 @@
     }
 
     async function cancelPrediction(matchId){
-      // Vérifie que le match n'a pas commencé
       const m = data.find(x=>String(x.id)===String(matchId));
       if(!m || matchStatusKey(m)==='live' || matchStatusKey(m)==='finished' || isPast(m)){
         alert('Le match a déjà commencé, impossible de modifier ton pronostic.');
@@ -290,9 +289,15 @@
             method: 'DELETE',
             headers: { Prefer: 'return=minimal' }
           });
+        } else {
+          // User non connecté : supprimer par user_key
+          await supabaseDelete(`match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${matchId}`);
         }
         _selectedQualifier = null;
-        await loadPredictions();
+        // Recharger les données de prédictions depuis Supabase puis re-rendre
+        if(typeof loadDynamicData === 'function'){
+          await loadDynamicData();
+        }
         await renderPredictionBox(matchId);
       }catch(e){
         console.error(e);
