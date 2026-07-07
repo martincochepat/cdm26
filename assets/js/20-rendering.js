@@ -3,6 +3,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));document.querySelectorAll('.mobile-drawer [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===activeTab));
       document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
       [renderHome,renderLiveCenter,updateChips,renderHighlights,render,renderTeamsPage,renderStadiums,renderMapPage,renderTvGuide,renderGroups,renderBracket,renderFanZone].forEach(fn=>{try{fn()}catch(err){console.error('Render error:',fn.name,err)}});
+      try{checkGoalAnimation()}catch(err){console.error('checkGoalAnimation error:',err)}
     }
     function renderTeamPicker(){teamPicker.innerHTML=allTeams().map(t=>`<button class="team-chip ${followedTeams.has(t)?'on':''}" onclick="toggleTeam('${esc(t)}')">${flags[t]||'🏳️'} ${esc(t)}</button>`).join('')}
     function toggleTeam(t){followedTeams.has(t)?followedTeams.delete(t):followedTeams.add(t);localStorage.setItem('wc26_teams',JSON.stringify([...followedTeams]));renderTeamPicker();renderAll()}
@@ -45,7 +46,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const awayGoals=goals.filter(e=>e.team_name===mainMatch.away||frName(e.team_name)===mainMatch.away);
 
         const statusBadgeHtml=isLive
-          ?`<span class="hm-live-badge">● EN DIRECT${mainMatch.minute?` · ${esc(mainMatch.minute)}'`:''}</span>`
+          ?`<span class="hm-live-badge">● EN DIRECT${liveLabel(mainMatch)?' · '+liveLabel(mainMatch):''}</span>`
           :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
           :`<span class="hm-next-badge">⏳ À venir</span>`;
 
@@ -236,7 +237,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <button class="home-btn home-btn-secondary" onclick="switchTab('matches')">Voir tous les matchs →</button>
       `;
 
-      checkGoalAnimation();
       renderHeroInfoCard();
     }
 
@@ -356,7 +356,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const prev=_prevScores[key];
         const curr={a:m.score_a,b:m.score_b};
         if(prev && (curr.a!==prev.a || curr.b!==prev.b)){
-          // But marqué ! Animer le score dans la fiche si ouverte
+          // 1) Fiche détail ouverte sur ce match précis
           if(currentOpenMatchId===key){
             const el=document.querySelector('.det-score');
             if(el){
@@ -368,12 +368,35 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
               },2500);
             }
           }
-          // Animer aussi le score home featured
-          const featEl=document.querySelector('.hm-score');
-          if(featEl){
-            featEl.classList.add('hm-score-goal');
-            setTimeout(()=>featEl.classList.remove('hm-score-goal'),2500);
+          // 2) Bloc featured home, uniquement si c'est bien ce match qui y est affiché
+          const featEl=document.getElementById('featuredBox');
+          if(featEl && featEl.querySelector('.hm-teams')?.getAttribute('onclick')?.includes("'"+key+"'")){
+            const scoreEl=featEl.querySelector('.hm-score');
+            if(scoreEl){
+              scoreEl.classList.add('hm-score-goal');
+              setTimeout(()=>scoreEl.classList.remove('hm-score-goal'),2500);
+            }
           }
+          // 3) Live Center : carte focus si c'est ce match qui est en focus
+          if(typeof liveCenterFocusId!=='undefined' && liveCenterFocusId===key){
+            const lcEl=document.querySelector('.lc-focus-score');
+            if(lcEl){
+              lcEl.classList.add('lc-focus-score-goal');
+              const oldHtml=lcEl.innerHTML;
+              lcEl.innerHTML='<span class="det-goal-text">BUT !</span>';
+              setTimeout(()=>{
+                lcEl.innerHTML=curr.a+' <span class="lc-focus-sep">-</span> '+curr.b;
+                lcEl.classList.remove('lc-focus-score-goal');
+              },2500);
+            }
+          }
+          // 4) Mini-card Live Center correspondant à ce match (toujours visible même hors focus)
+          document.querySelectorAll('.lc-mini').forEach(btn=>{
+            if(btn.getAttribute('onclick')?.includes("'"+key+"'")){
+              btn.classList.add('lc-mini-goal');
+              setTimeout(()=>btn.classList.remove('lc-mini-goal'),2500);
+            }
+          });
         }
         _prevScores[key]=curr;
       });
@@ -758,7 +781,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         :`<div class="det-vs">VS</div>`;
 
       const stBadge=isLive
-        ?`<span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>`
+        ?`<span class="hm-live-badge">● EN DIRECT${liveLabel(m)?' · '+liveLabel(m):''}</span>`
         :isDone?`<span class="hm-done-badge">✓ Terminé</span>`
         :`<span class="hm-next-badge">⏳ ${smartDateLabel(m)} · ${esc(m.time)}</span>`;
 
@@ -767,9 +790,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <div class="det-tabs">
           <button class="det-tab det-tab-active" data-tab="resume" onclick="setDetailTab('resume')">Résumé</button>
           <button class="det-tab" data-tab="stats" onclick="setDetailTab('stats')">Stats</button>
-          <button class="det-tab" data-tab="lineups" onclick="setDetailTab('lineups')">Compositions</button>
+          <button class="det-tab" data-tab="lineups" onclick="setDetailTab('lineups')">Compos</button>
           <button class="det-tab" data-tab="predictions" onclick="setDetailTab('predictions')">Prédictions</button>
-          <button class="det-tab" data-tab="h2h" onclick="setDetailTab('h2h')">Confrontations</button>
+          <button class="det-tab" data-tab="h2h" onclick="setDetailTab('h2h')">H2H</button>
         </div>`:'';
 
       const resumePanel=allEvents.length?`
@@ -870,16 +893,37 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           return `<div class="det-stat-row">
             <span class="det-stat-val">${hVal}</span>
             <div class="det-stat-bar-wrap">
-              <div class="det-stat-bar"><div class="det-stat-fill det-stat-home" style="width:${hPct}%"></div></div>
+              <div class="det-stat-bar">
+                <div class="det-stat-home-bar" style="flex:${hPct}"></div>
+                <div class="det-stat-divider"></div>
+                <div class="det-stat-away-bar" style="flex:${100-hPct}"></div>
+              </div>
               <span class="det-stat-label">${label}</span>
-              <div class="det-stat-bar"><div class="det-stat-fill det-stat-away" style="width:${100-hPct}%"></div></div>
             </div>
             <span class="det-stat-val">${aVal}</span>
           </div>`;
         }
+        const possH=parseFloat(String(getStat(h,'Ball Possession')).replace('%',''))||0;
+        const possA=parseFloat(String(getStat(a,'Ball Possession')).replace('%',''))||0;
+        const circumference=2*Math.PI*34;
+        const homeDash=Math.round((possH/100)*circumference);
+        const awayDash=Math.round((possA/100)*circumference);
         el.innerHTML=`
           <div class="det-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
-          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
+          <div class="det-poss-wrap">
+            <div class="det-poss-circle">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff10" stroke-width="7"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff30" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference-awayDash}" stroke-linecap="round"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffd166" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${homeDash}" stroke-linecap="round" opacity="0.9"/>
+              </svg>
+              <div class="det-poss-val"><span>${possH}%</span><span>poss.</span></div>
+            </div>
+            <div class="det-poss-labels">
+              <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-home"></div><span>${esc(m.home)}</span><strong>${possH}%</strong></div>
+              <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-away"></div><span>${esc(m.away)}</span><strong>${possA}%</strong></div>
+            </div>
+          </div>
           ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
           ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
           ${statBar('Tirs non cadrés',getStat(h,'Shots off Goal'),getStat(a,'Shots off Goal'))}
@@ -889,7 +933,6 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
           ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
           ${statBar('Arrêts gardien',getStat(h,'Goalkeeper Saves'),getStat(a,'Goalkeeper Saves'))}
-          ${statBar('Passes totales',getStat(h,'Total passes'),getStat(a,'Total passes'))}
           ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
           ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
         `;
@@ -1259,7 +1302,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         const isFocus=String(m.id)===liveCenterFocusId;
         const scored=m.score_a!==null&&m.score_a!==undefined;
         return `<button class="lc-mini ${isFocus?'lc-mini-active':''}" onclick="setLiveFocus(${jsArg(m.id)})">
-          <div class="lc-mini-top"><span class="lc-mini-live">● ${m.minute?esc(m.minute)+"'":'LIVE'}</span></div>
+          <div class="lc-mini-top"><span class="lc-mini-live">● ${liveLabel(m)||'LIVE'}</span></div>
           <div class="lc-mini-teams">
             <span class="lc-mini-team">${flags[m.home]||'🏳️'} ${esc(m.home)}</span>
             <span class="lc-mini-score">${scored?m.score_a+'-'+m.score_b:'vs'}</span>
@@ -1310,7 +1353,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         <div class="lc-focus-card">
           <div class="lc-focus-top">
             <span class="lc-focus-phase">${esc(m.phase)}</span>
-            <span class="hm-live-badge">● EN DIRECT${m.minute?' · '+esc(m.minute)+"'":''}</span>
+            <span class="hm-live-badge">● EN DIRECT${liveLabel(m)?' · '+liveLabel(m):''}</span>
           </div>
           <div class="lc-focus-teams" onclick="openDetail(${jsArg(m.id)})">
             <div class="lc-focus-team">
@@ -1349,4 +1392,13 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       }
       tick();
       liveCountdownInterval=setInterval(tick,1000);
+    }
+
+    // Affiche "Mi-temps" / "Prolongation" / minute selon le statut détaillé
+    function liveLabel(m){
+      if(m.period==='HT') return 'Mi-temps';
+      if(m.period==='ET') return 'Prolongation'+(m.minute?' · '+esc(m.minute)+"'":'');
+      if(m.period==='PEN') return 'Tirs au but';
+      if(m.period==='BT') return 'Pause prolongation';
+      return m.minute?esc(m.minute)+"'":'';
     }
