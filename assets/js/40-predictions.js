@@ -223,7 +223,13 @@
 
       try{
         const id = String(matchId);
-        if(myPredictionForMatch(id)) return;
+        // Supprimer tout vote existant avant d'insérer (évite les doublons)
+        try {
+          const delUrl = typeof currentUser !== 'undefined' && currentUser
+            ? `match_predictions?user_id=eq.${currentUser.id}&match_id=eq.${id}`
+            : `match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${id}`;
+          if(typeof authFetch === 'function') await authFetch(delUrl, {method:'DELETE',headers:{Prefer:'return=minimal'}});
+        } catch(_){}
 
         const payload = {
           match_id: id,
@@ -285,18 +291,15 @@
         return;
       }
       try{
+        // Supprimer TOUTES les lignes pour cet user+match (évite les doublons)
         const url = typeof currentUser !== 'undefined' && currentUser
           ? `match_predictions?user_id=eq.${currentUser.id}&match_id=eq.${String(matchId)}`
           : `match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${String(matchId)}`;
 
-        const SUPA_URL = window._supabaseUrl || document.querySelector('[data-supabase-url]')?.dataset?.supabaseUrl;
-        const SUPA_KEY = window._supabaseKey || document.querySelector('[data-supabase-key]')?.dataset?.supabaseKey;
-
-        // Méthode directe via supabaseFetch si disponible
-        if(typeof supabaseFetch === 'function'){
-          await supabaseFetch(url, { method:'DELETE' });
-        } else if(typeof authFetch === 'function'){
+        if(typeof authFetch === 'function'){
           await authFetch(url, { method:'DELETE', headers:{ Prefer:'return=minimal' } });
+        } else if(typeof supabaseFetch === 'function'){
+          await supabaseFetch(url, { method:'DELETE' });
         }
 
         _selectedQualifier = null;
