@@ -294,9 +294,10 @@
           await supabaseDelete(`match_predictions?user_key=eq.${predictionUserKey}&match_id=eq.${matchId}`);
         }
         _selectedQualifier = null;
-        // Recharger les données de prédictions depuis Supabase puis re-rendre
+        // Recharger les données puis re-rendre (petit délai pour laisser le temps à Supabase)
         if(typeof loadDynamicData === 'function'){
           await loadDynamicData();
+          await new Promise(r => setTimeout(r, 300));
         }
         await renderPredictionBox(matchId);
       }catch(e){
