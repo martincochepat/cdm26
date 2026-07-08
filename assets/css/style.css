@@ -809,6 +809,8 @@ body:not(.home-active) .hero{
 .pred-score-input{width:64px;height:64px;border-radius:16px;border:2px solid #ffffff20;background:#ffffff10;color:#fff;font-size:28px;font-weight:950;text-align:center;outline:none;transition:.2s;-moz-appearance:textfield}
 .pred-score-input::-webkit-outer-spin-button,.pred-score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .pred-score-input:focus{border-color:#ffd166;background:#ffd16615}
+.pred-score-input:disabled{opacity:.6;color:#ffd166;background:#ffffff08;border-color:#ffd16640;cursor:not-allowed}
+.pred-qual-btn:disabled{opacity:.55;cursor:not-allowed}
 .pred-dash{font-size:24px;font-weight:950;color:#8fa6bd}
 .pred-qualifier-wrap{margin:12px 0;padding:12px;background:#ffffff08;border-radius:14px;border:1px solid #ffffff12}
 .pred-qualifier-btns{display:flex;gap:8px;margin-top:8px}
