@@ -103,59 +103,47 @@
       }
 
       const already = myPredictionForMatch(matchId);
-      const { counts, total } = predictionStatsForMatch(matchId);
+      const { total } = predictionStatsForMatch(matchId);
+      const pred = already ? (predictionRows||[]).find(r => String(r.match_id)===String(matchId) && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey))) : null;
+      const sa = pred?.score_a_pick, sb = pred?.score_b_pick, qp = pred?.qualifier_pick;
+      const hasScore = sa!==null && sa!==undefined && sb!==null && sb!==undefined;
+      const isReadOnly = already && hasScore && _predictionForceEdit !== String(matchId);
+      const initialA = hasScore ? sa : 0;
+      const initialB = hasScore ? sb : 0;
+      const wrapVisible = isKnockout && (isReadOnly ? !!qp : initialA===initialB);
 
-      if(already){
-        // Déjà voté : afficher le vote + stats
-        const pred = (predictionRows||[]).find(r => String(r.match_id)===String(matchId) && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey)));
-        const sa = pred?.score_a_pick;
-        const sb = pred?.score_b_pick;
-        const qp = pred?.qualifier_pick;
-        const hasScore = sa!==null&&sa!==undefined&&sb!==null&&sb!==undefined;
-        const winnerLabel = already==='home'?m.home : already==='away'?m.away : 'Match nul';
-        box.innerHTML = `<div class="prediction-card">
-          <h3>✅ Ton pronostic</h3>
-          ${hasScore
-            ? `<div class="pred-voted-score">${esc(m.home)} <span>${sa} - ${sb}</span> ${esc(m.away)}</div>`
-            : `<div class="pred-voted-score"><span>${esc(winnerLabel)}</span></div>`
-          }
-          ${qp?`<div class="pred-voted-qualifier">Se qualifie : <b>${esc(qp)}</b></div>`:''}
-          <p class="prediction-sub" style="margin-top:8px">Score exact → 5pts · Bon vainqueur → 3pts</p>
-          <span class="prediction-total">${total} vote${total>1?'s':''}</span>
-          <button class="pred-modify-btn" onclick="cancelPrediction(${jsArg(matchId)})">✏️ Modifier mon pronostic</button>
-        </div>`;
-        return;
-      }
-
-      // Formulaire score exact
       box.innerHTML = `<div class="prediction-card">
-        <div class="pred-rules-banner">🆕 Nouvelles règles · Score exact = <b>+5pts</b> · Bon vainqueur = <b>+3pts</b></div>
-        <h3>🎯 Pronostic du match</h3>
-        <p class="prediction-sub">Entre le score que tu penses voir à la fin du temps réglementaire.</p>
+        ${isReadOnly?'':`<div class="pred-rules-banner">🆕 Nouvelles règles · Score exact = <b>+5pts</b> · Bon vainqueur = <b>+3pts</b></div>`}
+        <h3>${isReadOnly?'✅ Ton pronostic':'🎯 Pronostic du match'}</h3>
+        <p class="prediction-sub">${isReadOnly?'Score exact → 5pts · Bon vainqueur → 3pts':"Entre le score que tu penses voir à la fin du temps réglementaire."}</p>
         <div class="pred-score-inputs">
           <div class="pred-team-col">
             <span class="pred-team-name">${esc(m.home)}</span>
-            <input type="number" id="predScoreA" value="0" min="0" max="20" class="pred-score-input">
+            <input type="number" id="predScoreA" value="${initialA}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}>
           </div>
           <span class="pred-dash">-</span>
           <div class="pred-team-col">
             <span class="pred-team-name">${esc(m.away)}</span>
-            <input type="number" id="predScoreB" value="0" min="0" max="20" class="pred-score-input">
+            <input type="number" id="predScoreB" value="${initialB}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}>
           </div>
         </div>
         ${isKnockout?`
-        <div class="pred-qualifier-wrap" id="predQualifierWrap" style="display:none">
+        <div class="pred-qualifier-wrap" id="predQualifierWrap" style="display:${wrapVisible?'block':'none'}">
           <p class="prediction-sub">Score nul : qui se qualifie ?</p>
           <div class="pred-qualifier-btns">
-            <button class="pred-qual-btn" id="predQualA" onclick="selectQualifier('${m.home}')">${esc(m.home)}</button>
-            <button class="pred-qual-btn" id="predQualB" onclick="selectQualifier('${m.away}')">${esc(m.away)}</button>
+            <button class="pred-qual-btn ${qp===m.home?'pred-qual-selected':''}" id="predQualA" ${isReadOnly?'disabled':''} onclick="selectQualifier('${esc(m.home)}')">${esc(m.home)}</button>
+            <button class="pred-qual-btn ${qp===m.away?'pred-qual-selected':''}" id="predQualB" ${isReadOnly?'disabled':''} onclick="selectQualifier('${esc(m.away)}')">${esc(m.away)}</button>
           </div>
         </div>`:''}
-        <button class="pred-submit-btn" id="predSubmitBtn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>
+        ${isReadOnly
+          ? `<button class="pred-modify-btn" onclick="enablePredictionEdit(${jsArg(matchId)})">✏️ Modifier mon pronostic</button>`
+          : `<button class="pred-submit-btn" id="predSubmitBtn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>`
+        }
         <span class="prediction-total">${total} vote${total>1?'s':''}</span>
       </div>`;
 
-      if(isKnockout){
+      if(isKnockout && !isReadOnly){
+        _selectedQualifier = qp || null;
         // Afficher/masquer le sélecteur de qualifié si score nul
         function checkQualifier(){
           const a=parseInt(document.getElementById('predScoreA')?.value)||0;
@@ -166,6 +154,12 @@
         document.getElementById('predScoreA')?.addEventListener('input',checkQualifier);
         document.getElementById('predScoreB')?.addEventListener('input',checkQualifier);
       }
+    }
+
+    let _predictionForceEdit = null;
+    function enablePredictionEdit(matchId){
+      _predictionForceEdit = String(matchId);
+      renderPredictionBox(matchId);
     }
 
     let _selectedQualifier = null;
@@ -214,6 +208,7 @@
         await upsertPrediction(payload);
 
         _selectedQualifier = null;
+        _predictionForceEdit = null;
         // Feedback visuel immédiat
         const submitBtn = document.getElementById('predSubmitBtn');
         if(submitBtn){
@@ -303,6 +298,12 @@
       });
     }
 
+    const _challengeForceEdit = new Set();
+    function enableChallengeEdit(matchId){
+      _challengeForceEdit.add(String(matchId));
+      if(typeof renderFanZone === 'function') renderFanZone();
+    }
+
     function renderChallengeMatch(m){
       const id = String(m.id);
       const k = matchStatusKey(m);
@@ -315,40 +316,34 @@
       const already = myPredictionForMatch(id);
       const { total } = predictionStatsForMatch(id);
       const isKnockout = !String(m.phase||'').startsWith('Groupe');
-
-      if(already){
-        const pred = (predictionRows||[]).find(r => String(r.match_id)===id && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey)));
-        const sa = pred?.score_a_pick, sb = pred?.score_b_pick;
-        const qp = pred?.qualifier_pick;
-        const hasScore = sa!==null && sa!==undefined && sb!==null && sb!==undefined;
-        const winnerLabel = already==='home'?m.home:already==='away'?m.away:'Match nul';
-        return `<div class="poll-match-card">
-          <b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b>
-          <div class="mini">${dateLabel(m.date)} · ${m.time} · ${total} vote${total>1?'s':''}</div>
-          <div class="mini" style="margin-top:8px;color:#ffd166">
-            Votre pronostic : <b>${hasScore?`${esc(m.home)} ${sa} - ${sb} ${esc(m.away)}`:esc(winnerLabel)}</b>${qp?` · Qualifié : <b>${esc(qp)}</b>`:''}
-          </div>
-          <button class="pred-modify-btn" style="margin-top:8px" onclick="cancelPrediction(${jsArg(id)}, () => { if(typeof renderFanZone==='function') renderFanZone(); })">✏️ Modifier</button>
-        </div>`;
-      }
+      const pred = already ? (predictionRows||[]).find(r => String(r.match_id)===id && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey))) : null;
+      const sa = pred?.score_a_pick, sb = pred?.score_b_pick, qp = pred?.qualifier_pick;
+      const hasScore = sa!==null && sa!==undefined && sb!==null && sb!==undefined;
+      const isReadOnly = already && hasScore && !_challengeForceEdit.has(id);
+      const initialA = hasScore ? sa : 0;
+      const initialB = hasScore ? sb : 0;
+      const wrapVisible = isKnockout && (isReadOnly ? !!qp : initialA===initialB);
 
       return `<div class="poll-match-card">
         <b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b>
         <div class="mini">${dateLabel(m.date)} · ${m.time}${total?` · ${total} vote${total>1?'s':''}`:''}</div>
         <div class="pred-score-inputs" style="margin-top:10px">
-          <div class="pred-team-col"><span class="pred-team-name">${esc(m.home)}</span><input type="number" id="cpredScoreA_${id}" value="0" min="0" max="20" class="pred-score-input"></div>
+          <div class="pred-team-col"><span class="pred-team-name">${esc(m.home)}</span><input type="number" id="cpredScoreA_${id}" value="${initialA}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}></div>
           <span class="pred-dash">-</span>
-          <div class="pred-team-col"><span class="pred-team-name">${esc(m.away)}</span><input type="number" id="cpredScoreB_${id}" value="0" min="0" max="20" class="pred-score-input"></div>
+          <div class="pred-team-col"><span class="pred-team-name">${esc(m.away)}</span><input type="number" id="cpredScoreB_${id}" value="${initialB}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}></div>
         </div>
         ${isKnockout?`
-        <div class="pred-qualifier-wrap" id="cpredQualifierWrap_${id}" style="display:none">
+        <div class="pred-qualifier-wrap" id="cpredQualifierWrap_${id}" style="display:${wrapVisible?'block':'none'}">
           <p class="prediction-sub">Score nul : qui se qualifie ?</p>
           <div class="pred-qualifier-btns">
-            <button class="pred-qual-btn cpred-qual-btn" data-match="${id}" onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.home)}')">${esc(m.home)}</button>
-            <button class="pred-qual-btn cpred-qual-btn" data-match="${id}" onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.away)}')">${esc(m.away)}</button>
+            <button class="pred-qual-btn cpred-qual-btn ${qp===m.home?'pred-qual-selected':''}" data-match="${id}" ${isReadOnly?'disabled':''} onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.home)}')">${esc(m.home)}</button>
+            <button class="pred-qual-btn cpred-qual-btn ${qp===m.away?'pred-qual-selected':''}" data-match="${id}" ${isReadOnly?'disabled':''} onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.away)}')">${esc(m.away)}</button>
           </div>
         </div>`:''}
-        <button class="pred-submit-btn" id="cpredSubmitBtn_${id}" style="margin-top:10px" onclick="submitScorePredictionCompact(${jsArg(id)})">Valider →</button>
+        ${isReadOnly
+          ? `<button class="pred-modify-btn" style="margin-top:10px" onclick="enableChallengeEdit(${jsArg(id)})">✏️ Modifier mon pronostic</button>`
+          : `<button class="pred-submit-btn" id="cpredSubmitBtn_${id}" style="margin-top:10px" onclick="submitScorePredictionCompact(${jsArg(id)})">Valider →</button>`
+        }
       </div>`;
     }
 
@@ -385,6 +380,7 @@
         await upsertPrediction(payload);
 
         delete _selectedQualifiersCompact[id];
+        _challengeForceEdit.delete(id);
         const btn = document.getElementById('cpredSubmitBtn_'+id);
         if(btn){
           btn.textContent = '✅ Enregistré !';
