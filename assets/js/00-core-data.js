@@ -114,38 +114,12 @@ let data = [
     }
 
     // Point d'écriture UNIQUE pour match_predictions (score exact + sondage FanZone).
-    // Tente un INSERT ; si une ligne existe déjà pour ce match+user (409/23505),
-    // bascule automatiquement sur un PATCH au lieu de planter.
-    // Évite les conflits entre les différentes fonctionnalités qui écrivent dans la même table.
-    async function upsertPrediction(payload){
-      const id = String(payload.match_id);
-      const isLoggedIn = typeof currentUser !== 'undefined' && currentUser;
-      const useAuth = isLoggedIn && typeof authFetch === 'function';
-
-      try {
-        if(useAuth){
-          await authFetch('match_predictions', {
-            method: 'POST',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify(payload),
-          });
-        } else {
-          await supabasePost('match_predictions', payload);
-        }
-        return;
-      } catch(err) {
-        const msg = String((err && err.message) || err || '');
-        const isConflict = msg.includes('23505') || msg.includes('409') || msg.toLowerCase().includes('duplicate');
-        if(!isConflict) throw err;
-      }
-
-      // Ligne déjà existante → on la met à jour (PATCH) au lieu de l'insérer
-      const filter = isLoggedIn
-        ? `match_id=eq.${id}&user_id=eq.${currentUser.id}`
-        : `match_id=eq.${id}&user_key=eq.${predictionUserKey}`;
+    // Vérifie D'ABORD si une ligne existe déjà pour ce match+user (lecture directe,
+    // fiable), puis fait un PATCH si oui, un POST (insert) si non. Évite de deviner
+    // un conflit à partir du texte d'erreur renvoyé par Supabase, qui peut varier.
+    async function patchPrediction(filter, payload, useAuth){
       const patchBody = Object.assign({}, payload);
       delete patchBody.match_id;
-
       if(useAuth){
         await authFetch(`match_predictions?${filter}`, {
           method: 'PATCH',
@@ -168,6 +142,48 @@ let data = [
           const t = await res.text().catch(()=>'');
           throw new Error(t || `Supabase ${res.status}`);
         }
+      }
+    }
+
+    async function upsertPrediction(payload){
+      const id = String(payload.match_id);
+      const isLoggedIn = typeof currentUser !== 'undefined' && currentUser;
+      const useAuth = isLoggedIn && typeof authFetch === 'function';
+      const filter = isLoggedIn
+        ? `match_id=eq.${id}&user_id=eq.${currentUser.id}`
+        : `match_id=eq.${id}&user_key=eq.${predictionUserKey}`;
+
+      // 1) Vérifie explicitement si une ligne existe déjà pour ce match+utilisateur
+      let existing = null;
+      try {
+        const rows = useAuth
+          ? await authFetch(`match_predictions?${filter}&select=match_id`)
+          : await supabaseFetch(`match_predictions?${filter}&select=match_id`);
+        existing = Array.isArray(rows) && rows.length ? rows[0] : null;
+      } catch(_) {
+        existing = null; // en cas de doute, on tente un INSERT ci-dessous
+      }
+
+      // 2) Ligne existante trouvée → PATCH direct, sans ambiguïté
+      if(existing){
+        await patchPrediction(filter, payload, useAuth);
+        return;
+      }
+
+      // 3) Pas de ligne trouvée → INSERT ; si un conflit survient quand même
+      //    (ex: doublon créé entre notre lecture et notre écriture), repli sur PATCH
+      try {
+        if(useAuth){
+          await authFetch('match_predictions', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          await supabasePost('match_predictions', payload);
+        }
+      } catch(err) {
+        await patchPrediction(filter, payload, useAuth);
       }
     }
 
