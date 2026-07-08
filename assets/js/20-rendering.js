@@ -348,7 +348,23 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         }).join('')}</tbody></table><div class="group-note">${hasResults?'Classement calculé automatiquement depuis les scores terminés renseignés dans Supabase.':'Aucun match terminé pour ce groupe pour le moment.'}</div></article>`
       }).join('')
     }
+    // Ordre des tours de la phase finale, utilisé pour déterminer automatiquement
+    // quel onglet afficher par défaut (le premier tour pas encore entièrement terminé).
+    const BRACKET_ROUNDS_ORDER = ['16es de finale','8es de finale','Quarts de finale','Demi-finales','Finale'];
+    function computeCurrentBracketRound(){
+      for (const round of BRACKET_ROUNDS_ORDER) {
+        const matches = data.filter(m => m.phase === round);
+        if (!matches.length) continue; // pas encore de matchs connus pour ce tour
+        const allFinished = matches.every(m => matchStatusKey(m) === 'finished');
+        if (!allFinished) return round;
+      }
+      return BRACKET_ROUNDS_ORDER[BRACKET_ROUNDS_ORDER.length - 1]; // tout est fini → Finale
+    }
     let bracketActiveRound = '16es de finale';
+    // Tant que l'utilisateur n'a pas cliqué manuellement sur un onglet de tour,
+    // l'onglet actif suit automatiquement le tour en cours (avance tout seul
+    // des 8es → quarts → demies → finale au fil des résultats).
+    let bracketRoundManuallySet = false;
     const _prevScores = {}; // stocke les scores précédents pour détecter les buts
     function checkGoalAnimation(){
       data.filter(m=>matchStatusKey(m)==='live').forEach(m=>{
@@ -403,6 +419,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     }
     function renderBracket(){
       if(!window.bracketBox) return;
+      if(!bracketRoundManuallySet){
+        bracketActiveRound = computeCurrentBracketRound();
+      }
       const rounds = [
         {key:'16es de finale',   label:'16es de finale'},
         {key:'8es de finale',    label:'8es de finale'},
@@ -474,7 +493,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
 
       bracketBox.innerHTML = tabsHtml + bodyHtml;
     }
-    function setBracketRound(r){ bracketActiveRound=r; renderBracket(); }
+    function setBracketRound(r){ bracketActiveRound=r; bracketRoundManuallySet=true; renderBracket(); }
 
     const quizFallback=[{id:'local-1',question:'Combien de pays accueillent la Coupe du Monde 2026 ?',correct_answer:'3',options:['2','3','4','5']},{id:'local-2',question:'Quel stade accueille la finale intégrée dans ce guide ?',correct_answer:'MetLife Stadium',options:['SoFi Stadium','MetLife Stadium','AT&T Stadium','Estadio Azteca']},{id:'local-3',question:'Quel pays hôte joue le match d\u2019ouverture ?',correct_answer:'Mexique',options:['Canada','Mexique','États-Unis','Brésil']}];
     function localDateKey(d=new Date()){
