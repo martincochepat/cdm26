@@ -320,7 +320,7 @@ body:not(.home-active) .hero{
 
   
 /* V76 — Pronostics visiteurs */
-.prediction-card{margin-top:14px;border:1px solid #ffffff16;background:#06142699;border-radius:20px;padding:14px}
+.prediction-card{margin-top:14px;margin-bottom:20px;border:1px solid #ffffff16;background:#06142699;border-radius:20px;padding:14px}
 .prediction-card h3{margin:0 0 8px;font-size:18px}
 .prediction-sub{color:#adc0d2;font-size:13px;line-height:1.45;margin:0 0 12px}
 .prediction-options{display:grid;gap:8px}
