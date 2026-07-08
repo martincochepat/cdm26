@@ -58,6 +58,38 @@
     if (window.caches) {
       caches.keys().then(keys => keys.filter(k => !k.includes('v37')).forEach(key => caches.delete(key))).catch(()=>{});
     }
+
+    // ─── Détection de nouvelle version (au-delà du service worker) ──────────
+    // Le service worker ne cache rien : le vrai problème est que si l'app reste
+    // ouverte sans jamais recharger index.html, le JS déjà en mémoire continue
+    // de tourner tel quel même si une nouvelle version est publiée. On compare
+    // donc périodiquement un petit fichier version.json à la version chargée.
+    const APP_VERSION = 90; // ⚠️ à incrémenter à chaque déploiement, en même temps que version.json
+    let updateBannerShown = false;
+    function checkForNewVersion(){
+      if (updateBannerShown) return;
+      fetch('/version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data && data.v && data.v > APP_VERSION) showUpdateBanner();
+        })
+        .catch(() => {});
+    }
+    function showUpdateBanner(){
+      if (updateBannerShown) return;
+      updateBannerShown = true;
+      const bar = document.createElement('div');
+      bar.id = 'appUpdateBanner';
+      bar.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;padding:12px 18px;border-radius:14px;font-weight:900;font-size:14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px #00000055;font-family:inherit';
+      bar.innerHTML = '<span>🔄 Nouvelle version disponible</span><button style="background:#061426;color:#ffd166;-webkit-text-fill-color:#ffd166;border:none;border-radius:10px;padding:8px 14px;font-weight:900;cursor:pointer;font-family:inherit" onclick="location.reload()">Actualiser</button>';
+      document.body.appendChild(bar);
+    }
+    // Vérifie au chargement, quand l'app revient au premier plan, et toutes les 5 minutes
+    window.addEventListener('load', checkForNewVersion);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkForNewVersion();
+    });
+    setInterval(checkForNewVersion, 5 * 60 * 1000);
   </script>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
