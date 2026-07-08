@@ -783,22 +783,44 @@ async function renderPredictionHistory() {
   if (!currentUser || !currentProfile) return '';
   let myPreds = [];
   try {
-    myPreds = await authFetch(`match_predictions?user_id=eq.${currentUser.id}&select=match_id,choice`);
+    myPreds = await authFetch(`match_predictions?user_id=eq.${currentUser.id}&select=match_id,choice,score_a_pick,score_b_pick,qualifier_pick`);
   } catch(_) { myPreds = []; }
   if (!myPreds || !myPreds.length) return '';
+
+  // Déduplique par match (peut arriver s'il reste d'anciennes lignes en base
+  // avant l'ajout de la contrainte unique côté Supabase) — garde la ligne
+  // la plus complète (avec un score exact renseigné si possible).
+  const byMatch = {};
+  myPreds.forEach(p => {
+    const key = String(p.match_id);
+    const existing = byMatch[key];
+    const hasScore = p.score_a_pick!=null && p.score_b_pick!=null;
+    const existingHasScore = existing && existing.score_a_pick!=null && existing.score_b_pick!=null;
+    if(!existing || (hasScore && !existingHasScore)){
+      byMatch[key] = p;
+    }
+  });
+  myPreds = Object.values(byMatch);
 
   const rows = myPreds.map(pred => {
     const m = data.find(x => String(x.id) === String(pred.match_id));
     if (!m) return null;
-    const opts = [m.home, 'Match nul', m.away];
-    const choiceLabel = pred.choice === 'home' ? m.home : pred.choice === 'away' ? m.away : pred.choice === 'draw' ? 'Match nul' : pred.choice;
+    const hasScore = pred.score_a_pick!=null && pred.score_b_pick!=null;
+    // Label utilisé pour l'affichage (score exact si dispo, sinon le vainqueur choisi)
+    const winnerLabel = pred.choice === 'home' ? m.home : pred.choice === 'away' ? m.away : pred.choice === 'draw' ? 'Match nul' : pred.choice;
+    const displayLabel = hasScore ? `${m.home} ${pred.score_a_pick} - ${pred.score_b_pick} ${m.away}` : winnerLabel;
     const finished = matchStatusKey(m) === 'finished';
     let resultIcon = '⏳';
     let resultLabel = 'En attente';
     let pts = 0;
     if (finished) {
       const realResult = m.score_a > m.score_b ? m.home : m.score_a < m.score_b ? m.away : 'Match nul';
-      if (choiceLabel === realResult) {
+      const exactMatch = hasScore && m.score_a === pred.score_a_pick && m.score_b === pred.score_b_pick;
+      if (exactMatch) {
+        resultIcon = '✅';
+        resultLabel = '+5 pts';
+        pts = 5;
+      } else if (winnerLabel === realResult) {
         resultIcon = '✅';
         resultLabel = '+3 pts';
         pts = 3;
@@ -807,7 +829,7 @@ async function renderPredictionHistory() {
         resultLabel = '0 pt';
       }
     }
-    return { m, choiceLabel, resultIcon, resultLabel, finished, pts, start: matchStart(m) };
+    return { m, choiceLabel: displayLabel, resultIcon, resultLabel, finished, pts, start: matchStart(m) };
   }).filter(Boolean).sort((a,b) => b.start - a.start);
 
   if (!rows.length) return '';
