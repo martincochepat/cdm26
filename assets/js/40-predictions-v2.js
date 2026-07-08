@@ -36,50 +36,25 @@
       return { counts, total: rows.length };
     }
 
-    // Sauvegarde unifiée — utilise savePrediction() de 00-core-data.js
-    // et ajoute user_id si connecté
+    // Sauvegarde unifiée (sondage FanZone) — utilise le point d'écriture unique
+    // upsertPrediction() de 00-core-data.js, partagé avec submitScorePrediction,
+    // pour éviter tout conflit 409 quand les deux fonctionnalités touchent le même match.
     async function submitUnifiedPrediction(matchId, choice){
       const id = String(matchId);
 
-      // Vérifie si déjà voté
+      // Vérifie si déjà voté (cache local)
       if(myPredictionForMatch(id)) return;
 
-      // Payload de base
       const payload = {
         match_id: id,
         choice: String(choice),
         user_key: predictionUserKey,
       };
-
-      // Ajoute user_id si connecté
       if(typeof currentUser !== 'undefined' && currentUser){
         payload.user_id = currentUser.id;
       }
 
-      // Utilise authFetch si connecté pour envoyer le bon token
-      // UPSERT : si une ligne existe déjà pour (match_id, user_key), on met à jour au lieu d'insérer
-      if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
-        try {
-          await authFetch('match_predictions', {
-            method: 'POST',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify(payload),
-          });
-        } catch(err) {
-          // Conflit (déjà voté en anonyme) → met à jour la ligne existante
-          if(String(err.message).includes('23505') || String(err.message).includes('duplicate')){
-            await authFetch(`match_predictions?match_id=eq.${id}&user_key=eq.${predictionUserKey}`, {
-              method: 'PATCH',
-              headers: { Prefer: 'return=minimal' },
-              body: JSON.stringify({ choice: String(choice), user_id: currentUser.id }),
-            });
-          } else {
-            throw err;
-          }
-        }
-      } else {
-        await supabasePost('match_predictions', payload);
-      }
+      await upsertPrediction(payload);
 
       // Recharge les pronostics pour mettre à jour l'affichage
       await loadPredictions();
@@ -223,21 +198,6 @@
 
       try{
         const id = String(matchId);
-        // Supprimer tout vote existant via fetch direct (évite les erreurs de parsing JSON de authFetch)
-        try {
-          const SUPABASE_URL = 'https://lclnnxirkuuwexxcmmho.supabase.co';
-          const SUPABASE_KEY = typeof currentUser !== 'undefined' && currentUser
-            ? (window.__supabaseToken || localStorage.getItem('supabase.auth.token') || '')
-            : '';
-          const delFilter = typeof currentUser !== 'undefined' && currentUser
-            ? `user_id=eq.${currentUser.id}&match_id=eq.${id}`
-            : `user_key=eq.${predictionUserKey}&match_id=eq.${id}`;
-          // Utiliser authFetch mais ignorer l'erreur de parsing
-          if(typeof authFetch === 'function'){
-            authFetch(`match_predictions?${delFilter}`, {method:'DELETE',headers:{Prefer:'return=minimal'}}).catch(()=>{});
-            await new Promise(r=>setTimeout(r,200));
-          }
-        } catch(_){}
 
         const payload = {
           match_id: id,
@@ -249,15 +209,9 @@
         };
         if(typeof currentUser !== 'undefined' && currentUser) payload.user_id = currentUser.id;
 
-        if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
-          await authFetch('match_predictions', {
-            method: 'POST',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify(payload),
-          });
-        } else {
-          await supabasePost('match_predictions', payload);
-        }
+        // Écriture unique et sûre : POST, et si une ligne existe déjà (409/23505)
+        // pour ce match+user (ex: déjà voté via le sondage FanZone), bascule en PATCH.
+        await upsertPrediction(payload);
 
         _selectedQualifier = null;
         // Feedback visuel immédiat
