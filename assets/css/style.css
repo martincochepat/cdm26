@@ -357,6 +357,10 @@ body:not(.home-active) .hero{
   padding:10px 12px;
   font-weight:1000;
 }
+.quick-predict-btn.quick-predict-done{
+  border:1px solid #00c96e55;
+  background:linear-gradient(135deg,#00a85922,#00c96e22);
+}
 
 
 /* ─── V80 CHALLENGE + LEADERBOARD ──────────────────────────────────────── */
@@ -796,3 +800,27 @@ body:not(.home-active) .hero{
 .lc-mini-goal{animation:goalPulse .4s ease!important;border-color:#ef334080!important}
 
 .notif-banner{background:linear-gradient(135deg,#1a0f2bf8,#0a1f3cf8 55%,#0f2a1ff8)}
+
+/* ── Pronostic score exact V87 ───────────────────────────────── */
+.pred-rules-banner{background:#ffd16615;border:1px solid #ffd16640;border-radius:12px;padding:8px 12px;font-size:11px;color:#ffd166;font-weight:800;margin-bottom:14px;text-align:center}
+.pred-score-inputs{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px 0}
+.pred-team-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pred-team-name{font-size:12px;font-weight:800;color:#dcecff;text-align:center;max-width:90px}
+.pred-score-input{width:64px;height:64px;border-radius:16px;border:2px solid #ffffff20;background:#ffffff10;color:#fff;font-size:28px;font-weight:950;text-align:center;outline:none;transition:.2s;-moz-appearance:textfield}
+.pred-score-input::-webkit-outer-spin-button,.pred-score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pred-score-input:focus{border-color:#ffd166;background:#ffd16615}
+.pred-score-input:disabled{opacity:.6;color:#ffd166;background:#ffffff08;border-color:#ffd16640;cursor:not-allowed}
+.pred-qual-btn:disabled{opacity:.55;cursor:not-allowed}
+.pred-dash{font-size:24px;font-weight:950;color:#8fa6bd}
+.pred-qualifier-wrap{margin:12px 0;padding:12px;background:#ffffff08;border-radius:14px;border:1px solid #ffffff12}
+.pred-qualifier-btns{display:flex;gap:8px;margin-top:8px}
+.pred-qual-btn{flex:1;padding:10px;border-radius:12px;border:1.5px solid #ffffff20;background:#ffffff08;color:#dcecff;font-weight:800;font-size:13px;cursor:pointer;transition:.2s}
+.pred-qual-btn:hover{border-color:#ffd16660;background:#ffd16615}
+.pred-qual-selected{border-color:#ffd166!important;background:#ffd16622!important;color:#ffd166!important}
+.pred-submit-btn{width:100%;padding:13px;border-radius:16px;border:none;background:linear-gradient(90deg,#ffd166,#ff9f43);color:#061426;font-weight:950;font-size:14px;cursor:pointer;margin-top:12px;transition:.2s}
+.pred-submit-btn:hover{opacity:.9;transform:translateY(-1px)}
+.pred-voted-score{font-size:18px;font-weight:950;color:#dcecff;text-align:center;margin:10px 0}
+.pred-voted-score span{color:#ffd166;margin:0 8px}
+.pred-voted-qualifier{font-size:12px;color:#8fa6bd;text-align:center;margin-top:4px}
+.pred-modify-btn{width:100%;padding:10px;border-radius:14px;border:1px solid #ffffff20;background:transparent;color:#8fa6bd;font-weight:800;font-size:12px;cursor:pointer;margin-top:10px;transition:.2s}
+.pred-modify-btn:hover{border-color:#ffd16640;color:#ffd166}

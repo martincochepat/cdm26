@@ -36,50 +36,25 @@
       return { counts, total: rows.length };
     }
 
-    // Sauvegarde unifiée — utilise savePrediction() de 00-core-data.js
-    // et ajoute user_id si connecté
+    // Sauvegarde unifiée (sondage FanZone) — utilise le point d'écriture unique
+    // upsertPrediction() de 00-core-data.js, partagé avec submitScorePrediction,
+    // pour éviter tout conflit 409 quand les deux fonctionnalités touchent le même match.
     async function submitUnifiedPrediction(matchId, choice){
       const id = String(matchId);
 
-      // Vérifie si déjà voté
+      // Vérifie si déjà voté (cache local)
       if(myPredictionForMatch(id)) return;
 
-      // Payload de base
       const payload = {
         match_id: id,
         choice: String(choice),
         user_key: predictionUserKey,
       };
-
-      // Ajoute user_id si connecté
       if(typeof currentUser !== 'undefined' && currentUser){
         payload.user_id = currentUser.id;
       }
 
-      // Utilise authFetch si connecté pour envoyer le bon token
-      // UPSERT : si une ligne existe déjà pour (match_id, user_key), on met à jour au lieu d'insérer
-      if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
-        try {
-          await authFetch('match_predictions', {
-            method: 'POST',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify(payload),
-          });
-        } catch(err) {
-          // Conflit (déjà voté en anonyme) → met à jour la ligne existante
-          if(String(err.message).includes('23505') || String(err.message).includes('duplicate')){
-            await authFetch(`match_predictions?match_id=eq.${id}&user_key=eq.${predictionUserKey}`, {
-              method: 'PATCH',
-              headers: { Prefer: 'return=minimal' },
-              body: JSON.stringify({ choice: String(choice), user_id: currentUser.id }),
-            });
-          } else {
-            throw err;
-          }
-        }
-      } else {
-        await supabasePost('match_predictions', payload);
-      }
+      await upsertPrediction(payload);
 
       // Recharge les pronostics pour mettre à jour l'affichage
       await loadPredictions();
@@ -128,59 +103,47 @@
       }
 
       const already = myPredictionForMatch(matchId);
-      const { counts, total } = predictionStatsForMatch(matchId);
+      const { total } = predictionStatsForMatch(matchId);
+      const pred = already ? (predictionRows||[]).find(r => String(r.match_id)===String(matchId) && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey))) : null;
+      const sa = pred?.score_a_pick, sb = pred?.score_b_pick, qp = pred?.qualifier_pick;
+      const hasScore = sa!==null && sa!==undefined && sb!==null && sb!==undefined;
+      const isReadOnly = already && hasScore && _predictionForceEdit !== String(matchId);
+      const initialA = hasScore ? sa : 0;
+      const initialB = hasScore ? sb : 0;
+      const wrapVisible = isKnockout && (isReadOnly ? !!qp : initialA===initialB);
 
-      if(already){
-        // Déjà voté : afficher le vote + stats
-        const pred = (predictionRows||[]).find(r => String(r.match_id)===String(matchId) && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey)));
-        const sa = pred?.score_a_pick;
-        const sb = pred?.score_b_pick;
-        const qp = pred?.qualifier_pick;
-        const hasScore = sa!==null&&sa!==undefined&&sb!==null&&sb!==undefined;
-        const winnerLabel = already==='home'?m.home : already==='away'?m.away : 'Match nul';
-        box.innerHTML = `<div class="prediction-card">
-          <h3>✅ Ton pronostic</h3>
-          ${hasScore
-            ? `<div class="pred-voted-score">${esc(m.home)} <span>${sa} - ${sb}</span> ${esc(m.away)}</div>`
-            : `<div class="pred-voted-score"><span>${esc(winnerLabel)}</span></div>`
-          }
-          ${qp?`<div class="pred-voted-qualifier">Se qualifie : <b>${esc(qp)}</b></div>`:''}
-          <p class="prediction-sub" style="margin-top:8px">Score exact → 5pts · Bon vainqueur → 3pts</p>
-          <span class="prediction-total">${total} vote${total>1?'s':''}</span>
-          <button class="pred-modify-btn" onclick="cancelPrediction(${jsArg(matchId)})">✏️ Modifier mon pronostic</button>
-        </div>`;
-        return;
-      }
-
-      // Formulaire score exact
       box.innerHTML = `<div class="prediction-card">
-        <div class="pred-rules-banner">🆕 Nouvelles règles · Score exact = <b>+5pts</b> · Bon vainqueur = <b>+3pts</b></div>
-        <h3>🎯 Pronostic du match</h3>
-        <p class="prediction-sub">Entre le score que tu penses voir à la fin du temps réglementaire.</p>
+        ${isReadOnly?'':`<div class="pred-rules-banner">🆕 Nouvelles règles · Score exact = <b>+5pts</b> · Bon vainqueur = <b>+3pts</b></div>`}
+        <h3>${isReadOnly?'✅ Ton pronostic':'🎯 Pronostic du match'}</h3>
+        <p class="prediction-sub">${isReadOnly?'Score exact → 5pts · Bon vainqueur → 3pts':"Entre le score que tu penses voir à la fin du temps réglementaire."}</p>
         <div class="pred-score-inputs">
           <div class="pred-team-col">
             <span class="pred-team-name">${esc(m.home)}</span>
-            <input type="number" id="predScoreA" value="0" min="0" max="20" class="pred-score-input">
+            <input type="number" id="predScoreA" value="${initialA}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}>
           </div>
           <span class="pred-dash">-</span>
           <div class="pred-team-col">
             <span class="pred-team-name">${esc(m.away)}</span>
-            <input type="number" id="predScoreB" value="0" min="0" max="20" class="pred-score-input">
+            <input type="number" id="predScoreB" value="${initialB}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}>
           </div>
         </div>
         ${isKnockout?`
-        <div class="pred-qualifier-wrap" id="predQualifierWrap" style="display:none">
+        <div class="pred-qualifier-wrap" id="predQualifierWrap" style="display:${wrapVisible?'block':'none'}">
           <p class="prediction-sub">Score nul : qui se qualifie ?</p>
           <div class="pred-qualifier-btns">
-            <button class="pred-qual-btn" id="predQualA" onclick="selectQualifier('${m.home}')">${esc(m.home)}</button>
-            <button class="pred-qual-btn" id="predQualB" onclick="selectQualifier('${m.away}')">${esc(m.away)}</button>
+            <button class="pred-qual-btn ${qp===m.home?'pred-qual-selected':''}" id="predQualA" ${isReadOnly?'disabled':''} onclick="selectQualifier('${esc(m.home)}')">${esc(m.home)}</button>
+            <button class="pred-qual-btn ${qp===m.away?'pred-qual-selected':''}" id="predQualB" ${isReadOnly?'disabled':''} onclick="selectQualifier('${esc(m.away)}')">${esc(m.away)}</button>
           </div>
         </div>`:''}
-        <button class="pred-submit-btn" id="predSubmitBtn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>
+        ${isReadOnly
+          ? `<button class="pred-modify-btn" onclick="enablePredictionEdit(${jsArg(matchId)})">✏️ Modifier mon pronostic</button>`
+          : `<button class="pred-submit-btn" id="predSubmitBtn" onclick="submitScorePrediction(${jsArg(matchId)})">Valider mon pronostic →</button>`
+        }
         <span class="prediction-total">${total} vote${total>1?'s':''}</span>
       </div>`;
 
-      if(isKnockout){
+      if(isKnockout && !isReadOnly){
+        _selectedQualifier = qp || null;
         // Afficher/masquer le sélecteur de qualifié si score nul
         function checkQualifier(){
           const a=parseInt(document.getElementById('predScoreA')?.value)||0;
@@ -191,6 +154,12 @@
         document.getElementById('predScoreA')?.addEventListener('input',checkQualifier);
         document.getElementById('predScoreB')?.addEventListener('input',checkQualifier);
       }
+    }
+
+    let _predictionForceEdit = null;
+    function enablePredictionEdit(matchId){
+      _predictionForceEdit = String(matchId);
+      renderPredictionBox(matchId);
     }
 
     let _selectedQualifier = null;
@@ -223,21 +192,6 @@
 
       try{
         const id = String(matchId);
-        // Supprimer tout vote existant via fetch direct (évite les erreurs de parsing JSON de authFetch)
-        try {
-          const SUPABASE_URL = 'https://lclnnxirkuuwexxcmmho.supabase.co';
-          const SUPABASE_KEY = typeof currentUser !== 'undefined' && currentUser
-            ? (window.__supabaseToken || localStorage.getItem('supabase.auth.token') || '')
-            : '';
-          const delFilter = typeof currentUser !== 'undefined' && currentUser
-            ? `user_id=eq.${currentUser.id}&match_id=eq.${id}`
-            : `user_key=eq.${predictionUserKey}&match_id=eq.${id}`;
-          // Utiliser authFetch mais ignorer l'erreur de parsing
-          if(typeof authFetch === 'function'){
-            authFetch(`match_predictions?${delFilter}`, {method:'DELETE',headers:{Prefer:'return=minimal'}}).catch(()=>{});
-            await new Promise(r=>setTimeout(r,200));
-          }
-        } catch(_){}
 
         const payload = {
           match_id: id,
@@ -249,17 +203,12 @@
         };
         if(typeof currentUser !== 'undefined' && currentUser) payload.user_id = currentUser.id;
 
-        if(typeof currentUser !== 'undefined' && currentUser && typeof authFetch === 'function'){
-          await authFetch('match_predictions', {
-            method: 'POST',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify(payload),
-          });
-        } else {
-          await supabasePost('match_predictions', payload);
-        }
+        // Écriture unique et sûre : POST, et si une ligne existe déjà (409/23505)
+        // pour ce match+user (ex: déjà voté via le sondage FanZone), bascule en PATCH.
+        await upsertPrediction(payload);
 
         _selectedQualifier = null;
+        _predictionForceEdit = null;
         // Feedback visuel immédiat
         const submitBtn = document.getElementById('predSubmitBtn');
         if(submitBtn){
@@ -292,7 +241,7 @@
       }
     }
 
-    async function cancelPrediction(matchId){
+    async function cancelPrediction(matchId, afterRender){
       const m = data.find(x=>String(x.id)===String(matchId));
       if(!m || matchStatusKey(m)==='live' || matchStatusKey(m)==='finished' || isPast(m)){
         alert('Le match a déjà commencé, impossible de modifier ton pronostic.');
@@ -311,6 +260,7 @@
         }
 
         _selectedQualifier = null;
+        delete _selectedQualifiersCompact[String(matchId)];
         // Vider localement predictionRows pour ce match puis re-rendre
         if(Array.isArray(window.predictionRows)){
           window.predictionRows = window.predictionRows.filter(r =>
@@ -324,8 +274,126 @@
               (r.user_id===(currentUser?.id) || String(r.user_key)===String(predictionUserKey)))
           );
         }
-        await renderPredictionBox(matchId);
+        if(typeof afterRender === 'function'){
+          await afterRender(matchId);
+        } else {
+          await renderPredictionBox(matchId);
+        }
       }catch(e){
         console.error('cancelPrediction error:', e);
+      }
+    }
+
+    // ─── Widget compact pour la page Challenge (plusieurs matchs affichés en même temps) ───
+    // Réutilise upsertPrediction/myPredictionForMatch/predictionStatsForMatch ci-dessus,
+    // mais avec des ID DOM uniques par match (predScoreA/B sont uniques sur la fiche détail,
+    // donc inutilisables tels quels quand 3 cartes de pronostic sont affichées à la fois).
+    const _selectedQualifiersCompact = {};
+
+    function selectQualifierCompact(matchId, team){
+      const id = String(matchId);
+      _selectedQualifiersCompact[id] = team;
+      document.querySelectorAll(`.cpred-qual-btn[data-match="${id}"]`).forEach(b=>{
+        b.classList.toggle('pred-qual-selected', b.textContent.trim()===team);
+      });
+    }
+
+    const _challengeForceEdit = new Set();
+    function enableChallengeEdit(matchId){
+      _challengeForceEdit.add(String(matchId));
+      if(typeof renderFanZone === 'function') renderFanZone();
+    }
+
+    function renderChallengeMatch(m){
+      const id = String(m.id);
+      const k = matchStatusKey(m);
+
+      if(k==='live' || k==='finished' || isPast(m)){
+        const msg = k==='live' ? '⏱️ Match en cours' : '🔒 Match terminé';
+        return `<div class="poll-match-card"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}</div><div class="prediction-sub" style="margin-top:8px">${msg}</div></div>`;
+      }
+
+      const already = myPredictionForMatch(id);
+      const { total } = predictionStatsForMatch(id);
+      const isKnockout = !String(m.phase||'').startsWith('Groupe');
+      const pred = already ? (predictionRows||[]).find(r => String(r.match_id)===id && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey))) : null;
+      const sa = pred?.score_a_pick, sb = pred?.score_b_pick, qp = pred?.qualifier_pick;
+      const hasScore = sa!==null && sa!==undefined && sb!==null && sb!==undefined;
+      const isReadOnly = already && hasScore && !_challengeForceEdit.has(id);
+      const initialA = hasScore ? sa : 0;
+      const initialB = hasScore ? sb : 0;
+      const wrapVisible = isKnockout && (isReadOnly ? !!qp : initialA===initialB);
+
+      return `<div class="poll-match-card">
+        <b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b>
+        <div class="mini">${dateLabel(m.date)} · ${m.time}${total?` · ${total} vote${total>1?'s':''}`:''}</div>
+        <div class="pred-score-inputs" style="margin-top:10px">
+          <div class="pred-team-col"><span class="pred-team-name">${esc(m.home)}</span><input type="number" id="cpredScoreA_${id}" value="${initialA}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}></div>
+          <span class="pred-dash">-</span>
+          <div class="pred-team-col"><span class="pred-team-name">${esc(m.away)}</span><input type="number" id="cpredScoreB_${id}" value="${initialB}" min="0" max="20" class="pred-score-input" ${isReadOnly?'disabled':''}></div>
+        </div>
+        ${isKnockout?`
+        <div class="pred-qualifier-wrap" id="cpredQualifierWrap_${id}" style="display:${wrapVisible?'block':'none'}">
+          <p class="prediction-sub">Score nul : qui se qualifie ?</p>
+          <div class="pred-qualifier-btns">
+            <button class="pred-qual-btn cpred-qual-btn ${qp===m.home?'pred-qual-selected':''}" data-match="${id}" ${isReadOnly?'disabled':''} onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.home)}')">${esc(m.home)}</button>
+            <button class="pred-qual-btn cpred-qual-btn ${qp===m.away?'pred-qual-selected':''}" data-match="${id}" ${isReadOnly?'disabled':''} onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.away)}')">${esc(m.away)}</button>
+          </div>
+        </div>`:''}
+        ${isReadOnly
+          ? `<button class="pred-modify-btn" style="margin-top:10px" onclick="enableChallengeEdit(${jsArg(id)})">✏️ Modifier mon pronostic</button>`
+          : `<button class="pred-submit-btn" id="cpredSubmitBtn_${id}" style="margin-top:10px" onclick="submitScorePredictionCompact(${jsArg(id)})">Valider →</button>`
+        }
+      </div>`;
+    }
+
+    async function submitScorePredictionCompact(matchId){
+      const id = String(matchId);
+      const sa = parseInt(document.getElementById('cpredScoreA_'+id)?.value);
+      const sb = parseInt(document.getElementById('cpredScoreB_'+id)?.value);
+      if(isNaN(sa)||isNaN(sb)){ alert('Entre un score valide.'); return; }
+
+      const m = data.find(x=>String(x.id)===id);
+      if(!m) return;
+      const isKnockout = !String(m.phase||'').startsWith('Groupe');
+
+      if(isKnockout && sa===sb && !_selectedQualifiersCompact[id]){
+        const wrap = document.getElementById('cpredQualifierWrap_'+id);
+        if(wrap) wrap.style.display='block';
+        return;
+      }
+
+      const qualifierPick = (isKnockout && sa===sb) ? _selectedQualifiersCompact[id] : null;
+      const choice = sa>sb ? 'home' : sa<sb ? 'away' : 'draw';
+
+      try{
+        const payload = {
+          match_id: id,
+          choice,
+          score_a_pick: sa,
+          score_b_pick: sb,
+          qualifier_pick: qualifierPick,
+          user_key: predictionUserKey || String(Date.now()),
+        };
+        if(typeof currentUser !== 'undefined' && currentUser) payload.user_id = currentUser.id;
+
+        await upsertPrediction(payload);
+
+        delete _selectedQualifiersCompact[id];
+        _challengeForceEdit.delete(id);
+        const btn = document.getElementById('cpredSubmitBtn_'+id);
+        if(btn){
+          btn.textContent = '✅ Enregistré !';
+          btn.style.background = 'linear-gradient(90deg,#00a859,#00c96e)';
+          btn.disabled = true;
+        }
+        await loadPredictions();
+        if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
+          await recalculateUserPoints(currentUser.id);
+        }
+        if(typeof renderFanZone === 'function') renderFanZone();
+      }catch(e){
+        console.error(e);
+        alert("Impossible d'enregistrer le pronostic pour le moment.");
       }
     }
