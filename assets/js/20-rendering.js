@@ -497,32 +497,9 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const item = source[dayNumber() % source.length];
       return item || source[0];
     }
-    const pollOptionsFor=m=>[m.home,'Nul',m.away];
-    function predictionStats(matchId){
-      const id=String(matchId);
-      const rows=(predictionRows||[]).filter(r=>String(r.match_id)===id);
-      const counts={};
-      rows.forEach(r=>{counts[r.choice]=(counts[r.choice]||0)+1});
-      return {rows,counts,total:rows.length};
-    }
-    function myPrediction(matchId){
-      const id=String(matchId);
-      let row;
-      if(typeof currentUser !== 'undefined' && currentUser){
-        row=(predictionRows||[]).find(r=>String(r.match_id)===id && r.user_id && r.user_id===currentUser.id);
-      }
-      if(!row){
-        row=(predictionRows||[]).find(r=>String(r.match_id)===id && String(r.user_key)===String(predictionUserKey));
-      }
-      if(!row) return '';
-      // Convertit home/draw/away en label affiché (ex: 'Suisse', 'Nul')
-      const m=data.find(x=>String(x.id)===id);
-      if(!m) return row.choice || '';
-      if(row.choice==='home') return m.home;
-      if(row.choice==='draw') return 'Nul';
-      if(row.choice==='away') return m.away;
-      return row.choice || '';
-    }
+    // (Ancien système de sondage 3-boutons remplacé par le pronostic score-exact
+    // — voir renderChallengeMatch() dans 40-predictions-v2.js)
+
 
     // ─── Fan Zone : quiz et pronos avec gating compte ─────────────────────
     function renderLockedOverlay(label) {
@@ -535,13 +512,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       </div>`;
     }
 
-    function renderPollMatch(m){
-      const opts=pollOptionsFor(m);
-      const {counts,total}=predictionStats(m.id);
-      const voted=myPrediction(m.id);
-      const loading=!predictionsLoaded;
-      return `<div class="poll-match-card"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}${loading?' · chargement...':` · ${total} vote(s)`}</div>${opts.map(o=>{let pct=total?Math.round(((counts[o]||0)/total)*100):0;let selected=voted===o;return `<button class="poll-option" ${(voted||loading)?'disabled':''} onclick="votePoll(${jsArg(m.id)},'${esc(o)}')" style="${selected?'background:linear-gradient(135deg,#ffd16633,#ff9f4333);border:2px solid #ffd166;color:#ffd166;-webkit-text-fill-color:#ffd166':''}"><span>${esc(o)}</span><b>${pct}%</b></button><div class="progress"><span style="width:${pct}%;${selected?'background:linear-gradient(90deg,#ffd166,#ff9f43)':''}"></span></div>`}).join('')}${voted?`<div class="mini" style="margin-top:8px;color:#ffd166">Votre pronostic : <b>${esc(voted)}</b></div>`:''}</div>`;
-    }
+    // (renderPollMatch supprimé — remplacé par renderChallengeMatch dans 40-predictions-v2.js)
+
 
     function renderFanZone(){
       if(!window.quizBox) return;
@@ -569,7 +541,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       if(!isLoggedIn){
         pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><div style="position:relative;border-radius:18px;overflow:hidden"><div style="filter:blur(4px);pointer-events:none;user-select:none;opacity:.65">${pollMatches.slice(0,2).map(m=>`<div class="poll-match-card" style="opacity:.5;pointer-events:none"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}</div><div style="display:grid;gap:6px;margin-top:8px">${['─','─','─'].map(o=>`<div style="background:#ffffff10;border:1px solid #ffffff18;border-radius:12px;padding:8px 12px;color:#adc0d2">${o}</div>`).join('')}</div></div>`).join('')}</div>${renderLockedOverlay('Connecte-toi pour pronostiquer et grimper dans le classement')}</div><button onclick="switchTab('matches');setTimeout(()=>{const next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0];if(next){const el=document.getElementById('match-'+next.id);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}},200)" style="display:block;width:100%;margin-top:12px;background:#ffffff0d;border:1px solid #ffffff18;color:#dcecff;-webkit-text-fill-color:#dcecff;border-radius:14px;padding:12px;font-weight:900;cursor:pointer;font-family:inherit">Voir tous les matchs →</button>`;
       } else {
-        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Synchronisé entre tous les joueurs.</p>${pollMatches.length?pollMatches.map(renderPollMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}<button onclick="switchTab('matches');setTimeout(()=>{const next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0];if(next){const el=document.getElementById('match-'+next.id);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}},200)" style="display:block;width:100%;margin-top:12px;background:#ffffff0d;border:1px solid #ffffff18;color:#dcecff;-webkit-text-fill-color:#dcecff;border-radius:14px;padding:12px;font-weight:900;cursor:pointer;font-family:inherit">Voir tous les matchs →</button>`;
+        pollBox.innerHTML=`<h3 style="margin:0 0 10px">🔥 ${pollTitle}</h3><p class="mini">Synchronisé entre tous les joueurs.</p>${pollMatches.length?pollMatches.map(renderChallengeMatch).join(''):'<div class="empty-soft">Aucun match à pronostiquer.</div>'}<button onclick="switchTab('matches');setTimeout(()=>{const next=data.filter(m=>!isPast(m)).sort((a,b)=>matchStart(a)-matchStart(b))[0];if(next){const el=document.getElementById('match-'+next.id);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}},200)" style="display:block;width:100%;margin-top:12px;background:#ffffff0d;border:1px solid #ffffff18;color:#dcecff;-webkit-text-fill-color:#dcecff;border-radius:14px;padding:12px;font-weight:900;cursor:pointer;font-family:inherit">Voir tous les matchs →</button>`;
       }
 
       // ── STATS ─────────────────────────────────────────────────────────────
@@ -625,33 +597,8 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         console.warn('Quiz Supabase:', err.message || err);
       }
     }
-    async function votePoll(id,opt){
-      id=String(id);
-      if(myPrediction(id)){renderFanZone();return}
-      const m=data.find(x=>String(x.id)===id);
-      if(!m) return;
-      // Convertit le label affiché (Suisse/Nul/Qatar) en home/draw/away
-      let choice;
-      if(opt===m.home) choice='home';
-      else if(opt===m.away) choice='away';
-      else choice='draw';
-      try{
-        if(typeof submitUnifiedPrediction === 'function'){
-          await submitUnifiedPrediction(id, choice);
-        } else {
-          await savePrediction(id,opt);
-          await loadPredictions();
-        }
-        if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
-          await recalculateUserPoints(currentUser.id);
-        }
-      }catch(err){
-        console.warn('Vote Supabase impossible.', err);
-        alert('Vote déjà enregistré ou indisponible pour le moment.');
-        await loadPredictions();
-      }
-      renderFanZone()
-    }
+    // (votePoll supprimé — remplacé par submitScorePredictionCompact dans 40-predictions-v2.js)
+
 
     function renderHostMap(activeCity='', mode='compact'){
       const major=new Set(['New York','Dallas','Los Angeles','Mexico','Toronto','Vancouver']);

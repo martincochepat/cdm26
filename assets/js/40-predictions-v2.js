@@ -246,7 +246,7 @@
       }
     }
 
-    async function cancelPrediction(matchId){
+    async function cancelPrediction(matchId, afterRender){
       const m = data.find(x=>String(x.id)===String(matchId));
       if(!m || matchStatusKey(m)==='live' || matchStatusKey(m)==='finished' || isPast(m)){
         alert('Le match a déjà commencé, impossible de modifier ton pronostic.');
@@ -265,6 +265,7 @@
         }
 
         _selectedQualifier = null;
+        delete _selectedQualifiersCompact[String(matchId)];
         // Vider localement predictionRows pour ce match puis re-rendre
         if(Array.isArray(window.predictionRows)){
           window.predictionRows = window.predictionRows.filter(r =>
@@ -278,8 +279,125 @@
               (r.user_id===(currentUser?.id) || String(r.user_key)===String(predictionUserKey)))
           );
         }
-        await renderPredictionBox(matchId);
+        if(typeof afterRender === 'function'){
+          await afterRender(matchId);
+        } else {
+          await renderPredictionBox(matchId);
+        }
       }catch(e){
         console.error('cancelPrediction error:', e);
+      }
+    }
+
+    // ─── Widget compact pour la page Challenge (plusieurs matchs affichés en même temps) ───
+    // Réutilise upsertPrediction/myPredictionForMatch/predictionStatsForMatch ci-dessus,
+    // mais avec des ID DOM uniques par match (predScoreA/B sont uniques sur la fiche détail,
+    // donc inutilisables tels quels quand 3 cartes de pronostic sont affichées à la fois).
+    const _selectedQualifiersCompact = {};
+
+    function selectQualifierCompact(matchId, team){
+      const id = String(matchId);
+      _selectedQualifiersCompact[id] = team;
+      document.querySelectorAll(`.cpred-qual-btn[data-match="${id}"]`).forEach(b=>{
+        b.classList.toggle('pred-qual-selected', b.textContent.trim()===team);
+      });
+    }
+
+    function renderChallengeMatch(m){
+      const id = String(m.id);
+      const k = matchStatusKey(m);
+
+      if(k==='live' || k==='finished' || isPast(m)){
+        const msg = k==='live' ? '⏱️ Match en cours' : '🔒 Match terminé';
+        return `<div class="poll-match-card"><b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b><div class="mini">${dateLabel(m.date)} · ${m.time}</div><div class="prediction-sub" style="margin-top:8px">${msg}</div></div>`;
+      }
+
+      const already = myPredictionForMatch(id);
+      const { total } = predictionStatsForMatch(id);
+      const isKnockout = !String(m.phase||'').startsWith('Groupe');
+
+      if(already){
+        const pred = (predictionRows||[]).find(r => String(r.match_id)===id && (r.user_id===currentUser?.id || String(r.user_key)===String(predictionUserKey)));
+        const sa = pred?.score_a_pick, sb = pred?.score_b_pick;
+        const qp = pred?.qualifier_pick;
+        const hasScore = sa!==null && sa!==undefined && sb!==null && sb!==undefined;
+        const winnerLabel = already==='home'?m.home:already==='away'?m.away:'Match nul';
+        return `<div class="poll-match-card">
+          <b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b>
+          <div class="mini">${dateLabel(m.date)} · ${m.time} · ${total} vote${total>1?'s':''}</div>
+          <div class="mini" style="margin-top:8px;color:#ffd166">
+            Votre pronostic : <b>${hasScore?`${esc(m.home)} ${sa} - ${sb} ${esc(m.away)}`:esc(winnerLabel)}</b>${qp?` · Qualifié : <b>${esc(qp)}</b>`:''}
+          </div>
+          <button class="pred-modify-btn" style="margin-top:8px" onclick="cancelPrediction(${jsArg(id)}, () => { if(typeof renderFanZone==='function') renderFanZone(); })">✏️ Modifier</button>
+        </div>`;
+      }
+
+      return `<div class="poll-match-card">
+        <b>${flags[m.home]||'🏳️'} ${esc(m.home)} vs ${flags[m.away]||'🏳️'} ${esc(m.away)}</b>
+        <div class="mini">${dateLabel(m.date)} · ${m.time}${total?` · ${total} vote${total>1?'s':''}`:''}</div>
+        <div class="pred-score-inputs" style="margin-top:10px">
+          <div class="pred-team-col"><span class="pred-team-name">${esc(m.home)}</span><input type="number" id="cpredScoreA_${id}" value="0" min="0" max="20" class="pred-score-input"></div>
+          <span class="pred-dash">-</span>
+          <div class="pred-team-col"><span class="pred-team-name">${esc(m.away)}</span><input type="number" id="cpredScoreB_${id}" value="0" min="0" max="20" class="pred-score-input"></div>
+        </div>
+        ${isKnockout?`
+        <div class="pred-qualifier-wrap" id="cpredQualifierWrap_${id}" style="display:none">
+          <p class="prediction-sub">Score nul : qui se qualifie ?</p>
+          <div class="pred-qualifier-btns">
+            <button class="pred-qual-btn cpred-qual-btn" data-match="${id}" onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.home)}')">${esc(m.home)}</button>
+            <button class="pred-qual-btn cpred-qual-btn" data-match="${id}" onclick="selectQualifierCompact(${jsArg(id)},'${esc(m.away)}')">${esc(m.away)}</button>
+          </div>
+        </div>`:''}
+        <button class="pred-submit-btn" id="cpredSubmitBtn_${id}" style="margin-top:10px" onclick="submitScorePredictionCompact(${jsArg(id)})">Valider →</button>
+      </div>`;
+    }
+
+    async function submitScorePredictionCompact(matchId){
+      const id = String(matchId);
+      const sa = parseInt(document.getElementById('cpredScoreA_'+id)?.value);
+      const sb = parseInt(document.getElementById('cpredScoreB_'+id)?.value);
+      if(isNaN(sa)||isNaN(sb)){ alert('Entre un score valide.'); return; }
+
+      const m = data.find(x=>String(x.id)===id);
+      if(!m) return;
+      const isKnockout = !String(m.phase||'').startsWith('Groupe');
+
+      if(isKnockout && sa===sb && !_selectedQualifiersCompact[id]){
+        const wrap = document.getElementById('cpredQualifierWrap_'+id);
+        if(wrap) wrap.style.display='block';
+        return;
+      }
+
+      const qualifierPick = (isKnockout && sa===sb) ? _selectedQualifiersCompact[id] : null;
+      const choice = sa>sb ? 'home' : sa<sb ? 'away' : 'draw';
+
+      try{
+        const payload = {
+          match_id: id,
+          choice,
+          score_a_pick: sa,
+          score_b_pick: sb,
+          qualifier_pick: qualifierPick,
+          user_key: predictionUserKey || String(Date.now()),
+        };
+        if(typeof currentUser !== 'undefined' && currentUser) payload.user_id = currentUser.id;
+
+        await upsertPrediction(payload);
+
+        delete _selectedQualifiersCompact[id];
+        const btn = document.getElementById('cpredSubmitBtn_'+id);
+        if(btn){
+          btn.textContent = '✅ Enregistré !';
+          btn.style.background = 'linear-gradient(90deg,#00a859,#00c96e)';
+          btn.disabled = true;
+        }
+        await loadPredictions();
+        if(typeof currentUser !== 'undefined' && currentUser && typeof recalculateUserPoints === 'function'){
+          await recalculateUserPoints(currentUser.id);
+        }
+        if(typeof renderFanZone === 'function') renderFanZone();
+      }catch(e){
+        console.error(e);
+        alert("Impossible d'enregistrer le pronostic pour le moment.");
       }
     }
