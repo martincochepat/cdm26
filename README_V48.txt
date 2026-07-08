@@ -1,5 +1,5 @@
 Guide Mondial 2026 — V48 UI
-Branche de développement et test
+Branche de développement et test v2
 
 Modifications :
 - Ajout d'un bloc dynamique à droite du hero sur ordinateur uniquement.
