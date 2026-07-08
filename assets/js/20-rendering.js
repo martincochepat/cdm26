@@ -821,6 +821,66 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       document.querySelectorAll('.det-panel').forEach(p=>{p.style.display=p.dataset.panel===tab?'block':'none'});
     }
 
+    // Génère le HTML des stats (cercle de possession + barres) — design unique,
+    // partagé entre la fiche détail et le bloc "à la une" de l'accueil, pour que
+    // tous les matchs (en cours, terminés) aient exactement le même rendu.
+    function buildStatsHtml(m, stats, emptyClass){
+      emptyClass = emptyClass || 'det-empty';
+      if(stats.length<2) return `<div class="${emptyClass}">Statistiques non disponibles pour ce match.</div>`;
+      const h=stats[0], a=stats[1];
+      function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
+      function statBar(label,hVal,aVal){
+        const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
+        const tot=hNum+aNum||1;
+        const hPct=Math.round((hNum/tot)*100);
+        return `<div class="det-stat-row">
+          <span class="det-stat-val">${hVal}</span>
+          <div class="det-stat-bar-wrap">
+            <div class="det-stat-bar">
+              <div class="det-stat-home-bar" style="flex:${hPct}"></div>
+              <div class="det-stat-divider"></div>
+              <div class="det-stat-away-bar" style="flex:${100-hPct}"></div>
+            </div>
+            <span class="det-stat-label">${label}</span>
+          </div>
+          <span class="det-stat-val">${aVal}</span>
+        </div>`;
+      }
+      const possH=parseFloat(String(getStat(h,'Ball Possession')).replace('%',''))||0;
+      const possA=parseFloat(String(getStat(a,'Ball Possession')).replace('%',''))||0;
+      const circumference=2*Math.PI*34;
+      const homeDash=Math.round((possH/100)*circumference);
+      const awayDash=Math.round((possA/100)*circumference);
+      return `
+        <div class="det-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
+        <div class="det-poss-wrap">
+          <div class="det-poss-circle">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff10" stroke-width="7"/>
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff30" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference-awayDash}" stroke-linecap="round"/>
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#ffd166" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${homeDash}" stroke-linecap="round" opacity="0.9"/>
+            </svg>
+            <div class="det-poss-val"><span>${possH}%</span><span>poss.</span></div>
+          </div>
+          <div class="det-poss-labels">
+            <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-home"></div><span>${esc(m.home)}</span><strong>${possH}%</strong></div>
+            <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-away"></div><span>${esc(m.away)}</span><strong>${possA}%</strong></div>
+          </div>
+        </div>
+        ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
+        ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
+        ${statBar('Tirs non cadrés',getStat(h,'Shots off Goal'),getStat(a,'Shots off Goal'))}
+        ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
+        ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
+        ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
+        ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
+        ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
+        ${statBar('Arrêts gardien',getStat(h,'Goalkeeper Saves'),getStat(a,'Goalkeeper Saves'))}
+        ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
+        ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
+      `;
+    }
+
     async function loadDetailStats(m){
       const els=document.querySelectorAll('.det-panel[data-panel="stats"]');
       const el=els[els.length-1];
@@ -830,59 +890,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         if(!res.ok){ el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>'; return; }
         const json=await res.json();
         const stats=json.stats||[];
-        if(stats.length<2){ el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>'; return; }
-        const h=stats[0], a=stats[1];
-        function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
-        function statBar(label,hVal,aVal){
-          const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
-          const tot=hNum+aNum||1;
-          const hPct=Math.round((hNum/tot)*100);
-          return `<div class="det-stat-row">
-            <span class="det-stat-val">${hVal}</span>
-            <div class="det-stat-bar-wrap">
-              <div class="det-stat-bar">
-                <div class="det-stat-home-bar" style="flex:${hPct}"></div>
-                <div class="det-stat-divider"></div>
-                <div class="det-stat-away-bar" style="flex:${100-hPct}"></div>
-              </div>
-              <span class="det-stat-label">${label}</span>
-            </div>
-            <span class="det-stat-val">${aVal}</span>
-          </div>`;
-        }
-        const possH=parseFloat(String(getStat(h,'Ball Possession')).replace('%',''))||0;
-        const possA=parseFloat(String(getStat(a,'Ball Possession')).replace('%',''))||0;
-        const circumference=2*Math.PI*34;
-        const homeDash=Math.round((possH/100)*circumference);
-        const awayDash=Math.round((possA/100)*circumference);
-        el.innerHTML=`
-          <div class="det-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
-          <div class="det-poss-wrap">
-            <div class="det-poss-circle">
-              <svg width="80" height="80" viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff10" stroke-width="7"/>
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff30" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference-awayDash}" stroke-linecap="round"/>
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#ffd166" stroke-width="7" stroke-dasharray="${circumference}" stroke-dashoffset="${homeDash}" stroke-linecap="round" opacity="0.9"/>
-              </svg>
-              <div class="det-poss-val"><span>${possH}%</span><span>poss.</span></div>
-            </div>
-            <div class="det-poss-labels">
-              <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-home"></div><span>${esc(m.home)}</span><strong>${possH}%</strong></div>
-              <div class="det-poss-label"><div class="det-poss-dot det-poss-dot-away"></div><span>${esc(m.away)}</span><strong>${possA}%</strong></div>
-            </div>
-          </div>
-          ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
-          ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
-          ${statBar('Tirs non cadrés',getStat(h,'Shots off Goal'),getStat(a,'Shots off Goal'))}
-          ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
-          ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
-          ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
-          ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
-          ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
-          ${statBar('Arrêts gardien',getStat(h,'Goalkeeper Saves'),getStat(a,'Goalkeeper Saves'))}
-          ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
-          ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
-        `;
+        el.innerHTML=buildStatsHtml(m, stats, 'det-empty');
       }catch(e){
         el.innerHTML='<div class="det-empty">Statistiques non disponibles pour ce match.</div>';
       }
@@ -1095,36 +1103,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
         if(!res.ok){ el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>'; return; }
         const json=await res.json();
         const stats=json.stats||[];
-        if(stats.length<2){ el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>'; return; }
-        const h=stats[0], a=stats[1];
-        function getStat(team,name){const s=team.statistics||[];const found=s.find(x=>x.type===name);return found?(found.value??0):0;}
-        function statBar(label,hVal,aVal){
-          const hNum=parseFloat(String(hVal).replace('%',''))||0, aNum=parseFloat(String(aVal).replace('%',''))||0;
-          const tot=hNum+aNum||1;
-          const hPct=Math.round((hNum/tot)*100);
-          return `<div class="hm-fz-stat-row">
-            <span class="hm-fz-stat-val">${hVal}</span>
-            <div class="hm-fz-stat-bar-wrap">
-              <div class="hm-fz-stat-bar"><div class="hm-fz-stat-fill hm-fz-stat-home" style="width:${hPct}%"></div></div>
-              <span class="hm-fz-stat-label">${label}</span>
-              <div class="hm-fz-stat-bar"><div class="hm-fz-stat-fill hm-fz-stat-away" style="width:${100-hPct}%"></div></div>
-            </div>
-            <span class="hm-fz-stat-val">${aVal}</span>
-          </div>`;
-        }
-        el.innerHTML=`
-          <div class="hm-fz-stats-header"><span>${esc(m.home)}</span><span>${esc(m.away)}</span></div>
-          ${statBar('Possession',getStat(h,'Ball Possession')||'0%',getStat(a,'Ball Possession')||'0%')}
-          ${statBar('Tirs totaux',getStat(h,'Total Shots'),getStat(a,'Total Shots'))}
-          ${statBar('Tirs cadrés',getStat(h,'Shots on Goal'),getStat(a,'Shots on Goal'))}
-          ${statBar('Corners',getStat(h,'Corner Kicks'),getStat(a,'Corner Kicks'))}
-          ${statBar('Fautes',getStat(h,'Fouls'),getStat(a,'Fouls'))}
-          ${statBar('Hors-jeux',getStat(h,'Offsides'),getStat(a,'Offsides'))}
-          ${statBar('Cartons jaunes',getStat(h,'Yellow Cards'),getStat(a,'Yellow Cards'))}
-          ${statBar('Cartons rouges',getStat(h,'Red Cards'),getStat(a,'Red Cards'))}
-          ${statBar('Passes réussies',getStat(h,'Passes accurate'),getStat(a,'Passes accurate'))}
-          ${statBar('% Passes',getStat(h,'Passes %')||'0%',getStat(a,'Passes %')||'0%')}
-        `;
+        el.innerHTML=buildStatsHtml(m, stats, 'hm-fz-empty');
       }catch(e){
         el.innerHTML='<div class="hm-fz-empty">Statistiques non disponibles pour ce match.</div>';
       }
