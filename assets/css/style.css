@@ -357,6 +357,10 @@ body:not(.home-active) .hero{
   padding:10px 12px;
   font-weight:1000;
 }
+.quick-predict-btn.quick-predict-done{
+  border:1px solid #00c96e55;
+  background:linear-gradient(135deg,#00a85922,#00c96e22);
+}
 
 
 /* ─── V80 CHALLENGE + LEADERBOARD ──────────────────────────────────────── */
