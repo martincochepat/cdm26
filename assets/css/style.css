@@ -370,6 +370,46 @@ body:not(.home-active) .hero{
 
 /* Leaderboard */
 .challenge-leaderboard{background:#061426e8;border:1px solid #ffffff14;border-radius:22px;padding:20px;margin-top:12px}
+
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:14px 0 20px}
+.podium-col{display:flex;flex-direction:column;align-items:center;width:30%;max-width:104px}
+.podium-medal{font-size:22px;margin-bottom:4px}
+.podium-col-first .podium-medal{font-size:30px}
+.podium-avatar{width:52px;height:52px;border-radius:50%;background:#ffffff10;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px;border:2px solid #c7d2e0}
+.podium-col-first .podium-avatar{width:60px;height:60px;font-size:28px;border-color:#ffd166;background:#ffd16622}
+.podium-name{font-size:12px;font-weight:700;color:#fff;text-align:center}
+.podium-col-first .podium-name{font-size:13px;font-weight:900;color:#ffd166}
+.podium-pts{font-size:11px;color:#8fa6bd;margin-bottom:8px}
+.podium-col-first .podium-pts{color:#ffd166;font-weight:700}
+.podium-bar{width:100%;background:linear-gradient(180deg,#c7d2e022,#c7d2e00a);border-radius:10px 10px 0 0;border:1px solid #c7d2e033;border-bottom:none}
+.podium-col-first .podium-bar{background:linear-gradient(180deg,#ffd16633,#ffd16608);border-color:#ffd16655}
+.podium-col:nth-child(3) .podium-avatar{border-color:#d8935c}
+.podium-col:nth-child(3) .podium-bar{background:linear-gradient(180deg,#d8935c22,#d8935c0a);border-color:#d8935c33}
+
+.champion-hero{position:relative;background:linear-gradient(160deg,#1a1030 0%,#061426 55%);border-radius:22px;padding:32px 20px 24px;text-align:center;overflow:hidden;border:1px solid #ffffff14}
+.champion-confetti{position:absolute;font-size:24px;opacity:.45}
+.champion-confetti-1{top:10px;left:10px;transform:rotate(-15deg)}
+.champion-confetti-2{top:14px;right:10px;transform:rotate(20deg)}
+.champion-confetti-3{bottom:14px;left:20px;transform:rotate(10deg);font-size:20px}
+.champion-confetti-4{bottom:20px;right:20px;transform:rotate(-20deg)}
+.champion-eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;color:#ffd166;margin-bottom:14px}
+.champion-trophy{font-size:60px;line-height:1;margin-bottom:10px}
+.champion-label{font-size:12px;font-weight:700;letter-spacing:.1em;color:#8fa6bd;margin-bottom:6px}
+.champion-team{display:flex;align-items:center;justify-content:center;gap:10px}
+.champion-flag{font-size:32px}
+.champion-name{font-size:28px;font-weight:900;color:#fff}
+.champion-final-score{font-size:13px;color:#ffd166;font-weight:700;margin-top:10px}
+.champion-stats{background:#061426e8;border:1px solid #ffffff14;border-radius:18px;padding:18px 20px;margin-top:14px}
+.champion-stats-title{font-size:11px;font-weight:700;letter-spacing:.08em;color:#8fa6bd;margin-bottom:10px}
+.champion-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.champion-stat-card{background:#ffffff08;border-radius:12px;padding:12px}
+.champion-stat-num{font-size:20px;font-weight:900;color:#fff}
+.champion-stat-label{font-size:10px;color:#8fa6bd;margin-top:2px}
+.champion-topscorer{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#ffd16622,#ff9f4322);border-radius:12px;padding:10px 12px;border:1px solid #ffd16640}
+.champion-topscorer-left{display:flex;align-items:center;gap:8px}
+.champion-topscorer-label{font-size:11px;color:#ffd166;font-weight:700}
+.champion-topscorer-name{font-size:12px;color:#fff;font-weight:900}
+.champion-topscorer-goals{font-size:16px;font-weight:900;color:#ffd166}
 .challenge-empty{text-align:center;padding:28px;color:#8fa6bd;border:1px dashed #ffffff18;border-radius:18px;margin-top:12px}
 .lb-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #ffffff0a}
 .lb-row:last-child{border-bottom:none}
