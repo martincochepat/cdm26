@@ -131,6 +131,43 @@ const EN_TO_FR = {
         supabaseStatus = 'offline';
       }
     }
+
+    // ─── Fin de tournoi : champion + stats globales ───────────────────────
+    // Match id 104 = Finale (voir 00-core-data.js). Retourne le match si la
+    // finale est terminée avec un vainqueur connu, sinon null.
+    function getTournamentChampionMatch(){
+      const final = (data||[]).find(m=>String(m.id)==='104');
+      if(!final || matchStatusKey(final)!=='finished' || !final.winner || final.winner==='draw') return null;
+      return final;
+    }
+
+    // Calcule les stats globales du tournoi (buts, matchs joués, meilleur
+    // buteur) à partir des données déjà chargées (data + match_events).
+    function computeTournamentStats(){
+      const finishedMatches=(data||[]).filter(m=>matchStatusKey(m)==='finished');
+      let totalGoals=0;
+      finishedMatches.forEach(m=>{
+        const sa=Number(m.score_a), sb=Number(m.score_b);
+        if(!isNaN(sa)) totalGoals+=sa;
+        if(!isNaN(sb)) totalGoals+=sb;
+      });
+      const scorerCounts={};
+      Object.values(matchEventsByMatchId||{}).forEach(events=>{
+        (events||[]).forEach(e=>{
+          const t=String(e.event_type||'').toLowerCase(), d=String(e.detail||'').toLowerCase();
+          const isGoal = !d.includes('missed') && !d.includes('own goal') && (t==='goal'||d.includes('goal')||d.includes('penalty'));
+          if(isGoal && e.player_name){
+            scorerCounts[e.player_name]=(scorerCounts[e.player_name]||0)+1;
+          }
+        });
+      });
+      let topScorer=null, topScorerGoals=0;
+      Object.entries(scorerCounts).forEach(([name,count])=>{
+        if(count>topScorerGoals){ topScorer=name; topScorerGoals=count; }
+      });
+      return { totalGoals, totalMatches: finishedMatches.length, topScorer, topScorerGoals };
+    }
+
     const flags={'France':'🇫🇷','Brésil':'🇧🇷','Argentine':'🇦🇷','Mexique':'🇲🇽','Canada':'🇨🇦','États-Unis':'🇺🇸','Allemagne':'🇩🇪','Espagne':'🇪🇸','Portugal':'🇵🇹','Angleterre':'🏴','Pays-Bas':'🇳🇱','Belgique':'🇧🇪','Italie':'🇮🇹','Suisse':'🇨🇭','Croatie':'🇭🇷','Danemark':'🇩🇰','Norvège':'🇳🇴','Suède':'🇸🇪','Écosse':'🏴','Autriche':'🇦🇹','Pologne':'🇵🇱','Serbie':'🇷🇸','Turquie':'🇹🇷','Ukraine':'🇺🇦','Rép. tchèque':'🇨🇿','Bosnie-Herzégovine':'🇧🇦','Russie':'🇷🇺','Maroc':'🇲🇦','Sénégal':'🇸🇳','Tunisie':'🇹🇳','Égypte':'🇪🇬','Afrique du Sud':'🇿🇦',"Côte d'Ivoire":'🇨🇮','Ghana':'🇬🇭','Nigeria':'🇳🇬','Algérie':'🇩🇿','Cap-Vert':'🇨🇻','Japon':'🇯🇵','Corée du Sud':'🇰🇷','Iran':'🇮🇷','Arabie saoudite':'🇸🇦','Qatar':'🇶🇦','Australie':'🇦🇺','Nouvelle-Zélande':'🇳🇿','Irak':'🇮🇶','Jordanie':'🇯🇴','Ouzbékistan':'🇺🇿','Uruguay':'🇺🇾','Colombie':'🇨🇴','Paraguay':'🇵🇾','Equateur':'🇪🇨','Équateur':'🇪🇨','Chili':'🇨🇱','Pérou':'🇵🇪','Venezuela':'🇻🇪','Haïti':'🇭🇹','Jamaïque':'🇯🇲','Panama':'🇵🇦','Curaçao':'🇨🇼'};
     const favs=new Set(JSON.parse(localStorage.getItem('wc26_favs')||'[]').map(String));
     const followedTeams=new Set(JSON.parse(localStorage.getItem('wc26_teams')||'["France"]')); let activeTab='home'; const $=id=>document.getElementById(id); const dateLabel=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long'}); const matchStart=m=>new Date(`${m.date}T${m.time}:00+02:00`); const matchEnd=m=>new Date(matchStart(m).getTime()+120*60000); const isLive=m=>new Date()>=matchStart(m)&&new Date()<=matchEnd(m); const isPast=m=>new Date()>matchEnd(m); const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

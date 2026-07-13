@@ -16,6 +16,39 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
     }
     function renderHome(){
       const now=new Date();
+      const champion=typeof getTournamentChampionMatch==='function'?getTournamentChampionMatch():null;
+      if(champion && featuredBox){
+        const stats=computeTournamentStats();
+        featuredBox.innerHTML=`
+          <div class="champion-hero">
+            <span class="champion-confetti champion-confetti-1">🎉</span>
+            <span class="champion-confetti champion-confetti-2">✨</span>
+            <span class="champion-confetti champion-confetti-3">🎊</span>
+            <span class="champion-confetti champion-confetti-4">✨</span>
+            <div class="champion-eyebrow">COUPE DU MONDE 2026 TERMINÉE</div>
+            <div class="champion-trophy">🏆</div>
+            <div class="champion-label">CHAMPION DU MONDE</div>
+            <div class="champion-team">
+              <span class="champion-flag">${flags[champion.winner]||'🏆'}</span>
+              <span class="champion-name">${esc(champion.winner)}</span>
+            </div>
+            <div class="champion-final-score">Finale : ${esc(champion.home)} ${champion.score_a} - ${champion.score_b} ${esc(champion.away)}</div>
+          </div>
+          <div class="champion-stats">
+            <div class="champion-stats-title">📊 LA COMPÉTITION EN CHIFFRES</div>
+            <div class="champion-stats-grid">
+              <div class="champion-stat-card"><div class="champion-stat-num">${stats.totalGoals}</div><div class="champion-stat-label">Buts marqués</div></div>
+              <div class="champion-stat-card"><div class="champion-stat-num">${stats.totalMatches}</div><div class="champion-stat-label">Matchs joués</div></div>
+            </div>
+            ${stats.topScorer?`<div class="champion-topscorer">
+              <div class="champion-topscorer-left"><span>⚽</span><div><div class="champion-topscorer-label">Meilleur buteur</div><div class="champion-topscorer-name">${esc(stats.topScorer)}</div></div></div>
+              <span class="champion-topscorer-goals">${stats.topScorerGoals} but${stats.topScorerGoals>1?'s':''}</span>
+            </div>`:''}
+          </div>
+          <button class="home-btn home-btn-primary" onclick="switchTab('fan')">🔥 Voir le classement final →</button>
+        `;
+        if(document.getElementById('lastResultBox')) document.getElementById('lastResultBox').style.display='none';
+      }
       const upcoming=data.filter(m=>matchStatusKey(m)==='upcoming').sort((a,b)=>matchStart(a)-matchStart(b));
       const liveMatches=data.filter(m=>matchStatusKey(m)==='live').sort((a,b)=>matchStart(a)-matchStart(b));
       const finished=data.filter(m=>matchStatusKey(m)==='finished').sort((a,b)=>matchStart(b)-matchStart(a));
@@ -29,7 +62,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
       const followed=[...followedTeams];
 
       // ── FEATURED BOX (premium, style Flashscore) ──────────────
-      if(mainMatch){
+      if(mainMatch && !champion){
         const isLive=mainStatus==='live';
         const isDone=mainStatus==='finished';
         const scored=mainMatch.score_a!==null&&mainMatch.score_a!==undefined&&mainMatch.score_b!==null&&mainMatch.score_b!==undefined;
@@ -154,7 +187,7 @@ function renderAll(){document.body.classList.toggle('home-active', activeTab==='
           loadFeaturedStats(mainMatch);
           loadFeaturedLineups(mainMatch);
         }
-      } else {
+      } else if(!champion){
         featuredBox.innerHTML='<h2 class="card-title">⏳ Prochain match</h2><div class="empty-soft">Aucun match à afficher.</div>';
       }
 

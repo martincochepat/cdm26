@@ -512,6 +512,10 @@ function renderLeaderboard(myRank) {
     return `<div class="challenge-empty">Aucun joueur pour l'instant — sois le premier ! 🏆</div>`;
   }
 
+  const champion = typeof getTournamentChampionMatch === 'function' ? getTournamentChampionMatch() : null;
+  const podiumHtml = champion ? renderPodium() : '';
+  const title = champion ? '🏆 Classement final' : '🏆 Classement';
+
   const medals = ['🥇', '🥈', '🥉'];
   const rows = leaderboardRows.map((r, i) => {
     const isMe = currentProfile && r.pseudo === currentProfile.pseudo;
@@ -534,11 +538,35 @@ function renderLeaderboard(myRank) {
 
   return `
     <div class="challenge-leaderboard" id="challengeLeaderboard">
-      <h3 style="margin:0 0 14px">🏆 Classement</h3>
+      <h3 style="margin:0 0 14px">${title}</h3>
+      ${podiumHtml}
       ${rows}
       ${!currentUser ? `<div class="lb-cta">Rejoins le classement pour apparaître ici ↑</div>` : ''}
     </div>
   `;
+}
+
+// Podium visuel pour les 3 premiers, affiché uniquement une fois le tournoi terminé.
+function renderPodium(){
+  const top3 = leaderboardRows.slice(0, 3);
+  if(!top3.length) return '';
+  const order = [1, 0, 2].filter(i => top3[i]); // affiche 2e - 1er - 3e
+  const heights = {0: 82, 1: 56, 2: 38};
+  const medals = ['🥇', '🥈', '🥉'];
+  const cols = order.map(i => {
+    const r = top3[i];
+    const isFirst = i === 0;
+    return `
+      <div class="podium-col ${isFirst?'podium-col-first':''}">
+        <span class="podium-medal">${medals[i]}</span>
+        <span class="podium-avatar">${esc(r.avatar_emoji)}</span>
+        <div class="podium-name">${esc(r.pseudo)}</div>
+        <div class="podium-pts">${r.points} pts</div>
+        <div class="podium-bar" style="height:${heights[i]}px"></div>
+      </div>
+    `;
+  }).join('');
+  return `<div class="podium-wrap">${cols}</div>`;
 }
 
 // ─── Handlers UI ───────────────────────────────────────────────────────────
@@ -808,7 +836,8 @@ async function renderPredictionHistory() {
     const hasScore = pred.score_a_pick!=null && pred.score_b_pick!=null;
     // Label utilisé pour l'affichage (score exact si dispo, sinon le vainqueur choisi)
     const winnerLabel = pred.choice === 'home' ? m.home : pred.choice === 'away' ? m.away : pred.choice === 'draw' ? 'Match nul' : pred.choice;
-    const displayLabel = hasScore ? `${m.home} ${pred.score_a_pick} - ${pred.score_b_pick} ${m.away}` : winnerLabel;
+    let displayLabel = hasScore ? `${m.home} ${pred.score_a_pick} - ${pred.score_b_pick} ${m.away}` : winnerLabel;
+    if(pred.qualifier_pick) displayLabel += ` · Qualifié : ${pred.qualifier_pick}`;
     const finished = matchStatusKey(m) === 'finished';
     let resultIcon = '⏳';
     let resultLabel = 'En attente';
