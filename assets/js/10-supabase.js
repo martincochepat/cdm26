@@ -75,17 +75,12 @@ const EN_TO_FR = {
           // Pour les matchs knockout : toujours garder les noms de localData (00-core-data.js)
           const isKnockout = !String(local.phase||'').startsWith('Groupe');
           if(isKnockout){
-            // Si l'ordre domicile/extérieur renvoyé par Supabase (rawHome/rawAway)
-            // est inversé par rapport à l'ordre attendu localement, il faut permuter
-            // les scores en conséquence, sinon ils restent attachés à la mauvaise équipe.
-            const namesMatch=(a,b)=>a && b && String(a).trim().toLowerCase()===String(b).trim().toLowerCase();
-            const isReversed = namesMatch(rawHome, local.away) && namesMatch(rawAway, local.home);
-            if(isReversed){
-              const sa=m.score_a, sb=m.score_b;
-              m.score_a=sb; m.score_b=sa;
-              const pa=m.pen_a, pb=m.pen_b;
-              if(pa!==null || pb!==null){ m.pen_a=pb; m.pen_b=pa; }
-            }
+            // On mémorise l'ordre domicile/extérieur réel renvoyé par Supabase
+            // (rawHome/rawAway) pour pouvoir, une fois les noms définitivement
+            // résolus par resolveKnockoutSlots() plus bas, vérifier si l'ordre a
+            // été inversé et permuter les scores en conséquence si besoin.
+            m._supaHome = rawHome;
+            m._supaAway = rawAway;
             m.home = local.home;
             m.away = local.away;
           } else {
@@ -97,6 +92,19 @@ const EN_TO_FR = {
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
         // resolveKnockoutTeams(); // désactivé - noms en dur dans 00-core-data.js
         resolveKnockoutSlots();
+        // Une fois les noms définitivement résolus, vérifie pour chaque match
+        // knockout si l'ordre domicile/extérieur a été inversé par rapport à
+        // Supabase, et permute les scores si besoin pour rester sur la bonne équipe.
+        data.forEach(m=>{
+          if(!m._supaHome || !m._supaAway || !m.home || !m.away) return;
+          const namesMatch=(a,b)=>a && b && String(a).trim().toLowerCase()===String(b).trim().toLowerCase();
+          if(namesMatch(m._supaHome, m.away) && namesMatch(m._supaAway, m.home)){
+            const sa=m.score_a, sb=m.score_b;
+            m.score_a=sb; m.score_b=sa;
+            const pa=m.pen_a, pb=m.pen_b;
+            if(pa!==null || pb!==null){ m.pen_a=pb; m.pen_b=pa; }
+          }
+        });
         supabaseStatus = 'online';
         supabaseLastSync = new Date();
         renderAll();
