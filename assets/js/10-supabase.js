@@ -75,6 +75,17 @@ const EN_TO_FR = {
           // Pour les matchs knockout : toujours garder les noms de localData (00-core-data.js)
           const isKnockout = !String(local.phase||'').startsWith('Groupe');
           if(isKnockout){
+            // Si l'ordre domicile/extérieur renvoyé par Supabase (rawHome/rawAway)
+            // est inversé par rapport à l'ordre attendu localement, il faut permuter
+            // les scores en conséquence, sinon ils restent attachés à la mauvaise équipe.
+            const namesMatch=(a,b)=>a && b && String(a).trim().toLowerCase()===String(b).trim().toLowerCase();
+            const isReversed = namesMatch(rawHome, local.away) && namesMatch(rawAway, local.home);
+            if(isReversed){
+              const sa=m.score_a, sb=m.score_b;
+              m.score_a=sb; m.score_b=sa;
+              const pa=m.pen_a, pb=m.pen_b;
+              if(pa!==null || pb!==null){ m.pen_a=pb; m.pen_b=pa; }
+            }
             m.home = local.home;
             m.away = local.away;
           } else {
