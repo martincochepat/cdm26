@@ -87,6 +87,12 @@ const EN_TO_FR = {
             m.home = rawHome;
             m.away = rawAway;
           }
+          // Repli sur les données locales (00-core-data.js) si Supabase ne
+          // renseigne pas ville/stade/diffusion (ex: lignes phase finale
+          // insérées manuellement sans ces infos).
+          if(!m.city && local.city) m.city = local.city;
+          if((!m.stadium || m.stadium==='Stade à confirmer') && local.stadium) m.stadium = local.stadium;
+          if((!m.tv || m.tv==='À confirmer') && local.tv) m.tv = local.tv;
           merged.set(String(m.id), m);
         });
         data = [...merged.values()].sort((a,b)=>matchStart(a)-matchStart(b));
