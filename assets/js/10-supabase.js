@@ -107,6 +107,10 @@ const EN_TO_FR = {
           if(namesMatch(m._supaHome, m.away) && namesMatch(m._supaAway, m.home)){
             const sa=m.score_a, sb=m.score_b;
             m.score_a=sb; m.score_b=sa;
+            const sa90=m.score_a_90, sb90=m.score_b_90;
+            if(sa90!==null && sa90!==undefined && sb90!==null && sb90!==undefined){
+              m.score_a_90=sb90; m.score_b_90=sa90;
+            }
             const pa=m.pen_a, pb=m.pen_b;
             if(pa!==null || pb!==null){ m.pen_a=pb; m.pen_b=pa; }
           }

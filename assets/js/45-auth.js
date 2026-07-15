@@ -215,8 +215,15 @@ async function recalculateUserPoints(userId) {
       if (!match || (match.status !== 'finished' && matchStatusKey(match) !== 'finished')) continue;
       if (match.score_a === null || match.score_b === null) continue;
 
-      const realA = Number(match.score_a);
-      const realB = Number(match.score_b);
+      // Le pronostic porte toujours sur le score à la 90e minute (temps
+      // réglementaire), jamais sur le score après prolongation. On utilise
+      // donc score_a_90/score_b_90 quand disponibles, avec repli sur le
+      // score final pour les matchs qui n'ont pas cette donnée (ex: matchs
+      // sans prolongation possible, ou données plus anciennes).
+      const has90 = match.score_a_90 !== null && match.score_a_90 !== undefined &&
+                    match.score_b_90 !== null && match.score_b_90 !== undefined;
+      const realA = has90 ? Number(match.score_a_90) : Number(match.score_a);
+      const realB = has90 ? Number(match.score_b_90) : Number(match.score_b);
       const realResult = realA > realB ? 'home' : realA < realB ? 'away' : 'draw';
 
       // Score exact → +5pts

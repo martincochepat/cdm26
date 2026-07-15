@@ -42,6 +42,10 @@ let data = [
         status: row.status || 'upcoming',
         score_a: row.score_a === null || row.score_a === undefined || row.score_a === '' ? null : Number(row.score_a),
         score_b: row.score_b === null || row.score_b === undefined || row.score_b === '' ? null : Number(row.score_b),
+        // Score à la 90e minute (temps réglementaire) — distinct du score final
+        // qui peut inclure la prolongation. Utilisé pour comparer aux pronostics.
+        score_a_90: row.score_a_90 === null || row.score_a_90 === undefined || row.score_a_90 === '' ? null : Number(row.score_a_90),
+        score_b_90: row.score_b_90 === null || row.score_b_90 === undefined || row.score_b_90 === '' ? null : Number(row.score_b_90),
         minute: row.minute === null || row.minute === undefined || row.minute === '' ? null : row.minute,
         period: row.period || null,
         winner: row.winner || '',
