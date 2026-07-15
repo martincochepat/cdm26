@@ -300,6 +300,14 @@ async function recalculateUserPoints(userId) {
         updated_at: new Date().toISOString(),
       })
     });
+    // Reflète immédiatement le nouveau total en mémoire, sans attendre un
+    // rechargement complet de la page.
+    if (typeof currentProfile !== 'undefined' && currentProfile && currentUser && currentUser.id === userId) {
+      currentProfile.points = points;
+      currentProfile.predictions_correct = correct;
+      currentProfile.predictions_total = total;
+      currentProfile.quiz_correct = quizCorrect;
+    }
   } catch (err) {
     console.warn('Recalcul points échoué', err);
   }
@@ -849,17 +857,43 @@ async function renderPredictionHistory() {
     let resultIcon = '⏳';
     let resultLabel = 'En attente';
     let pts = 0;
-    if (finished) {
-      const realResult = m.score_a > m.score_b ? m.home : m.score_a < m.score_b ? m.away : 'Match nul';
-      const exactMatch = hasScore && m.score_a === pred.score_a_pick && m.score_b === pred.score_b_pick;
+    if (finished && m.score_a !== null && m.score_b !== null) {
+      // Même logique que recalculateUserPoints() : le pronostic porte sur le
+      // score à la 90e minute, jamais sur le score après prolongation.
+      const has90 = m.score_a_90 !== null && m.score_a_90 !== undefined &&
+                    m.score_b_90 !== null && m.score_b_90 !== undefined;
+      const realA = has90 ? Number(m.score_a_90) : Number(m.score_a);
+      const realB = has90 ? Number(m.score_b_90) : Number(m.score_b);
+      const realResult = realA > realB ? 'home' : realA < realB ? 'away' : 'draw';
+      const isKnockout = !String(m.phase||'').startsWith('Groupe');
+      const exactMatch = hasScore && Number(pred.score_a_pick) === realA && Number(pred.score_b_pick) === realB;
+
       if (exactMatch) {
-        resultIcon = '✅';
-        resultLabel = '+5 pts';
-        pts = 5;
-      } else if (winnerLabel === realResult) {
-        resultIcon = '✅';
-        resultLabel = '+3 pts';
-        pts = 3;
+        if (isKnockout && realResult === 'draw') {
+          const realWinner = m.winner && m.winner !== 'draw' ? m.winner : null;
+          if (realWinner && pred.qualifier_pick === realWinner) {
+            resultIcon = '✅'; resultLabel = '+5 pts'; pts = 5;
+          } else if (!pred.qualifier_pick) {
+            resultIcon = '✅'; resultLabel = '+3 pts'; pts = 3;
+          } else {
+            resultIcon = '❌'; resultLabel = '0 pt';
+          }
+        } else {
+          resultIcon = '✅'; resultLabel = '+5 pts'; pts = 5;
+        }
+      } else if (pred.choice === realResult) {
+        if (isKnockout && realResult === 'draw' && pred.qualifier_pick) {
+          const realWinner = m.winner && m.winner !== 'draw' ? m.winner : null;
+          if (realWinner && pred.qualifier_pick === realWinner) {
+            resultIcon = '✅'; resultLabel = '+3 pts'; pts = 3;
+          } else {
+            resultIcon = '❌'; resultLabel = '0 pt';
+          }
+        } else if (!(isKnockout && realResult === 'draw' && !pred.qualifier_pick)) {
+          resultIcon = '✅'; resultLabel = '+3 pts'; pts = 3;
+        } else {
+          resultIcon = '❌'; resultLabel = '0 pt';
+        }
       } else {
         resultIcon = '❌';
         resultLabel = '0 pt';
