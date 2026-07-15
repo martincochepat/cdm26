@@ -167,12 +167,23 @@ function penaltyScore(fx) {
   return { pen_a: Number(penHome), pen_b: Number(penAway) };
 }
 
+// Score à la 90e minute (temps réglementaire), distinct du score final qui
+// peut inclure la prolongation. Nécessaire pour comparer correctement aux
+// pronostics, qui portent toujours sur le score à la 90e minute.
+function fulltimeScore(fx) {
+  const ftHome = fx?.score?.fulltime?.home;
+  const ftAway = fx?.score?.fulltime?.away;
+  if (ftHome == null || ftAway == null) return { score_a_90: null, score_b_90: null };
+  return { score_a_90: Number(ftHome), score_b_90: Number(ftAway) };
+}
+
 function fixtureToCandidate(fx) {
   const { date, time_fr } = toParisDateTime(fx?.fixture?.date);
   const status = normalizeStatus(fx?.fixture?.status);
   const home = fx?.teams?.home?.name || "";
   const away = fx?.teams?.away?.name || "";
   const { pen_a, pen_b } = penaltyScore(fx);
+  const { score_a_90, score_b_90 } = fulltimeScore(fx);
   return {
     api_fixture_id: fx?.fixture?.id ? String(fx.fixture.id) : null,
     date, time_fr, team_a: home, team_b: away,
@@ -180,6 +191,7 @@ function fixtureToCandidate(fx) {
     status, minute: getMinute(fx?.fixture?.status),
     period: getPeriod(fx?.fixture?.status),
     score_a: fx?.goals?.home ?? null, score_b: fx?.goals?.away ?? null,
+    score_a_90, score_b_90,
     pen_a, pen_b,
     winner: winnerFromFixture(fx, status),
   };
@@ -268,12 +280,13 @@ async function supabasePatchMatch(matchId, patch) {
 }
 
 function buildPatch(apiMatch, localMatch) {
-  let { score_a, score_b, winner, team_a, team_b, pen_a, pen_b } = apiMatch;
+  let { score_a, score_b, score_a_90, score_b_90, winner, team_a, team_b, pen_a, pen_b } = apiMatch;
   const wasPlaceholder = localMatch._wasPlaceholder;
   const originalWinner = winner;
 
   if (localMatch._reversed) {
     [score_a, score_b] = [score_b, score_a];
+    if (score_a_90 != null && score_b_90 != null) [score_a_90, score_b_90] = [score_b_90, score_a_90];
     [team_a, team_b] = [team_b, team_a];
     if (pen_a != null && pen_b != null) [pen_a, pen_b] = [pen_b, pen_a];
     if (originalWinner === apiMatch.team_a) winner = localMatch.team_b;
@@ -295,6 +308,11 @@ function buildPatch(apiMatch, localMatch) {
     api_fixture_id: apiMatch.api_fixture_id,
     updated_at: new Date().toISOString(),
   };
+
+  if (score_a_90 != null && score_b_90 != null) {
+    patch.score_a_90 = score_a_90;
+    patch.score_b_90 = score_b_90;
+  }
 
   // Tirs au but (uniquement si présents)
   if (pen_a != null && pen_b != null) {
